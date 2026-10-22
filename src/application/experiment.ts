@@ -25,8 +25,9 @@ export const Experiment = entity({
     exposure: "bridge",
     layer: "experiments",
   },
-  operations: ({ self, commands, operation }) => ({
+  operations: ({ self, commands, operation, app }) => ({
     createDraft: operation({
+      requires: [app.require.authenticated()],
       input: graphSchema
         .pick(self, ["id", "title", "story", "createdAt"])
         .named("CreateExperimentInput"),
@@ -69,6 +70,7 @@ export const Experiment = entity({
           .run(),
     }),
     updateDraft: operation({
+      requires: [app.require.authenticated()],
       input: graphSchema.object({
         experiment: field.ref(self),
         title: self.fields.title,
@@ -151,6 +153,7 @@ export const Experiment = entity({
       },
     }),
     publish: operation({
+      requires: [app.require.authenticated()],
       input: graphSchema.object({
         experiment: field.ref(self),
         publishedAt: self.fields.createdAt,
@@ -205,6 +208,7 @@ export const Experiment = entity({
       },
     }),
     close: operation({
+      requires: [app.require.authenticated()],
       input: graphSchema.object({ experiment: field.ref(self) }),
       output: self,
       bridge: { invalidate: [["Experiment"]] },

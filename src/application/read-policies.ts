@@ -1,4 +1,9 @@
-import type { GraphReadPolicy } from "@ontahi/core/data-graph";
+import {
+  selectionAll,
+  selectionNone,
+  type GraphReadPolicy,
+} from "@ontahi/core/data-graph";
+import type { Principal } from "@ontahi/core/runtime/server";
 
 import { AnalysisRun } from "./analysis-run";
 import { Experiment } from "./experiment";
@@ -6,8 +11,17 @@ import { ParticipantSession } from "./participant-session";
 import { RecallAnalysis } from "./recall-analysis";
 
 export type LocalRuntimeAuthority = {
-  principal: null;
+  principal: Principal | null;
+  participantSessionIds: string[];
+  participantPublicToken?: string;
+  cacheScope: readonly string[];
 };
+
+const authenticatedScope = ({
+  authority,
+}: {
+  authority: LocalRuntimeAuthority;
+}) => (authority.principal ? selectionAll() : selectionNone());
 
 const ExperimentReadPolicy = {
   entity: Experiment,
@@ -29,7 +43,28 @@ const ExperimentReadPolicy = {
     publishedAt: { select: true },
     publicToken: { select: true, filter: ["eq"] },
   },
-  scope: "all",
+  scope: ({ authority }) =>
+    authority.principal
+      ? selectionAll()
+      : authority.participantPublicToken
+        ? {
+            kind: "and",
+            operands: [
+              {
+                kind: "predicate",
+                operator: "eq",
+                fieldName: "status",
+                value: "published",
+              },
+              {
+                kind: "predicate",
+                operator: "eq",
+                fieldName: "publicToken",
+                value: authority.participantPublicToken,
+              },
+            ],
+          }
+        : selectionNone(),
 } satisfies GraphReadPolicy<typeof Experiment, LocalRuntimeAuthority>;
 
 const ParticipantSessionReadPolicy = {
@@ -48,7 +83,17 @@ const ParticipantSessionReadPolicy = {
     recallText: { select: true },
     submittedAt: { select: true, order: true },
   },
-  scope: "all",
+  scope: ({ authority }) =>
+    authority.principal
+      ? selectionAll()
+      : authority.participantSessionIds.length > 0
+        ? {
+            kind: "predicate",
+            operator: "in",
+            fieldName: "id",
+            values: authority.participantSessionIds,
+          }
+        : selectionNone(),
 } satisfies GraphReadPolicy<typeof ParticipantSession, LocalRuntimeAuthority>;
 
 const AnalysisRunReadPolicy = {
@@ -63,7 +108,7 @@ const AnalysisRunReadPolicy = {
     analyzerVersion: { select: true },
     createdAt: { select: true, order: true },
   },
-  scope: "all",
+  scope: authenticatedScope,
 } satisfies GraphReadPolicy<typeof AnalysisRun, LocalRuntimeAuthority>;
 
 const RecallAnalysisReadPolicy = {
@@ -84,7 +129,7 @@ const RecallAnalysisReadPolicy = {
     phenomena: { select: true },
     createdAt: { select: true, order: true },
   },
-  scope: "all",
+  scope: authenticatedScope,
 } satisfies GraphReadPolicy<typeof RecallAnalysis, LocalRuntimeAuthority>;
 
 export const localGraphReadPolicies = [

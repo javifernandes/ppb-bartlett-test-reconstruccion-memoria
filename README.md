@@ -26,7 +26,8 @@ La [síntesis del producto](./docs/README.md) describe el alcance y enlaza las e
 - persistencia en memoria;
 - flujo completo de creación, publicación, participación, cierre y exportación;
 - análisis local o mediante DeepSeek con resultados y evidencia por respuesta;
-- deployment de preview; todavía sin persistencia remota ni autenticación.
+- Supabase Auth con acceso administrativo por magic link y alta pública deshabilitada;
+- deployment de preview; todavía con persistencia de experimentos en memoria.
 
 ## Desarrollo local
 

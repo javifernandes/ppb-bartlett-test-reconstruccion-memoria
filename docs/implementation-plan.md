@@ -62,10 +62,10 @@ controlado. Éste es el primer hito de producto.
 ## Slice 5 — Persistencia y autenticación reales
 
 - Crear el proyecto separado en Supabase.
+- Integrar Supabase Auth SSR, magic links y principal de Ontahí. **Hecho.**
+- Proteger las pantallas y Operations administrativas. **Hecho.**
 - Incorporar `@ontahi/supabase` con la misma aplicación.
 - Crear migraciones con RLS explícito y permisos fail-closed.
-- Configurar Supabase Auth y deshabilitar registro público.
-- Sustituir `DevPrincipalProvider` por el provider de sesión Supabase.
 - Implementar invitación por email, magic links y aceptación de Membership.
 - Verificar migración del flujo completo contra PostgreSQL.
 

@@ -12,46 +12,73 @@ import { analyzeRecallHeuristically } from "./recall-analysis";
 import { parseRecallAnalysisOutput } from "./recall-analysis-model";
 
 describe("Bartlett application bootstrap", () => {
+  it("rechaza operaciones administrativas sin un principal", async () => {
+    const result = await Experiment.createDraft({
+      id: "experiment-unauthorized",
+      title: "No autorizado",
+      story: "Este experimento no debe crearse.",
+      createdAt: "2026-10-22T12:00:00.000Z",
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      failure: { reason: "not_authenticated" },
+    });
+  });
+
   it("runs a Query and an Operation against in-memory storage", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-10-22T13:05:00.000Z"));
+    const asAdmin = <T>(run: () => T) =>
+      BartlettApplication.app.runtime.withInvocationContext(
+        {
+          principal: { subject: "test-admin", kind: "user", issuer: "test" },
+        },
+        run,
+      );
     const initial = await BartlettApplication.graph.read(query(Experiment), {
       scope: "bootstrap.initial-experiments",
     });
 
     expect(initial).toHaveLength(1);
 
-    const created = await Experiment.createDraft({
-      id: "experiment-test",
-      title: "Experimento de prueba",
-      story: "Una historia de prueba suficientemente concreta.",
-      createdAt: "2026-10-22T12:00:00.000Z",
-    });
+    const created = await asAdmin(() =>
+      Experiment.createDraft({
+        id: "experiment-test",
+        title: "Experimento de prueba",
+        story: "Una historia de prueba suficientemente concreta.",
+        createdAt: "2026-10-22T12:00:00.000Z",
+      }),
+    );
 
     expect(created.ok).toBe(true);
 
-    const updated = await Experiment.updateDraft({
-      experiment: Experiment.refById("experiment-test"),
-      title: "Experimento editado",
-      participantTitle: "Una prueba de memoria",
-      introduction: "Leé atentamente la siguiente historia.",
-      consentText: "Acepto participar voluntariamente.",
-      story: "La historia fue editada.",
-      recallInstructions: "Escribí todo lo que recuerdes.",
-      intervalSeconds: 30,
-      distractorEnabled: true,
-    });
+    const updated = await asAdmin(() =>
+      Experiment.updateDraft({
+        experiment: Experiment.refById("experiment-test"),
+        title: "Experimento editado",
+        participantTitle: "Una prueba de memoria",
+        introduction: "Leé atentamente la siguiente historia.",
+        consentText: "Acepto participar voluntariamente.",
+        story: "La historia fue editada.",
+        recallInstructions: "Escribí todo lo que recuerdes.",
+        intervalSeconds: 30,
+        distractorEnabled: true,
+      }),
+    );
 
     expect(updated).toMatchObject({
       ok: true,
       value: { title: "Experimento editado" },
     });
 
-    const published = await Experiment.publish({
-      experiment: Experiment.refById("experiment-test"),
-      publishedAt: "2026-10-22T13:00:00.000Z",
-      publicToken: "public-test-token",
-    });
+    const published = await asAdmin(() =>
+      Experiment.publish({
+        experiment: Experiment.refById("experiment-test"),
+        publishedAt: "2026-10-22T13:00:00.000Z",
+        publicToken: "public-test-token",
+      }),
+    );
 
     expect(published).toMatchObject({
       ok: true,
@@ -61,17 +88,19 @@ describe("Bartlett application bootstrap", () => {
       },
     });
 
-    const rejectedUpdate = await Experiment.updateDraft({
-      experiment: Experiment.refById("experiment-test"),
-      title: "No debe cambiar",
-      participantTitle: "No debe cambiar",
-      introduction: "No debe cambiar",
-      consentText: "No debe cambiar",
-      story: "No debe cambiar",
-      recallInstructions: "No debe cambiar",
-      intervalSeconds: 0,
-      distractorEnabled: false,
-    });
+    const rejectedUpdate = await asAdmin(() =>
+      Experiment.updateDraft({
+        experiment: Experiment.refById("experiment-test"),
+        title: "No debe cambiar",
+        participantTitle: "No debe cambiar",
+        introduction: "No debe cambiar",
+        consentText: "No debe cambiar",
+        story: "No debe cambiar",
+        recallInstructions: "No debe cambiar",
+        intervalSeconds: 0,
+        distractorEnabled: false,
+      }),
+    );
 
     expect(rejectedUpdate).toMatchObject({
       ok: false,
@@ -145,29 +174,35 @@ describe("Bartlett application bootstrap", () => {
       experiment: Experiment.refById("experiment-test"),
     });
 
-    const prematureAnalysis = await AnalysisRun.start({
-      id: "analysis-too-early",
-      experiment: Experiment.refById("experiment-test"),
-      createdAt: "2026-10-22T13:11:31.000Z",
-    });
+    const prematureAnalysis = await asAdmin(() =>
+      AnalysisRun.start({
+        id: "analysis-too-early",
+        experiment: Experiment.refById("experiment-test"),
+        createdAt: "2026-10-22T13:11:31.000Z",
+      }),
+    );
     expect(prematureAnalysis).toMatchObject({
       ok: false,
       failure: { reason: "experiment_not_ready_for_analysis" },
     });
 
-    const closed = await Experiment.close({
-      experiment: Experiment.refById("experiment-test"),
-    });
+    const closed = await asAdmin(() =>
+      Experiment.close({
+        experiment: Experiment.refById("experiment-test"),
+      }),
+    );
     expect(closed).toMatchObject({
       ok: true,
       value: { status: "closed" },
     });
 
-    const analysis = await AnalysisRun.start({
-      id: "analysis-test",
-      experiment: Experiment.refById("experiment-test"),
-      createdAt: "2026-10-22T13:12:30.000Z",
-    });
+    const analysis = await asAdmin(() =>
+      AnalysisRun.start({
+        id: "analysis-test",
+        experiment: Experiment.refById("experiment-test"),
+        createdAt: "2026-10-22T13:12:30.000Z",
+      }),
+    );
     expect(analysis).toMatchObject({
       ok: true,
       value: {
@@ -176,22 +211,29 @@ describe("Bartlett application bootstrap", () => {
       },
     });
 
-    const recallAnalysis = await RecallAnalysis.analyze({
-      id: "recall-analysis-test",
-      run: AnalysisRun.refById("analysis-test"),
-      session: ParticipantSession.refById("session-test"),
-      experiment: Experiment.refById("experiment-test"),
-      createdAt: "2026-10-22T13:12:31.000Z",
-    });
+    const recallAnalysis = await asAdmin(() =>
+      RecallAnalysis.analyze({
+        id: "recall-analysis-test",
+        run: AnalysisRun.refById("analysis-test"),
+        session: ParticipantSession.refById("session-test"),
+        experiment: Experiment.refById("experiment-test"),
+        createdAt: "2026-10-22T13:12:31.000Z",
+      }),
+    );
     expect(recallAnalysis).toMatchObject({
       ok: true,
-      value: { status: "completed", rubricVersion: "bartlett-heuristic-v1" },
+      value: {
+        status: "completed",
+        rubricVersion: "bartlett-heuristic-v1",
+      },
     });
 
-    const finishedAnalysis = await AnalysisRun.finish({
-      run: AnalysisRun.refById("analysis-test"),
-      hasErrors: false,
-    });
+    const finishedAnalysis = await asAdmin(() =>
+      AnalysisRun.finish({
+        run: AnalysisRun.refById("analysis-test"),
+        hasErrors: false,
+      }),
+    );
     expect(finishedAnalysis).toMatchObject({
       ok: true,
       value: { status: "completed" },

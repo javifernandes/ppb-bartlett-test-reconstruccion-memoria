@@ -29,6 +29,8 @@
     "@ontahi/core": "1.0.0-alpha.13",
     "@ontahi/react": "1.0.0-alpha.13",
     "@ontahi/runtime-nextjs": "1.0.0-alpha.13",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.118.0",
     "@tabler/icons-react": "3.49.0",
     "@tanstack/react-query": "5.104.5",
     "effect": "3.21.0",

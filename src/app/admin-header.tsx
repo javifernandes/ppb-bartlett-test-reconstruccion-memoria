@@ -1,8 +1,18 @@
 "use client";
 
-import { AppShell, Box, Group, Text, UnstyledButton } from "@mantine/core";
-import { IconArrowLeft, IconFlask } from "@tabler/icons-react";
+import {
+  ActionIcon,
+  AppShell,
+  Box,
+  Group,
+  Text,
+  Tooltip,
+  UnstyledButton,
+} from "@mantine/core";
+import { IconArrowLeft, IconFlask, IconLogout } from "@tabler/icons-react";
 import Link from "next/link";
+
+import { signOut } from "./login/actions";
 
 export const AdminHeader = ({
   section,
@@ -51,7 +61,18 @@ export const AdminHeader = ({
         </Text>
       </Group>
 
-      <Box />
+      <Box component="form" action={signOut} style={{ justifySelf: "end" }}>
+        <Tooltip label="Cerrar sesión">
+          <ActionIcon
+            type="submit"
+            variant="subtle"
+            color="gray"
+            aria-label="Cerrar sesión"
+          >
+            <IconLogout size={19} />
+          </ActionIcon>
+        </Tooltip>
+      </Box>
     </Box>
   </AppShell.Header>
 );

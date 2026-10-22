@@ -177,8 +177,9 @@ export const RecallAnalysis = entity({
     exposure: "bridge",
     layer: "analysis",
   },
-  operations: ({ self, commands, operation }) => ({
+  operations: ({ self, commands, operation, app }) => ({
     analyze: operation({
+      requires: [app.require.authenticated()],
       input: graphSchema.object({
         id: self.fields.id,
         run: field.ref(AnalysisRun),

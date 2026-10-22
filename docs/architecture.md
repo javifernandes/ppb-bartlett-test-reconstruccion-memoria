@@ -89,6 +89,11 @@ para publicar, cerrar o analizar.
 El registro público se deshabilita. El owner invita un email mediante una Operation server-side que
 crea una `AdminInvitation` y llama a Supabase Auth Admin.
 
+La primera integración ya usa sesiones SSR de Supabase y magic links con `shouldCreateUser: false`.
+El host proyecta cada sesión válida como Principal de Ontahí; las Operations administrativas exigen
+ese Principal y las lecturas anónimas se limitan al flujo participante. La administración de
+invitaciones y Memberships persiste como el siguiente incremento de este slice.
+
 Al aceptar:
 
 1. Supabase verifica el email y crea la sesión.

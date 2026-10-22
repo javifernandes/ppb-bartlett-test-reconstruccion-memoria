@@ -22,8 +22,9 @@ export const AnalysisRun = entity({
     exposure: "bridge",
     layer: "analysis",
   },
-  operations: ({ self, commands, operation }) => ({
+  operations: ({ self, commands, operation, app }) => ({
     start: operation({
+      requires: [app.require.authenticated()],
       input: graphSchema.object({
         id: self.fields.id,
         experiment: field.ref(Experiment),
@@ -59,6 +60,7 @@ export const AnalysisRun = entity({
       },
     }),
     finish: operation({
+      requires: [app.require.authenticated()],
       input: graphSchema.object({
         run: field.ref(self),
         hasErrors: field.boolean(),
