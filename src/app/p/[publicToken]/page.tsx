@@ -467,10 +467,7 @@ const PublicParticipationPage = () => {
         <Button
           size="lg"
           fullWidth
-          disabled={
-            remainingSeconds > 0 ||
-            (experiment.data.distractorEnabled && !distractorComplete)
-          }
+          disabled={remainingSeconds > 0}
           loading={startRecall.isExecuting}
           onClick={() => void beginRecall()}
         >
