@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Accordion,
   AppShell,
   Badge,
   Button,
@@ -243,28 +244,6 @@ const ExperimentWorkspacePage = () => {
                         disabled={experiment.data.status !== "draft"}
                         {...form.getInputProps("title")}
                       />
-                      <TextInput
-                        label="Título para participantes"
-                        required
-                        disabled={experiment.data.status !== "draft"}
-                        {...form.getInputProps("participantTitle")}
-                      />
-                      <Textarea
-                        label="Introducción"
-                        minRows={3}
-                        autosize
-                        required
-                        disabled={experiment.data.status !== "draft"}
-                        {...form.getInputProps("introduction")}
-                      />
-                      <Textarea
-                        label="Consentimiento"
-                        minRows={3}
-                        autosize
-                        required
-                        disabled={experiment.data.status !== "draft"}
-                        {...form.getInputProps("consentText")}
-                      />
                       <Textarea
                         label="Historia"
                         description="El texto se mostrará a los participantes durante la etapa de lectura."
@@ -273,14 +252,6 @@ const ExperimentWorkspacePage = () => {
                         required
                         disabled={experiment.data.status !== "draft"}
                         {...form.getInputProps("story")}
-                      />
-                      <Textarea
-                        label="Instrucciones de reconstrucción"
-                        minRows={3}
-                        autosize
-                        required
-                        disabled={experiment.data.status !== "draft"}
-                        {...form.getInputProps("recallInstructions")}
                       />
                       <NumberInput
                         label="Intervalo antes de reconstruir"
@@ -298,6 +269,48 @@ const ExperimentWorkspacePage = () => {
                           type: "checkbox",
                         })}
                       />
+                      <Accordion variant="contained">
+                        <Accordion.Item value="participant-copy">
+                          <Accordion.Control>
+                            Textos e instrucciones
+                          </Accordion.Control>
+                          <Accordion.Panel>
+                            <Stack gap="lg">
+                              <TextInput
+                                label="Título para participantes"
+                                description="Por defecto puede ser igual al nombre del experimento."
+                                required
+                                disabled={experiment.data.status !== "draft"}
+                                {...form.getInputProps("participantTitle")}
+                              />
+                              <Textarea
+                                label="Introducción"
+                                minRows={3}
+                                autosize
+                                required
+                                disabled={experiment.data.status !== "draft"}
+                                {...form.getInputProps("introduction")}
+                              />
+                              <Textarea
+                                label="Consentimiento"
+                                minRows={3}
+                                autosize
+                                required
+                                disabled={experiment.data.status !== "draft"}
+                                {...form.getInputProps("consentText")}
+                              />
+                              <Textarea
+                                label="Instrucciones de reconstrucción"
+                                minRows={3}
+                                autosize
+                                required
+                                disabled={experiment.data.status !== "draft"}
+                                {...form.getInputProps("recallInstructions")}
+                              />
+                            </Stack>
+                          </Accordion.Panel>
+                        </Accordion.Item>
+                      </Accordion>
                       <Group justify="flex-end">
                         {experiment.data.status === "draft" && (
                           <Button
