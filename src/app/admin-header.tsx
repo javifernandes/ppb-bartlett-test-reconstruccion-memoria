@@ -7,11 +7,9 @@ import Link from "next/link";
 export const AdminHeader = ({
   section,
   backHref,
-  backLabel,
 }: {
   section: string;
   backHref?: string;
-  backLabel?: string;
 }) => (
   <AppShell.Header px={{ base: "sm", sm: "md" }}>
     <Box
@@ -33,16 +31,22 @@ export const AdminHeader = ({
 
       <Group gap="xs" wrap="nowrap" justify="center">
         {backHref && (
-          <UnstyledButton component={Link} href={backHref}>
-            <Group gap={6} wrap="nowrap">
-              <IconArrowLeft size={18} />
-              <Text size="sm" visibleFrom="md">
-                {backLabel ?? "Volver"}
-              </Text>
-            </Group>
+          <UnstyledButton
+            component={Link}
+            href={backHref}
+            aria-label="Volver"
+            title="Volver"
+          >
+            <IconArrowLeft size={19} />
           </UnstyledButton>
         )}
-        <Text fw={600} size="sm" truncate maw={{ base: 150, sm: 320 }}>
+        <Text
+          fw={600}
+          size="sm"
+          truncate
+          maw={{ base: 190, sm: 520, lg: 760 }}
+          title={section}
+        >
           {section}
         </Text>
       </Group>

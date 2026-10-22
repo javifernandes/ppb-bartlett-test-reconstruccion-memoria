@@ -353,9 +353,8 @@ const ExperimentWorkspacePage = () => {
   return (
     <AppShell header={{ height: 64 }} padding="md">
       <AdminHeader
-        section="Experimento"
+        section={experiment.data?.title ?? "Experimento"}
         backHref="/"
-        backLabel="Experimentos"
       />
 
       <AppShell.Main>

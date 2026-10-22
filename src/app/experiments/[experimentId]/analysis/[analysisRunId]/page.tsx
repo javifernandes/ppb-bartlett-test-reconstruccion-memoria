@@ -175,9 +175,10 @@ const AnalysisPage = () => {
   return (
     <AppShell header={{ height: 64 }} padding="md">
       <AdminHeader
-        section="Análisis"
+        section={
+          experiment.data ? `${experiment.data.title} · Análisis` : "Análisis"
+        }
         backHref={`/experiments/${experimentId}`}
-        backLabel="Experimento"
       />
 
       <AppShell.Main>
