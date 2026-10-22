@@ -20,6 +20,7 @@ import { useGraphQuery, useOperation } from "@ontahi/react/graph";
 import {
   IconArrowLeft,
   IconDeviceFloppy,
+  IconEye,
   IconFlask,
 } from "@tabler/icons-react";
 import Link from "next/link";
@@ -128,12 +129,22 @@ const ExperimentWorkspacePage = () => {
 
             {experiment.data && (
               <>
-                <Group justify="space-between" align="flex-start">
+                <Group justify="space-between" align="flex-start" wrap="wrap">
                   <div>
                     <Title order={1}>{experiment.data.title}</Title>
                     <Text c="dimmed">Configuración del experimento</Text>
                   </div>
-                  <Badge variant="light">Borrador</Badge>
+                  <Group>
+                    <Badge variant="light">Borrador</Badge>
+                    <Button
+                      component={Link}
+                      href={`/experiments/${experimentId}/preview`}
+                      variant="default"
+                      leftSection={<IconEye size={18} />}
+                    >
+                      Vista previa
+                    </Button>
+                  </Group>
                 </Group>
 
                 <Card withBorder padding="lg">
