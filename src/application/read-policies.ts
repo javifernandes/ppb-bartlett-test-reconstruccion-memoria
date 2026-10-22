@@ -1,6 +1,7 @@
 import type { GraphReadPolicy } from "@ontahi/core/data-graph";
 
 import { Experiment } from "./experiment";
+import { ParticipantSession } from "./participant-session";
 
 export type LocalRuntimeAuthority = {
   principal: null;
@@ -29,4 +30,23 @@ const ExperimentReadPolicy = {
   scope: "all",
 } satisfies GraphReadPolicy<typeof Experiment, LocalRuntimeAuthority>;
 
-export const localGraphReadPolicies = [ExperimentReadPolicy] as const;
+const ParticipantSessionReadPolicy = {
+  entity: ParticipantSession,
+  modes: ["get", "run", "count"],
+  cardinalities: ["one", "many"],
+  maxLimit: 500,
+  fields: {
+    id: { select: true, filter: ["eq", "in"] },
+    experiment: { select: true, filter: ["eq", "in"] },
+    status: { select: true, filter: ["eq", "in"] },
+    startedAt: { select: true, order: true },
+    recallText: { select: true },
+    submittedAt: { select: true, order: true },
+  },
+  scope: "all",
+} satisfies GraphReadPolicy<typeof ParticipantSession, LocalRuntimeAuthority>;
+
+export const localGraphReadPolicies = [
+  ExperimentReadPolicy,
+  ParticipantSessionReadPolicy,
+] as const;

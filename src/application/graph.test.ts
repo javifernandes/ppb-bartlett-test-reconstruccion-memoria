@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { query } from "@ontahi/core/data-graph";
 
-import { BartlettApplication, Experiment } from "./graph";
+import { BartlettApplication, Experiment, ParticipantSession } from "./graph";
 
 describe("Bartlett application bootstrap", () => {
   it("runs a Query and an Operation against in-memory storage", async () => {
@@ -66,6 +66,37 @@ describe("Bartlett application bootstrap", () => {
     expect(rejectedUpdate).toMatchObject({
       ok: false,
       failure: { reason: "experiment_not_editable" },
+    });
+
+    const session = await ParticipantSession.start({
+      id: "session-test",
+      experiment: Experiment.refById("experiment-test"),
+      startedAt: "2026-10-22T13:05:00.000Z",
+    });
+    expect(session).toMatchObject({
+      ok: true,
+      value: { status: "reading" },
+    });
+
+    const recalling = await ParticipantSession.startRecall({
+      session: ParticipantSession.refById("session-test"),
+    });
+    expect(recalling).toMatchObject({
+      ok: true,
+      value: { status: "recalling" },
+    });
+
+    const submitted = await ParticipantSession.submitRecall({
+      session: ParticipantSession.refById("session-test"),
+      recallText: "Recuerdo que la historia había sido editada.",
+      submittedAt: "2026-10-22T13:10:00.000Z",
+    });
+    expect(submitted).toMatchObject({
+      ok: true,
+      value: {
+        status: "submitted",
+        recallText: "Recuerdo que la historia había sido editada.",
+      },
     });
 
     const experiments = await BartlettApplication.graph.read(

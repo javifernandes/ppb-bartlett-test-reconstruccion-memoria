@@ -24,6 +24,7 @@ import { notifications } from "@mantine/notifications";
 import { useGraphQuery, useOperation } from "@ontahi/react/graph";
 import {
   IconArrowLeft,
+  IconCopy,
   IconDeviceFloppy,
   IconEye,
   IconFlask,
@@ -33,7 +34,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo } from "react";
 
-import { Experiment } from "@/generated/client-entities";
+import { Experiment, ParticipantSession } from "@/generated/client-entities";
 
 const ExperimentWorkspace = Experiment.view("ExperimentWorkspace", {
   id: true,
@@ -51,6 +52,14 @@ const ExperimentWorkspace = Experiment.view("ExperimentWorkspace", {
   publicToken: true,
 });
 
+const ParticipantSessionRow = ParticipantSession.view("ParticipantSessionRow", {
+  id: true,
+  status: true,
+  startedAt: true,
+  recallText: true,
+  submittedAt: true,
+});
+
 const ExperimentWorkspacePage = () => {
   const { experimentId } = useParams<{ experimentId: string }>();
   const experimentQuery = useMemo(
@@ -62,6 +71,17 @@ const ExperimentWorkspacePage = () => {
     [experimentId],
   );
   const experiment = useGraphQuery(experimentQuery);
+  const sessionsQuery = useMemo(
+    () =>
+      ParticipantSession.all()
+        .where((session) =>
+          session.experiment.eq(Experiment.refById(experimentId)),
+        )
+        .as(ParticipantSessionRow)
+        .orderBy((session) => session.startedAt.desc()),
+    [experimentId],
+  );
+  const sessions = useGraphQuery(sessionsQuery);
   const updateDraft = useOperation(Experiment.domain.updateDraft);
   const publish = useOperation(Experiment.domain.publish);
   const [publishOpened, publishModal] = useDisclosure(false);
@@ -162,6 +182,16 @@ const ExperimentWorkspacePage = () => {
     });
   };
 
+  const copyPublicLink = async (publicToken: string) => {
+    const url = `${window.location.origin}/p/${publicToken}`;
+    await navigator.clipboard.writeText(url);
+    notifications.show({
+      title: "Enlace copiado",
+      message: "Ya podés compartirlo con participantes.",
+      color: "teal",
+    });
+  };
+
   return (
     <AppShell header={{ height: 64 }} padding="md">
       <AppShell.Header px="md">
@@ -233,6 +263,34 @@ const ExperimentWorkspacePage = () => {
                     )}
                   </Group>
                 </Group>
+
+                {experiment.data.status === "published" &&
+                  experiment.data.publicToken && (
+                    <Card withBorder padding="lg">
+                      <Stack gap="sm">
+                        <Text fw={600}>Enlace para participantes</Text>
+                        <Group align="flex-end">
+                          <TextInput
+                            aria-label="Enlace para participantes"
+                            value={`/p/${experiment.data.publicToken}`}
+                            readOnly
+                            style={{ flex: 1 }}
+                          />
+                          <Button
+                            variant="default"
+                            leftSection={<IconCopy size={18} />}
+                            onClick={() =>
+                              void copyPublicLink(
+                                experiment.data.publicToken as string,
+                              )
+                            }
+                          >
+                            Copiar
+                          </Button>
+                        </Group>
+                      </Stack>
+                    </Card>
+                  )}
 
                 <Card withBorder padding="lg">
                   <form onSubmit={handleSave}>
@@ -326,6 +384,52 @@ const ExperimentWorkspacePage = () => {
                     </Stack>
                   </form>
                 </Card>
+
+                {experiment.data.status === "published" && (
+                  <Stack gap="md">
+                    <Group justify="space-between">
+                      <Title order={2}>Respuestas</Title>
+                      <Badge variant="light">
+                        {sessions.data?.filter(
+                          (session) => session.status === "submitted",
+                        ).length ?? 0}
+                      </Badge>
+                    </Group>
+                    {sessions.isLoading && <Loader size="sm" />}
+                    {sessions.isError && (
+                      <Card withBorder>
+                        <Text c="red">
+                          No se pudieron cargar las respuestas.
+                        </Text>
+                      </Card>
+                    )}
+                    {sessions.data?.filter(
+                      (session) => session.status === "submitted",
+                    ).length === 0 && (
+                      <Card withBorder>
+                        <Text c="dimmed">Todavía no hay respuestas.</Text>
+                      </Card>
+                    )}
+                    {sessions.data
+                      ?.filter((session) => session.status === "submitted")
+                      .map((session) => (
+                        <Card key={session.id} withBorder padding="lg">
+                          <Stack gap="xs">
+                            <Text size="sm" c="dimmed">
+                              {session.submittedAt
+                                ? new Date(session.submittedAt).toLocaleString(
+                                    "es-AR",
+                                  )
+                                : "Sin fecha"}
+                            </Text>
+                            <Text style={{ whiteSpace: "pre-wrap" }}>
+                              {session.recallText}
+                            </Text>
+                          </Stack>
+                        </Card>
+                      ))}
+                  </Stack>
+                )}
               </>
             )}
           </Stack>
