@@ -17,6 +17,7 @@ import {
   Stack,
   Text,
   Title,
+  UnstyledButton,
 } from "@mantine/core";
 import { useGraphQuery } from "@ontahi/react/graph";
 import {
@@ -580,7 +581,9 @@ const ResponseDetailPage = () => {
                           <Paper
                             withBorder
                             p="md"
-                            bg={`${phenomenonColors[selected.kind]}.light`}
+                            style={{
+                              background: phenomenonBackgrounds[selected.kind],
+                            }}
                           >
                             <Group justify="space-between" mb="xs">
                               <Badge color={phenomenonColors[selected.kind]}>
@@ -632,37 +635,96 @@ const ResponseDetailPage = () => {
                         </SimpleGrid>
 
                         {phenomena.length > 0 && (
-                          <Accordion variant="contained">
-                            <Accordion.Item value="technical-detail">
-                              <Accordion.Control>
-                                Ver detalle técnico ({phenomena.length})
-                              </Accordion.Control>
-                              <Accordion.Panel>
-                                <Stack gap="xs">
-                                  {phenomena.map((phenomenon, index) => (
-                                    <Button
-                                      key={`${phenomenon.kind}-${index}`}
-                                      variant="subtle"
-                                      color={phenomenonColors[phenomenon.kind]}
-                                      justify="space-between"
-                                      onClick={() =>
-                                        setSelectedPhenomenon(index)
-                                      }
+                          <Accordion variant="contained" multiple>
+                            {(
+                              Object.keys(
+                                phenomenonLabels,
+                              ) as DisplayPhenomenon["kind"][]
+                            ).map((kind) => {
+                              const grouped = phenomena
+                                .map((phenomenon, index) => ({
+                                  phenomenon,
+                                  index,
+                                }))
+                                .filter(
+                                  ({ phenomenon }) => phenomenon.kind === kind,
+                                );
+                              if (grouped.length === 0) return null;
+
+                              return (
+                                <Accordion.Item key={kind} value={kind}>
+                                  <Accordion.Control>
+                                    <Group gap="xs">
+                                      <Badge
+                                        color={phenomenonColors[kind]}
+                                        variant="light"
+                                      >
+                                        {grouped.length}
+                                      </Badge>
+                                      <Text fw={600} size="sm">
+                                        {phenomenonLabels[kind]}
+                                      </Text>
+                                    </Group>
+                                  </Accordion.Control>
+                                  <Accordion.Panel>
+                                    <Box
+                                      mah={320}
+                                      style={{ overflowY: "auto" }}
                                     >
-                                      <span>
-                                        {phenomenonLabels[phenomenon.kind]}
-                                      </span>
-                                      <span>
-                                        {Math.round(
-                                          phenomenon.confidence * 100,
-                                        )}{" "}
-                                        %
-                                      </span>
-                                    </Button>
-                                  ))}
-                                </Stack>
-                              </Accordion.Panel>
-                            </Accordion.Item>
+                                      {grouped.map(({ phenomenon, index }) => {
+                                        const excerpt =
+                                          phenomenon.storyExcerpt ??
+                                          phenomenon.recallExcerpt ??
+                                          "Sin fragmento asociado";
+                                        return (
+                                          <UnstyledButton
+                                            key={`${kind}-${index}`}
+                                            onClick={() =>
+                                              setSelectedPhenomenon(index)
+                                            }
+                                            w="100%"
+                                            px="sm"
+                                            py="xs"
+                                            style={{
+                                              borderBottom:
+                                                "1px solid var(--mantine-color-dark-4)",
+                                              background:
+                                                selectedPhenomenon === index
+                                                  ? phenomenonBackgrounds[kind]
+                                                  : undefined,
+                                            }}
+                                          >
+                                            <Group
+                                              justify="space-between"
+                                              wrap="nowrap"
+                                              gap="md"
+                                            >
+                                              <Text
+                                                size="sm"
+                                                lineClamp={1}
+                                                style={{ flex: 1 }}
+                                              >
+                                                “{excerpt}”
+                                              </Text>
+                                              <Text
+                                                size="xs"
+                                                c="dimmed"
+                                                style={{ flexShrink: 0 }}
+                                              >
+                                                {Math.round(
+                                                  phenomenon.confidence * 100,
+                                                )}
+                                                %
+                                              </Text>
+                                            </Group>
+                                          </UnstyledButton>
+                                        );
+                                      })}
+                                    </Box>
+                                  </Accordion.Panel>
+                                </Accordion.Item>
+                              );
+                            })}
                           </Accordion>
                         )}
                       </Stack>
