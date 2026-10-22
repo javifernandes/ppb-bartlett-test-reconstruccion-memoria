@@ -135,8 +135,8 @@ const ParticipantPreviewPage = () => {
       <Stack gap="lg" ta="center" align="center">
         <Title order={1}>Pausa</Title>
         <Text size="lg">
-          El protocolo indica una espera de {experiment.data.intervalSeconds}{" "}
-          segundos antes de reconstruir la historia.
+          Esperá {experiment.data.intervalSeconds} segundos antes de reconstruir
+          la historia.
         </Text>
         {experiment.data.distractorEnabled && (
           <Paper withBorder p="lg" w="100%">

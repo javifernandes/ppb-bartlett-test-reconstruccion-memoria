@@ -149,7 +149,7 @@ const ExperimentWorkspacePage = () => {
       publishModal.close();
       notifications.show({
         title: "Experimento publicado",
-        message: "El protocolo quedó bloqueado para edición.",
+        message: "El experimento quedó bloqueado para edición.",
         color: "teal",
       });
       return;
@@ -340,7 +340,7 @@ const ExperimentWorkspacePage = () => {
       >
         <Stack>
           <Text>
-            Al publicar, el protocolo quedará bloqueado para que todas las
+            Al publicar, el experimento quedará bloqueado para que todas las
             personas reciban exactamente la misma experiencia.
           </Text>
           <Group justify="flex-end">
