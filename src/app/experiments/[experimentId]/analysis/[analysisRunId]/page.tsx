@@ -224,6 +224,19 @@ const AnalysisPage = () => {
                       Calculado el{" "}
                       {new Date(run.data.createdAt).toLocaleString("es-AR")}
                     </Text>
+                    <Badge
+                      mt="sm"
+                      variant="outline"
+                      color={
+                        run.data.analyzerVersion.startsWith("deepseek:")
+                          ? "violet"
+                          : "gray"
+                      }
+                    >
+                      {run.data.analyzerVersion.startsWith("deepseek:")
+                        ? `DeepSeek · ${run.data.analyzerVersion.replace("deepseek:", "")}`
+                        : "Heurístico local"}
+                    </Badge>
                   </div>
                   <Badge variant="light" color="teal" size="lg">
                     {run.data.status === "completed_with_errors"
@@ -406,7 +419,7 @@ const AnalysisPage = () => {
                                 <Table.Td>
                                   <Button
                                     component={Link}
-                                    href={`/experiments/${experimentId}/responses/${response.id}`}
+                                    href={`/experiments/${experimentId}/responses/${response.id}?analysisRunId=${analysisRunId}`}
                                     variant="subtle"
                                     size="compact-sm"
                                     rightSection={

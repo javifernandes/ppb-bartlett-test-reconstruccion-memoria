@@ -33,6 +33,7 @@ import {
   IconEye,
   IconFlask,
   IconLock,
+  IconRefresh,
   IconRocket,
 } from "@tabler/icons-react";
 import Link from "next/link";
@@ -76,6 +77,7 @@ const ParticipantSessionRow = ParticipantSession.view("ParticipantSessionRow", {
 const AnalysisRunRow = AnalysisRun.view("AnalysisRunRow", {
   id: true,
   status: true,
+  analyzerVersion: true,
   createdAt: true,
 });
 
@@ -297,9 +299,9 @@ const ExperimentWorkspacePage = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleAnalysis = async () => {
+  const handleAnalysis = async (createNew = false) => {
     const existingRun = analysisRuns.data?.[0];
-    if (existingRun) {
+    if (existingRun && !createNew) {
       router.push(`/experiments/${experimentId}/analysis/${existingRun.id}`);
       return;
     }
@@ -431,19 +433,42 @@ const ExperimentWorkspacePage = () => {
                       </Button>
                     )}
                     {experiment.data.status === "closed" && (
-                      <Button
-                        leftSection={<IconChartBar size={18} />}
-                        loading={
-                          startAnalysis.isExecuting ||
-                          analyzeRecall.isExecuting ||
-                          finishAnalysis.isExecuting
-                        }
-                        onClick={() => void handleAnalysis()}
-                      >
-                        {analysisRuns.data?.length
-                          ? "Ver análisis"
-                          : "Analizar resultados"}
-                      </Button>
+                      <>
+                        {analysisRuns.data?.length ? (
+                          <Button
+                            leftSection={<IconChartBar size={18} />}
+                            onClick={() => void handleAnalysis()}
+                          >
+                            Ver último análisis
+                          </Button>
+                        ) : null}
+                        <Button
+                          variant={
+                            analysisRuns.data?.length ? "light" : "filled"
+                          }
+                          leftSection={
+                            analysisRuns.data?.length ? (
+                              <IconRefresh size={18} />
+                            ) : (
+                              <IconChartBar size={18} />
+                            )
+                          }
+                          loading={
+                            startAnalysis.isExecuting ||
+                            analyzeRecall.isExecuting ||
+                            finishAnalysis.isExecuting
+                          }
+                          onClick={() =>
+                            void handleAnalysis(
+                              Boolean(analysisRuns.data?.length),
+                            )
+                          }
+                        >
+                          {analysisRuns.data?.length
+                            ? "Analizar nuevamente"
+                            : "Analizar resultados"}
+                        </Button>
+                      </>
                     )}
                   </Group>
                 </Group>

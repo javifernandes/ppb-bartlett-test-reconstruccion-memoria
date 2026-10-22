@@ -27,10 +27,11 @@ import {
   IconSparkles,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import {
+  AnalysisRun,
   Experiment,
   ParticipantSession,
   RecallAnalysis,
@@ -147,37 +148,6 @@ const secondsBetween = (from?: string | null, to?: string | null) =>
 const countWords = (value: string) =>
   value.trim().match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
 
-const narrativeUnits = (value: string) =>
-  value
-    .split(/(?<=[.!?])\s+|\n+/)
-    .map((unit) => unit.trim())
-    .filter(Boolean);
-
-const significantTokens = (value: string) =>
-  new Set(
-    (
-      value
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLocaleLowerCase("es")
-        .match(/[a-z0-9]+/g) ?? []
-    ).filter((token) => token.length > 2),
-  );
-
-const closestRecallUnit = (storyUnit: string, recall: string) => {
-  const sourceTokens = significantTokens(storyUnit);
-  return narrativeUnits(recall).reduce(
-    (best, candidate) => {
-      const candidateTokens = significantTokens(candidate);
-      const score = [...sourceTokens].filter((token) =>
-        candidateTokens.has(token),
-      ).length;
-      return score > best.score ? { value: candidate, score } : best;
-    },
-    { value: null as string | null, score: 0 },
-  ).value;
-};
-
 const AnnotatedText = ({
   text,
   phenomena,
@@ -260,6 +230,7 @@ const ResponseDetailPage = () => {
     experimentId: string;
     sessionId: string;
   }>();
+  const requestedRunId = useSearchParams().get("analysisRunId");
   const experimentQuery = useMemo(
     () =>
       Experiment.all()
@@ -278,56 +249,27 @@ const ResponseDetailPage = () => {
   );
   const experiment = useGraphQuery(experimentQuery);
   const response = useGraphQuery(responseQuery);
-  const analysisQuery = useMemo(
-    () =>
-      RecallAnalysis.all()
-        .where((analysis) =>
-          analysis.session.eq(ParticipantSession.refById(sessionId)),
-        )
-        .as(ResponseAnalysis)
-        .orderBy((analysis) => analysis.createdAt.desc())
-        .first(),
-    [sessionId],
-  );
+  const analysisQuery = useMemo(() => {
+    let query = RecallAnalysis.all().where((analysis) =>
+      analysis.session.eq(ParticipantSession.refById(sessionId)),
+    );
+    if (requestedRunId) {
+      query = query.where((analysis) =>
+        analysis.run.eq(AnalysisRun.refById(requestedRunId)),
+      );
+    }
+    return query
+      .as(ResponseAnalysis)
+      .orderBy((analysis) => analysis.createdAt.desc())
+      .first();
+  }, [requestedRunId, sessionId]);
   const analysis = useGraphQuery(analysisQuery);
   const belongsToExperiment =
     response.data?.experiment.locator.id === experimentId;
-  const phenomena = useMemo(() => {
-    const stored = readPhenomena(analysis.data?.phenomena);
-    if (
-      stored.some((phenomenon) => phenomenon.kind === "retained") ||
-      !analysis.data?.rubricVersion.startsWith("bartlett-heuristic") ||
-      !experiment.data ||
-      !response.data
-    ) {
-      return stored;
-    }
-
-    const omitted = new Set(
-      stored
-        .filter((phenomenon) => phenomenon.kind === "omission")
-        .map((phenomenon) => phenomenon.storyExcerpt)
-        .filter((excerpt): excerpt is string => Boolean(excerpt)),
-    );
-    const inferredRetained = narrativeUnits(experiment.data.story)
-      .filter((unit) => !omitted.has(unit))
-      .slice(0, analysis.data.retainedUnitsCount)
-      .map(
-        (unit): DisplayPhenomenon => ({
-          kind: "retained",
-          storyExcerpt: unit,
-          recallExcerpt: closestRecallUnit(
-            unit,
-            response.data?.recallText ?? "",
-          ),
-          explanation:
-            "Esta unidad fue contabilizada como retenida por el análisis heurístico.",
-          confidence: 0.5,
-        }),
-      );
-
-    return [...inferredRetained, ...stored];
-  }, [analysis.data, experiment.data, response.data]);
+  const phenomena = useMemo(
+    () => readPhenomena(analysis.data?.phenomena),
+    [analysis.data?.phenomena],
+  );
   const selected =
     selectedPhenomenon === null ? null : phenomena[selectedPhenomenon];
   const readingSeconds = secondsBetween(
