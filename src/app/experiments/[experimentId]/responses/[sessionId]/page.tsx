@@ -8,6 +8,7 @@ import {
   Container,
   Group,
   Loader,
+  Paper,
   SimpleGrid,
   Stack,
   Text,
@@ -24,6 +25,7 @@ import { Experiment, ParticipantSession } from "@/generated/client-entities";
 const ResponseExperiment = Experiment.view("ResponseExperiment", {
   id: true,
   title: true,
+  story: true,
 });
 
 const ResponseDetail = ParticipantSession.view("ResponseDetail", {
@@ -58,6 +60,9 @@ const durationBetween = (from?: string | null, to?: string | null) => {
   const seconds = totalSeconds % 60;
   return minutes > 0 ? `${minutes} min ${seconds} s` : `${seconds} s`;
 };
+
+const countWords = (value: string) =>
+  value.trim().match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
 
 const ResponseDetailPage = () => {
   const { experimentId, sessionId } = useParams<{
@@ -224,15 +229,31 @@ const ResponseDetailPage = () => {
 
                 <Card withBorder padding="lg">
                   <Stack gap="md">
-                    <Title order={2}>Reconstrucción</Title>
-                    <Text
-                      size="lg"
-                      c={response.data.recallText ? undefined : "dimmed"}
-                      style={{ whiteSpace: "pre-wrap" }}
-                    >
-                      {response.data.recallText ??
-                        "La persona todavía no envió una respuesta."}
-                    </Text>
+                    <Title order={2}>Comparación</Title>
+                    <SimpleGrid cols={{ base: 1, md: 2 }}>
+                      <Paper withBorder p="md">
+                        <Text size="sm" c="dimmed" fw={600} mb="sm">
+                          Historia original ·{" "}
+                          {countWords(experiment.data.story)} palabras
+                        </Text>
+                        <Text style={{ whiteSpace: "pre-wrap" }}>
+                          {experiment.data.story}
+                        </Text>
+                      </Paper>
+                      <Paper withBorder p="md">
+                        <Text size="sm" c="dimmed" fw={600} mb="sm">
+                          Reconstrucción ·{" "}
+                          {countWords(response.data.recallText ?? "")} palabras
+                        </Text>
+                        <Text
+                          c={response.data.recallText ? undefined : "dimmed"}
+                          style={{ whiteSpace: "pre-wrap" }}
+                        >
+                          {response.data.recallText ??
+                            "La persona todavía no envió una respuesta."}
+                        </Text>
+                      </Paper>
+                    </SimpleGrid>
                   </Stack>
                 </Card>
               </>

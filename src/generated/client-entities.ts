@@ -19,6 +19,9 @@ export const ParticipantSessionSchema = defineEntitySchema("ParticipantSession",
         "reading", "interval", "recalling", "submitted",
     ] as const), startedAt: field.nonEmptyString({ trim: true }), intervalStartedAt: field.nullable(field.nonEmptyString({ trim: true })), recallingStartedAt: field.nullable(field.nonEmptyString({ trim: true })), lastActivityAt: field.nonEmptyString({ trim: true }), recallText: field.nullable(field.nonEmptyString({ trim: true })), submittedAt: field.nullable(field.nonEmptyString({ trim: true })),
 });
+export const AnalysisRunSchema = defineEntitySchema("AnalysisRun", {
+    id: field.id(), experiment: field.ref(ExperimentSchema), status: field.enum(["completed"] as const), analyzerVersion: field.nonEmptyString({ trim: true }), createdAt: field.nonEmptyString({ trim: true }),
+});
 
 export const Experiment = defineClientEntity(ExperimentSchema, {
 
@@ -135,6 +138,25 @@ export const ParticipantSession = defineClientEntity(ParticipantSessionSchema, {
   },
 });
 
+export const AnalysisRun = defineClientEntity(AnalysisRunSchema, {
+
+  domainOperations: {
+    start: defineClientDomainOperation({
+      authority: 'server',
+      exposure: 'bridge',
+      bridge: {
+        invalidate: [["AnalysisRun"]],
+      },
+      input: graphSchema.object({
+        id: AnalysisRunSchema.fields.id,
+        experiment: field.ref(ExperimentSchema),
+        createdAt: AnalysisRunSchema.fields.createdAt,
+      }),
+      output: AnalysisRunSchema,
+    }),
+  },
+});
+
 export const clientApplication = defineClientApplication({
-  entities: [Experiment, ParticipantSession],
+  entities: [Experiment, ParticipantSession, AnalysisRun],
 });

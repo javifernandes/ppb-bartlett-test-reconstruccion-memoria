@@ -25,6 +25,7 @@ import { notifications } from "@mantine/notifications";
 import { useGraphQuery, useOperation } from "@ontahi/react/graph";
 import {
   IconArrowLeft,
+  IconChartBar,
   IconChevronRight,
   IconCopy,
   IconDeviceFloppy,
@@ -35,10 +36,14 @@ import {
   IconRocket,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useMemo } from "react";
 
-import { Experiment, ParticipantSession } from "@/generated/client-entities";
+import {
+  AnalysisRun,
+  Experiment,
+  ParticipantSession,
+} from "@/generated/client-entities";
 
 const ExperimentWorkspace = Experiment.view("ExperimentWorkspace", {
   id: true,
@@ -67,6 +72,12 @@ const ParticipantSessionRow = ParticipantSession.view("ParticipantSessionRow", {
   submittedAt: true,
 });
 
+const AnalysisRunRow = AnalysisRun.view("AnalysisRunRow", {
+  id: true,
+  status: true,
+  createdAt: true,
+});
+
 const sessionStatus = {
   reading: { label: "Leyendo", color: "blue" },
   interval: { label: "En intervalo", color: "yellow" },
@@ -83,6 +94,7 @@ const elapsedSeconds = (from?: string | null, to?: string | null) => {
 
 const ExperimentWorkspacePage = () => {
   const { experimentId } = useParams<{ experimentId: string }>();
+  const router = useRouter();
   const experimentQuery = useMemo(
     () =>
       Experiment.all()
@@ -103,9 +115,19 @@ const ExperimentWorkspacePage = () => {
     [experimentId],
   );
   const sessions = useGraphQuery(sessionsQuery);
+  const analysisRunsQuery = useMemo(
+    () =>
+      AnalysisRun.all()
+        .where((run) => run.experiment.eq(Experiment.refById(experimentId)))
+        .as(AnalysisRunRow)
+        .orderBy((run) => run.createdAt.desc()),
+    [experimentId],
+  );
+  const analysisRuns = useGraphQuery(analysisRunsQuery);
   const updateDraft = useOperation(Experiment.domain.updateDraft);
   const publish = useOperation(Experiment.domain.publish);
   const close = useOperation(Experiment.domain.close);
+  const startAnalysis = useOperation(AnalysisRun.domain.start);
   const [publishOpened, publishModal] = useDisclosure(false);
   const [closeOpened, closeModal] = useDisclosure(false);
   const form = useForm({
@@ -259,17 +281,43 @@ const ExperimentWorkspacePage = () => {
           .join(","),
       );
     const csv = [
-      "session_id,status,started_at,interval_started_at,recalling_started_at,submitted_at,last_activity_at,total_seconds,reading_seconds,recall_seconds,recall_text",
+      "id_sesion,estado,inicio,inicio_intervalo,inicio_reconstruccion,envio,ultima_actividad,duracion_total_segundos,duracion_lectura_segundos,duracion_reconstruccion_segundos,reconstruccion",
       ...rows,
     ].join("\n");
     const url = URL.createObjectURL(
-      new Blob([csv], { type: "text/csv;charset=utf-8" }),
+      new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }),
     );
     const link = document.createElement("a");
     link.href = url;
     link.download = `${experiment.data?.title ?? "respuestas"}.csv`;
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleAnalysis = async () => {
+    const existingRun = analysisRuns.data?.[0];
+    if (existingRun) {
+      router.push(`/experiments/${experimentId}/analysis/${existingRun.id}`);
+      return;
+    }
+
+    const id = crypto.randomUUID();
+    const result = await startAnalysis.executeAsync({
+      id,
+      experiment: Experiment.refById(experimentId),
+      createdAt: new Date().toISOString(),
+    });
+
+    if (result.ok) {
+      router.push(`/experiments/${experimentId}/analysis/${id}`);
+      return;
+    }
+
+    notifications.show({
+      title: "No se pudo iniciar el análisis",
+      message: result.message,
+      color: "red",
+    });
   };
 
   return (
@@ -351,6 +399,17 @@ const ExperimentWorkspacePage = () => {
                         onClick={closeModal.open}
                       >
                         Cerrar recepción
+                      </Button>
+                    )}
+                    {experiment.data.status === "closed" && (
+                      <Button
+                        leftSection={<IconChartBar size={18} />}
+                        loading={startAnalysis.isExecuting}
+                        onClick={() => void handleAnalysis()}
+                      >
+                        {analysisRuns.data?.length
+                          ? "Ver análisis"
+                          : "Analizar resultados"}
                       </Button>
                     )}
                   </Group>

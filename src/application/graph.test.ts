@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import { query } from "@ontahi/core/data-graph";
 
-import { BartlettApplication, Experiment, ParticipantSession } from "./graph";
+import {
+  AnalysisRun,
+  BartlettApplication,
+  Experiment,
+  ParticipantSession,
+} from "./graph";
 
 describe("Bartlett application bootstrap", () => {
   it("runs a Query and an Operation against in-memory storage", async () => {
@@ -137,12 +142,35 @@ describe("Bartlett application bootstrap", () => {
       experiment: Experiment.refById("experiment-test"),
     });
 
+    const prematureAnalysis = await AnalysisRun.start({
+      id: "analysis-too-early",
+      experiment: Experiment.refById("experiment-test"),
+      createdAt: "2026-10-22T13:11:31.000Z",
+    });
+    expect(prematureAnalysis).toMatchObject({
+      ok: false,
+      failure: { reason: "experiment_not_ready_for_analysis" },
+    });
+
     const closed = await Experiment.close({
       experiment: Experiment.refById("experiment-test"),
     });
     expect(closed).toMatchObject({
       ok: true,
       value: { status: "closed" },
+    });
+
+    const analysis = await AnalysisRun.start({
+      id: "analysis-test",
+      experiment: Experiment.refById("experiment-test"),
+      createdAt: "2026-10-22T13:12:30.000Z",
+    });
+    expect(analysis).toMatchObject({
+      ok: true,
+      value: {
+        status: "completed",
+        analyzerVersion: "deterministic-v1",
+      },
     });
 
     const rejectedSubmission = await ParticipantSession.submitRecall({
