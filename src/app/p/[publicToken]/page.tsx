@@ -80,6 +80,37 @@ const writeSessionCookie = (publicToken: string, sessionId: string) => {
   document.cookie = `${encodeURIComponent(cookieName(publicToken))}=${encodeURIComponent(sessionId)}; Path=/p/${publicToken}; Max-Age=604800; SameSite=Lax${secure}`;
 };
 
+const recallDraftKey = (publicToken: string, sessionId: string) =>
+  `bartlett_recall_draft_${publicToken}_${sessionId}`;
+
+const readRecallDraft = (publicToken: string, sessionId: string) => {
+  try {
+    return localStorage.getItem(recallDraftKey(publicToken, sessionId)) ?? "";
+  } catch {
+    return "";
+  }
+};
+
+const writeRecallDraft = (
+  publicToken: string,
+  sessionId: string,
+  value: string,
+) => {
+  try {
+    localStorage.setItem(recallDraftKey(publicToken, sessionId), value);
+  } catch {
+    // The participation remains usable when browser storage is unavailable.
+  }
+};
+
+const clearRecallDraft = (publicToken: string, sessionId: string) => {
+  try {
+    localStorage.removeItem(recallDraftKey(publicToken, sessionId));
+  } catch {
+    // Nothing else is required after a successful submission.
+  }
+};
+
 const createDistractorValues = (seed: string) => {
   let state = [...seed].reduce(
     (value, character) => (value * 31 + character.charCodeAt(0)) >>> 0,
@@ -160,6 +191,9 @@ const PublicParticipationPage = () => {
     const frame = requestAnimationFrame(() => {
       setStep(stepByStatus[restoredSession.status]);
       setIntervalStartedAt(restoredSession.intervalStartedAt ?? undefined);
+      if (restoredSession.status === "recalling") {
+        setRecall(readRecallDraft(publicToken, restoredSession.id));
+      }
       if (restoredSession.status === "interval" && experiment.data) {
         const availableAt =
           Date.parse(restoredSession.intervalStartedAt ?? "") +
@@ -170,7 +204,23 @@ const PublicParticipationPage = () => {
       }
     });
     return () => cancelAnimationFrame(frame);
-  }, [experiment.data, savedSession.data, savedSession.isLoading, sessionId]);
+  }, [
+    experiment.data,
+    publicToken,
+    savedSession.data,
+    savedSession.isLoading,
+    sessionId,
+  ]);
+
+  useEffect(() => {
+    if (!sessionId || step !== "recall") return;
+    const key = recallDraftKey(publicToken, sessionId);
+    const syncDraft = (event: StorageEvent) => {
+      if (event.key === key) setRecall(event.newValue ?? "");
+    };
+    window.addEventListener("storage", syncDraft);
+    return () => window.removeEventListener("storage", syncDraft);
+  }, [publicToken, sessionId, step]);
 
   useEffect(() => {
     if (step !== "interval" || !intervalStartedAt || !experiment.data) return;
@@ -280,6 +330,7 @@ const PublicParticipationPage = () => {
       return;
     }
 
+    clearRecallDraft(publicToken, sessionId);
     setStep("complete");
   };
 
@@ -421,7 +472,11 @@ const PublicParticipationPage = () => {
         <Textarea
           label="Tu respuesta"
           value={recall}
-          onChange={(event) => setRecall(event.currentTarget.value)}
+          onChange={(event) => {
+            const value = event.currentTarget.value;
+            setRecall(value);
+            if (sessionId) writeRecallDraft(publicToken, sessionId, value);
+          }}
           minRows={10}
           autosize
           size="md"

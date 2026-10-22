@@ -41,6 +41,8 @@ const ParticipantSessionReadPolicy = {
     status: { select: true, filter: ["eq", "in"] },
     startedAt: { select: true, order: true },
     intervalStartedAt: { select: true },
+    recallingStartedAt: { select: true },
+    lastActivityAt: { select: true, order: true },
     recallText: { select: true },
     submittedAt: { select: true, order: true },
   },

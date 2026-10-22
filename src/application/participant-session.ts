@@ -17,6 +17,8 @@ export const ParticipantSession = entity({
     ] as const),
     startedAt: field.nonEmptyString({ trim: true }),
     intervalStartedAt: field.nullable(field.nonEmptyString({ trim: true })),
+    recallingStartedAt: field.nullable(field.nonEmptyString({ trim: true })),
+    lastActivityAt: field.nonEmptyString({ trim: true }),
     recallText: field.nullable(field.nonEmptyString({ trim: true })),
     submittedAt: field.nullable(field.nonEmptyString({ trim: true })),
   },
@@ -52,6 +54,8 @@ export const ParticipantSession = entity({
               status: "reading",
               startedAt,
               intervalStartedAt: null,
+              recallingStartedAt: null,
+              lastActivityAt: startedAt,
               recallText: null,
               submittedAt: null,
             },
@@ -61,6 +65,8 @@ export const ParticipantSession = entity({
               "status",
               "startedAt",
               "intervalStartedAt",
+              "recallingStartedAt",
+              "lastActivityAt",
               "recallText",
               "submittedAt",
             ],
@@ -93,12 +99,15 @@ export const ParticipantSession = entity({
         }
 
         const hasInterval = target.intervalSeconds > 0;
+        const transitionedAt = new Date().toISOString();
         const [updated] = yield* commands
           .where((candidate) => candidate.id.eq(current.id))
           .updateReturning(
             {
               status: hasInterval ? "interval" : "recalling",
-              intervalStartedAt: hasInterval ? new Date().toISOString() : null,
+              intervalStartedAt: hasInterval ? transitionedAt : null,
+              recallingStartedAt: hasInterval ? null : transitionedAt,
+              lastActivityAt: transitionedAt,
             },
             [
               "id",
@@ -106,6 +115,8 @@ export const ParticipantSession = entity({
               "status",
               "startedAt",
               "intervalStartedAt",
+              "recallingStartedAt",
+              "lastActivityAt",
               "recallText",
               "submittedAt",
             ],
@@ -149,17 +160,27 @@ export const ParticipantSession = entity({
           );
         }
 
+        const recallingStartedAt = new Date().toISOString();
         const [updated] = yield* commands
           .where((candidate) => candidate.id.eq(current.id))
-          .updateReturning({ status: "recalling" }, [
-            "id",
-            "experiment",
-            "status",
-            "startedAt",
-            "intervalStartedAt",
-            "recallText",
-            "submittedAt",
-          ])
+          .updateReturning(
+            {
+              status: "recalling",
+              recallingStartedAt,
+              lastActivityAt: recallingStartedAt,
+            },
+            [
+              "id",
+              "experiment",
+              "status",
+              "startedAt",
+              "intervalStartedAt",
+              "recallingStartedAt",
+              "lastActivityAt",
+              "recallText",
+              "submittedAt",
+            ],
+          )
           .run();
 
         return updated;
@@ -198,15 +219,25 @@ export const ParticipantSession = entity({
 
         const [submitted] = yield* commands
           .where((candidate) => candidate.id.eq(current.id))
-          .updateReturning({ status: "submitted", recallText, submittedAt }, [
-            "id",
-            "experiment",
-            "status",
-            "startedAt",
-            "intervalStartedAt",
-            "recallText",
-            "submittedAt",
-          ])
+          .updateReturning(
+            {
+              status: "submitted",
+              recallText,
+              submittedAt,
+              lastActivityAt: submittedAt,
+            },
+            [
+              "id",
+              "experiment",
+              "status",
+              "startedAt",
+              "intervalStartedAt",
+              "recallingStartedAt",
+              "lastActivityAt",
+              "recallText",
+              "submittedAt",
+            ],
+          )
           .run();
 
         return submitted;

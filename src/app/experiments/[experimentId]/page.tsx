@@ -25,6 +25,7 @@ import { notifications } from "@mantine/notifications";
 import { useGraphQuery, useOperation } from "@ontahi/react/graph";
 import {
   IconArrowLeft,
+  IconChevronRight,
   IconCopy,
   IconDeviceFloppy,
   IconDownload,
@@ -59,9 +60,26 @@ const ParticipantSessionRow = ParticipantSession.view("ParticipantSessionRow", {
   id: true,
   status: true,
   startedAt: true,
+  intervalStartedAt: true,
+  recallingStartedAt: true,
+  lastActivityAt: true,
   recallText: true,
   submittedAt: true,
 });
+
+const sessionStatus = {
+  reading: { label: "Leyendo", color: "blue" },
+  interval: { label: "En intervalo", color: "yellow" },
+  recalling: { label: "Reconstruyendo", color: "grape" },
+  submitted: { label: "Completada", color: "teal" },
+} as const;
+
+const elapsedSeconds = (from?: string | null, to?: string | null) => {
+  if (!from || !to) return "";
+  return String(
+    Math.max(0, Math.round((Date.parse(to) - Date.parse(from)) / 1000)),
+  );
+};
 
 const ExperimentWorkspacePage = () => {
   const { experimentId } = useParams<{ experimentId: string }>();
@@ -226,15 +244,22 @@ const ExperimentWorkspacePage = () => {
       .map((session) =>
         [
           session.id,
+          session.status,
           session.startedAt,
+          session.intervalStartedAt ?? "",
+          session.recallingStartedAt ?? "",
           session.submittedAt ?? "",
+          session.lastActivityAt,
+          elapsedSeconds(session.startedAt, session.submittedAt),
+          elapsedSeconds(session.startedAt, session.intervalStartedAt),
+          elapsedSeconds(session.recallingStartedAt, session.submittedAt),
           session.recallText ?? "",
         ]
           .map(quote)
           .join(","),
       );
     const csv = [
-      "session_id,started_at,submitted_at,recall_text",
+      "session_id,status,started_at,interval_started_at,recalling_started_at,submitted_at,last_activity_at,total_seconds,reading_seconds,recall_seconds,recall_text",
       ...rows,
     ].join("\n");
     const url = URL.createObjectURL(
@@ -507,31 +532,47 @@ const ExperimentWorkspacePage = () => {
                         </Text>
                       </Card>
                     )}
-                    {sessions.data?.filter(
-                      (session) => session.status === "submitted",
-                    ).length === 0 && (
+                    {sessions.data?.length === 0 && (
                       <Card withBorder>
-                        <Text c="dimmed">Todavía no hay respuestas.</Text>
+                        <Text c="dimmed">Todavía no hay participaciones.</Text>
                       </Card>
                     )}
-                    {sessions.data
-                      ?.filter((session) => session.status === "submitted")
-                      .map((session) => (
-                        <Card key={session.id} withBorder padding="lg">
-                          <Stack gap="xs">
-                            <Text size="sm" c="dimmed">
-                              {session.submittedAt
-                                ? new Date(session.submittedAt).toLocaleString(
-                                    "es-AR",
-                                  )
-                                : "Sin fecha"}
-                            </Text>
-                            <Text style={{ whiteSpace: "pre-wrap" }}>
-                              {session.recallText}
+                    {sessions.data?.map((session) => (
+                      <Card
+                        key={session.id}
+                        component={Link}
+                        href={`/experiments/${experimentId}/responses/${session.id}`}
+                        withBorder
+                        padding="lg"
+                        style={{ color: "inherit", textDecoration: "none" }}
+                      >
+                        <Group justify="space-between" wrap="nowrap">
+                          <Stack gap={4} style={{ minWidth: 0 }}>
+                            <Group gap="xs">
+                              <Badge
+                                variant="light"
+                                color={sessionStatus[session.status].color}
+                              >
+                                {sessionStatus[session.status].label}
+                              </Badge>
+                              <Text size="sm" c="dimmed">
+                                {new Date(session.startedAt).toLocaleString(
+                                  "es-AR",
+                                )}
+                              </Text>
+                            </Group>
+                            <Text
+                              lineClamp={2}
+                              c={session.recallText ? undefined : "dimmed"}
+                            >
+                              {session.recallText ??
+                                "Todavía no envió una respuesta."}
                             </Text>
                           </Stack>
-                        </Card>
-                      ))}
+                          <IconChevronRight size={20} />
+                        </Group>
+                      </Card>
+                    ))}
                   </Stack>
                 )}
               </>

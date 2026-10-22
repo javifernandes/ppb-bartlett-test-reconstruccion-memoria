@@ -17,7 +17,7 @@ export const ExperimentSchema = defineEntitySchema("Experiment", {
 export const ParticipantSessionSchema = defineEntitySchema("ParticipantSession", {
     id: field.id(), experiment: field.ref(ExperimentSchema), status: field.enum([
         "reading", "interval", "recalling", "submitted",
-    ] as const), startedAt: field.nonEmptyString({ trim: true }), intervalStartedAt: field.nullable(field.nonEmptyString({ trim: true })), recallText: field.nullable(field.nonEmptyString({ trim: true })), submittedAt: field.nullable(field.nonEmptyString({ trim: true })),
+    ] as const), startedAt: field.nonEmptyString({ trim: true }), intervalStartedAt: field.nullable(field.nonEmptyString({ trim: true })), recallingStartedAt: field.nullable(field.nonEmptyString({ trim: true })), lastActivityAt: field.nonEmptyString({ trim: true }), recallText: field.nullable(field.nonEmptyString({ trim: true })), submittedAt: field.nullable(field.nonEmptyString({ trim: true })),
 });
 
 export const Experiment = defineClientEntity(ExperimentSchema, {
