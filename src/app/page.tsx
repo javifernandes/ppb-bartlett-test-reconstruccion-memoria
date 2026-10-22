@@ -135,7 +135,16 @@ const HomePage = () => {
                     <Stack gap="sm">
                       <Group justify="space-between" align="flex-start">
                         <Title order={3}>{experiment.title}</Title>
-                        <Badge variant="light">Borrador</Badge>
+                        <Badge
+                          variant="light"
+                          color={
+                            experiment.status === "published" ? "teal" : "gray"
+                          }
+                        >
+                          {experiment.status === "published"
+                            ? "Publicado"
+                            : "Borrador"}
+                        </Badge>
                       </Group>
                       <Text c="dimmed" size="sm">
                         Creado{" "}

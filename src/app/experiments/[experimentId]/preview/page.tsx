@@ -5,6 +5,7 @@ import {
   Box,
   Button,
   Center,
+  Checkbox,
   Container,
   Group,
   Loader,
@@ -25,16 +26,27 @@ import { Experiment } from "@/generated/client-entities";
 
 const ParticipantPreview = Experiment.view("ParticipantPreview", {
   id: true,
-  title: true,
+  participantTitle: true,
+  introduction: true,
+  consentText: true,
   story: true,
+  recallInstructions: true,
+  intervalSeconds: true,
+  distractorEnabled: true,
 });
 
-type PreviewStep = "introduction" | "reading" | "recall" | "complete";
+type PreviewStep =
+  | "introduction"
+  | "reading"
+  | "interval"
+  | "recall"
+  | "complete";
 
 const progressByStep: Record<PreviewStep, number> = {
   introduction: 0,
-  reading: 33,
-  recall: 67,
+  reading: 25,
+  interval: 50,
+  recall: 75,
   complete: 100,
 };
 
@@ -42,6 +54,7 @@ const ParticipantPreviewPage = () => {
   const { experimentId } = useParams<{ experimentId: string }>();
   const [step, setStep] = useState<PreviewStep>("introduction");
   const [recall, setRecall] = useState("");
+  const [consentAccepted, setConsentAccepted] = useState(false);
   const experimentQuery = useMemo(
     () =>
       Experiment.all()
@@ -76,12 +89,22 @@ const ParticipantPreviewPage = () => {
         <Badge variant="light" w="fit-content">
           Vista previa
         </Badge>
-        <Title order={1}>{experiment.data.title}</Title>
-        <Text size="lg">
-          A continuación vas a leer una historia. Prestá atención: cuando
-          avances, no podrás volver a verla.
+        <Title order={1}>{experiment.data.participantTitle}</Title>
+        <Text size="lg" style={{ whiteSpace: "pre-wrap" }}>
+          {experiment.data.introduction}
         </Text>
-        <Button size="lg" fullWidth onClick={() => setStep("reading")}>
+        <Checkbox
+          checked={consentAccepted}
+          onChange={(event) => setConsentAccepted(event.currentTarget.checked)}
+          label={experiment.data.consentText}
+          size="md"
+        />
+        <Button
+          size="lg"
+          fullWidth
+          disabled={!consentAccepted}
+          onClick={() => setStep("reading")}
+        >
           Comenzar
         </Button>
       </Stack>
@@ -92,22 +115,47 @@ const ParticipantPreviewPage = () => {
           <Text c="dimmed" size="sm" fw={600} tt="uppercase" mb="xs">
             Historia
           </Text>
-          <Title order={1}>{experiment.data.title}</Title>
+          <Title order={1}>{experiment.data.participantTitle}</Title>
         </div>
         <Text size="lg" lh={1.7} style={{ whiteSpace: "pre-wrap" }}>
           {experiment.data.story}
         </Text>
-        <Button size="lg" fullWidth onClick={() => setStep("recall")}>
+        <Button
+          size="lg"
+          fullWidth
+          onClick={() =>
+            setStep(experiment.data.intervalSeconds > 0 ? "interval" : "recall")
+          }
+        >
           Terminé de leer
+        </Button>
+      </Stack>
+    ),
+    interval: (
+      <Stack gap="lg" ta="center" align="center">
+        <Title order={1}>Pausa</Title>
+        <Text size="lg">
+          El protocolo indica una espera de {experiment.data.intervalSeconds}{" "}
+          segundos antes de reconstruir la historia.
+        </Text>
+        {experiment.data.distractorEnabled && (
+          <Paper withBorder p="lg" w="100%">
+            <Text fw={600}>Distractor</Text>
+            <Text c="dimmed">
+              La actividad distractora se presentará durante este intervalo.
+            </Text>
+          </Paper>
+        )}
+        <Button size="lg" fullWidth onClick={() => setStep("recall")}>
+          Continuar vista previa
         </Button>
       </Stack>
     ),
     recall: (
       <Stack gap="lg">
         <Title order={1}>Reconstruí la historia</Title>
-        <Text size="lg">
-          Escribí todo lo que recuerdes, con el mayor detalle posible. No hay
-          respuestas correctas o incorrectas.
+        <Text size="lg" style={{ whiteSpace: "pre-wrap" }}>
+          {experiment.data.recallInstructions}
         </Text>
         <Textarea
           label="Tu respuesta"
@@ -141,6 +189,7 @@ const ParticipantPreviewPage = () => {
           variant="default"
           onClick={() => {
             setRecall("");
+            setConsentAccepted(false);
             setStep("introduction");
           }}
         >

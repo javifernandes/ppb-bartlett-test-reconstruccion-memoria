@@ -12,7 +12,7 @@ import {
 } from '@ontahi/core/data-graph';
 
 export const ExperimentSchema = defineEntitySchema("Experiment", {
-    id: field.id(), title: field.nonEmptyString({ trim: true }), story: field.nonEmptyString({ trim: true }), status: field.enum(["draft", "published", "closed"] as const), createdAt: field.nonEmptyString({ trim: true }),
+    id: field.id(), title: field.nonEmptyString({ trim: true }), participantTitle: field.nonEmptyString({ trim: true }), introduction: field.nonEmptyString({ trim: true }), consentText: field.nonEmptyString({ trim: true }), story: field.nonEmptyString({ trim: true }), recallInstructions: field.nonEmptyString({ trim: true }), intervalSeconds: field.integer({ min: 0, max: 3600 }), distractorEnabled: field.boolean(), status: field.enum(["draft", "published", "closed"] as const), createdAt: field.nonEmptyString({ trim: true }), publishedAt: field.nullable(field.nonEmptyString({ trim: true })), publicToken: field.nullable(field.nonEmptyString({ trim: true })),
 }).display({ primary: "title", search: ["title"] });
 
 export const Experiment = defineClientEntity(ExperimentSchema, {
@@ -38,7 +38,26 @@ export const Experiment = defineClientEntity(ExperimentSchema, {
       input: graphSchema.object({
         experiment: field.ref(ExperimentSchema),
         title: ExperimentSchema.fields.title,
+        participantTitle: ExperimentSchema.fields.participantTitle,
+        introduction: ExperimentSchema.fields.introduction,
+        consentText: ExperimentSchema.fields.consentText,
         story: ExperimentSchema.fields.story,
+        recallInstructions: ExperimentSchema.fields.recallInstructions,
+        intervalSeconds: ExperimentSchema.fields.intervalSeconds,
+        distractorEnabled: ExperimentSchema.fields.distractorEnabled,
+      }),
+      output: ExperimentSchema,
+    }),
+    publish: defineClientDomainOperation({
+      authority: 'server',
+      exposure: 'bridge',
+      bridge: {
+        invalidate: [["Experiment"]],
+      },
+      input: graphSchema.object({
+        experiment: field.ref(ExperimentSchema),
+        publishedAt: ExperimentSchema.fields.createdAt,
+        publicToken: field.nonEmptyString({ trim: true }),
       }),
       output: ExperimentSchema,
     }),

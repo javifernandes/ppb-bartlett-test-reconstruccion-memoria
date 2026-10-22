@@ -7,9 +7,17 @@ export const Experiment = entity({
   fields: {
     id: field.id(),
     title: field.nonEmptyString({ trim: true }),
+    participantTitle: field.nonEmptyString({ trim: true }),
+    introduction: field.nonEmptyString({ trim: true }),
+    consentText: field.nonEmptyString({ trim: true }),
     story: field.nonEmptyString({ trim: true }),
+    recallInstructions: field.nonEmptyString({ trim: true }),
+    intervalSeconds: field.integer({ min: 0, max: 3600 }),
+    distractorEnabled: field.boolean(),
     status: field.enum(["draft", "published", "closed"] as const),
     createdAt: field.nonEmptyString({ trim: true }),
+    publishedAt: field.nullable(field.nonEmptyString({ trim: true })),
+    publicToken: field.nullable(field.nonEmptyString({ trim: true })),
   },
   display: { primary: "title", search: ["title"] },
   domainOperationDefaults: {
@@ -26,24 +34,65 @@ export const Experiment = entity({
       bridge: { invalidate: [["Experiment"]] },
       run: (input) =>
         commands
-          .insertReturning({ ...input, status: "draft" }, [
-            "id",
-            "title",
-            "story",
-            "status",
-            "createdAt",
-          ])
+          .insertReturning(
+            {
+              ...input,
+              participantTitle: input.title,
+              introduction:
+                "Vas a participar en una prueba de reconstrucción de memoria.",
+              consentText:
+                "Acepto participar voluntariamente y comprendo que puedo abandonar la actividad antes de enviar mi respuesta.",
+              recallInstructions:
+                "Escribí todo lo que recuerdes, con el mayor detalle posible.",
+              intervalSeconds: 0,
+              distractorEnabled: false,
+              status: "draft",
+              publishedAt: null,
+              publicToken: null,
+            },
+            [
+              "id",
+              "title",
+              "participantTitle",
+              "introduction",
+              "consentText",
+              "story",
+              "recallInstructions",
+              "intervalSeconds",
+              "distractorEnabled",
+              "status",
+              "createdAt",
+              "publishedAt",
+              "publicToken",
+            ],
+          )
           .run(),
     }),
     updateDraft: operation({
       input: graphSchema.object({
         experiment: field.ref(self),
         title: self.fields.title,
+        participantTitle: self.fields.participantTitle,
+        introduction: self.fields.introduction,
+        consentText: self.fields.consentText,
         story: self.fields.story,
+        recallInstructions: self.fields.recallInstructions,
+        intervalSeconds: self.fields.intervalSeconds,
+        distractorEnabled: self.fields.distractorEnabled,
       }),
       output: self,
       bridge: { invalidate: [["Experiment"]] },
-      *run({ experiment, title, story }) {
+      *run({
+        experiment,
+        title,
+        participantTitle,
+        introduction,
+        consentText,
+        story,
+        recallInstructions,
+        intervalSeconds,
+        distractorEnabled,
+      }) {
         const current = yield* experiment.resolve();
 
         if (!current) {
@@ -62,13 +111,33 @@ export const Experiment = entity({
 
         const [updated] = yield* commands
           .where((candidate) => candidate.id.eq(current.id))
-          .updateReturning({ title, story }, [
-            "id",
-            "title",
-            "story",
-            "status",
-            "createdAt",
-          ])
+          .updateReturning(
+            {
+              title,
+              participantTitle,
+              introduction,
+              consentText,
+              story,
+              recallInstructions,
+              intervalSeconds,
+              distractorEnabled,
+            },
+            [
+              "id",
+              "title",
+              "participantTitle",
+              "introduction",
+              "consentText",
+              "story",
+              "recallInstructions",
+              "intervalSeconds",
+              "distractorEnabled",
+              "status",
+              "createdAt",
+              "publishedAt",
+              "publicToken",
+            ],
+          )
           .run();
 
         if (!updated) {
@@ -79,6 +148,60 @@ export const Experiment = entity({
         }
 
         return updated;
+      },
+    }),
+    publish: operation({
+      input: graphSchema.object({
+        experiment: field.ref(self),
+        publishedAt: self.fields.createdAt,
+        publicToken: field.nonEmptyString({ trim: true }),
+      }),
+      output: self,
+      bridge: { invalidate: [["Experiment"]] },
+      *run({ experiment, publishedAt, publicToken }) {
+        const current = yield* experiment.resolve();
+
+        if (!current) {
+          return yield* failOperation(
+            "experiment_not_found",
+            "El experimento no existe.",
+          );
+        }
+
+        if (current.status !== "draft") {
+          return yield* failOperation(
+            "experiment_not_publishable",
+            "Sólo se pueden publicar experimentos en borrador.",
+          );
+        }
+
+        const [published] = yield* commands
+          .where((candidate) => candidate.id.eq(current.id))
+          .updateReturning({ status: "published", publishedAt, publicToken }, [
+            "id",
+            "title",
+            "participantTitle",
+            "introduction",
+            "consentText",
+            "story",
+            "recallInstructions",
+            "intervalSeconds",
+            "distractorEnabled",
+            "status",
+            "createdAt",
+            "publishedAt",
+            "publicToken",
+          ])
+          .run();
+
+        if (!published) {
+          return yield* failOperation(
+            "experiment_not_found",
+            "El experimento no existe.",
+          );
+        }
+
+        return published;
       },
     }),
   }),

@@ -23,12 +23,49 @@ describe("Bartlett application bootstrap", () => {
     const updated = await Experiment.updateDraft({
       experiment: Experiment.refById("experiment-test"),
       title: "Experimento editado",
+      participantTitle: "Una prueba de memoria",
+      introduction: "Leé atentamente la siguiente historia.",
+      consentText: "Acepto participar voluntariamente.",
       story: "La historia fue editada.",
+      recallInstructions: "Escribí todo lo que recuerdes.",
+      intervalSeconds: 30,
+      distractorEnabled: true,
     });
 
     expect(updated).toMatchObject({
       ok: true,
       value: { title: "Experimento editado" },
+    });
+
+    const published = await Experiment.publish({
+      experiment: Experiment.refById("experiment-test"),
+      publishedAt: "2026-10-22T13:00:00.000Z",
+      publicToken: "public-test-token",
+    });
+
+    expect(published).toMatchObject({
+      ok: true,
+      value: {
+        status: "published",
+        publicToken: "public-test-token",
+      },
+    });
+
+    const rejectedUpdate = await Experiment.updateDraft({
+      experiment: Experiment.refById("experiment-test"),
+      title: "No debe cambiar",
+      participantTitle: "No debe cambiar",
+      introduction: "No debe cambiar",
+      consentText: "No debe cambiar",
+      story: "No debe cambiar",
+      recallInstructions: "No debe cambiar",
+      intervalSeconds: 0,
+      distractorEnabled: false,
+    });
+
+    expect(rejectedUpdate).toMatchObject({
+      ok: false,
+      failure: { reason: "experiment_not_editable" },
     });
 
     const experiments = await BartlettApplication.graph.read(
