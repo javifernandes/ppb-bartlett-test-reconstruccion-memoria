@@ -38,9 +38,7 @@ export const requestMagicLink = async (
     return {
       status: "error",
       message:
-        error.code === "otp_disabled"
-          ? "El acceso por enlace mágico no está habilitado."
-          : "No se pudo enviar el enlace. Verificá que el email haya sido invitado.",
+        "No se pudo enviar el enlace. Verificá que el email haya sido invitado.",
     };
   }
 
