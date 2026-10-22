@@ -21,4 +21,25 @@ La [síntesis del producto](./docs/README.md) describe el alcance y enlaza las e
 
 ## Estado
 
-Definición inicial del MVP. Todavía no hay implementación de la aplicación.
+Slice 0 ejecutable en local:
+
+- Next.js 16, React 19 y Mantine 9;
+- Ontahí `1.0.0-alpha.13`, fijado explícitamente;
+- persistencia en memoria con un experimento de ejemplo;
+- lectura reactiva y operación `createDraft` a través del bridge de Ontahí;
+- sin autenticación, servicios externos ni deployment todavía.
+
+## Desarrollo local
+
+Requiere Node.js 20.9 o superior y pnpm 10.
+
+```bash
+pnpm install
+pnpm dev
+```
+
+La aplicación queda disponible en `http://localhost:3000`. Para ejecutar todos los chequeos:
+
+```bash
+pnpm verify
+```

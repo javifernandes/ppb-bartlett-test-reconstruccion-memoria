@@ -57,14 +57,14 @@ flowchart TD
 
 ## Proyección del workspace por estado
 
-| Estado | Información principal | CTA principal | Acciones secundarias |
-|---|---|---|---|
-| `draft` | Configuración del protocolo | Publicar | Editar, previsualizar |
-| `published` | Progreso de recolección | Cerrar recepción | Copiar enlace, ver respuestas |
-| `closed` | Totales finales y raw data | Ejecutar análisis | Descargar CSV |
-| `analyzing` | Progreso durable | Ninguno | Ver respuestas |
-| `analyzed` | Métricas y conclusiones | Ver resultados | Descargar, nueva corrida |
-| `analyzed_with_errors` | Resultados y fallas | Reintentar fallidas | Ver resultados disponibles |
+| Estado                 | Información principal       | CTA principal       | Acciones secundarias          |
+| ---------------------- | --------------------------- | ------------------- | ----------------------------- |
+| `draft`                | Configuración del protocolo | Publicar            | Editar, previsualizar         |
+| `published`            | Progreso de recolección     | Cerrar recepción    | Copiar enlace, ver respuestas |
+| `closed`               | Totales finales y raw data  | Ejecutar análisis   | Descargar CSV                 |
+| `analyzing`            | Progreso durable            | Ninguno             | Ver respuestas                |
+| `analyzed`             | Métricas y conclusiones     | Ver resultados      | Descargar, nueva corrida      |
+| `analyzed_with_errors` | Resultados y fallas         | Reintentar fallidas | Ver resultados disponibles    |
 
 ## Flujo del participante
 
