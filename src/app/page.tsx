@@ -143,7 +143,9 @@ const HomePage = () => {
                         >
                           {experiment.status === "published"
                             ? "Publicado"
-                            : "Borrador"}
+                            : experiment.status === "closed"
+                              ? "Cerrado"
+                              : "Borrador"}
                         </Badge>
                       </Group>
                       <Text c="dimmed" size="sm">

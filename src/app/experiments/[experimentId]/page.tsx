@@ -11,6 +11,7 @@ import {
   Loader,
   Modal,
   NumberInput,
+  SimpleGrid,
   Stack,
   Switch,
   Text,
@@ -26,8 +27,10 @@ import {
   IconArrowLeft,
   IconCopy,
   IconDeviceFloppy,
+  IconDownload,
   IconEye,
   IconFlask,
+  IconLock,
   IconRocket,
 } from "@tabler/icons-react";
 import Link from "next/link";
@@ -84,7 +87,9 @@ const ExperimentWorkspacePage = () => {
   const sessions = useGraphQuery(sessionsQuery);
   const updateDraft = useOperation(Experiment.domain.updateDraft);
   const publish = useOperation(Experiment.domain.publish);
+  const close = useOperation(Experiment.domain.close);
   const [publishOpened, publishModal] = useDisclosure(false);
+  const [closeOpened, closeModal] = useDisclosure(false);
   const form = useForm({
     initialValues: {
       title: "",
@@ -192,6 +197,56 @@ const ExperimentWorkspacePage = () => {
     });
   };
 
+  const handleClose = async () => {
+    const result = await close.executeAsync({
+      experiment: Experiment.refById(experimentId),
+    });
+
+    if (result.ok) {
+      closeModal.close();
+      notifications.show({
+        title: "Recepción cerrada",
+        message: "El experimento ya no acepta nuevas respuestas.",
+        color: "teal",
+      });
+      return;
+    }
+
+    notifications.show({
+      title: "No se pudo cerrar el experimento",
+      message: result.message,
+      color: "red",
+    });
+  };
+
+  const exportResponses = () => {
+    const quote = (value: string) => `"${value.replaceAll('"', '""')}"`;
+    const rows = (sessions.data ?? [])
+      .filter((session) => session.status === "submitted")
+      .map((session) =>
+        [
+          session.id,
+          session.startedAt,
+          session.submittedAt ?? "",
+          session.recallText ?? "",
+        ]
+          .map(quote)
+          .join(","),
+      );
+    const csv = [
+      "session_id,started_at,submitted_at,recall_text",
+      ...rows,
+    ].join("\n");
+    const url = URL.createObjectURL(
+      new Blob([csv], { type: "text/csv;charset=utf-8" }),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${experiment.data?.title ?? "respuestas"}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <AppShell header={{ height: 64 }} padding="md">
       <AppShell.Header px="md">
@@ -242,7 +297,9 @@ const ExperimentWorkspacePage = () => {
                     >
                       {experiment.data.status === "published"
                         ? "Publicado"
-                        : "Borrador"}
+                        : experiment.data.status === "closed"
+                          ? "Cerrado"
+                          : "Borrador"}
                     </Badge>
                     <Button
                       component={Link}
@@ -259,6 +316,16 @@ const ExperimentWorkspacePage = () => {
                         disabled={form.isDirty()}
                       >
                         Publicar
+                      </Button>
+                    )}
+                    {experiment.data.status === "published" && (
+                      <Button
+                        color="red"
+                        variant="light"
+                        leftSection={<IconLock size={18} />}
+                        onClick={closeModal.open}
+                      >
+                        Cerrar recepción
                       </Button>
                     )}
                   </Group>
@@ -385,16 +452,53 @@ const ExperimentWorkspacePage = () => {
                   </form>
                 </Card>
 
-                {experiment.data.status === "published" && (
+                {experiment.data.status !== "draft" && (
                   <Stack gap="md">
                     <Group justify="space-between">
                       <Title order={2}>Respuestas</Title>
-                      <Badge variant="light">
-                        {sessions.data?.filter(
-                          (session) => session.status === "submitted",
-                        ).length ?? 0}
-                      </Badge>
+                      <Button
+                        variant="default"
+                        leftSection={<IconDownload size={18} />}
+                        disabled={
+                          !sessions.data?.some(
+                            (session) => session.status === "submitted",
+                          )
+                        }
+                        onClick={exportResponses}
+                      >
+                        Descargar CSV
+                      </Button>
                     </Group>
+                    <SimpleGrid cols={{ base: 1, xs: 3 }}>
+                      <Card withBorder padding="md">
+                        <Text size="sm" c="dimmed">
+                          Iniciadas
+                        </Text>
+                        <Text size="xl" fw={700}>
+                          {sessions.data?.length ?? 0}
+                        </Text>
+                      </Card>
+                      <Card withBorder padding="md">
+                        <Text size="sm" c="dimmed">
+                          En curso
+                        </Text>
+                        <Text size="xl" fw={700}>
+                          {sessions.data?.filter(
+                            (session) => session.status !== "submitted",
+                          ).length ?? 0}
+                        </Text>
+                      </Card>
+                      <Card withBorder padding="md">
+                        <Text size="sm" c="dimmed">
+                          Completadas
+                        </Text>
+                        <Text size="xl" fw={700}>
+                          {sessions.data?.filter(
+                            (session) => session.status === "submitted",
+                          ).length ?? 0}
+                        </Text>
+                      </Card>
+                    </SimpleGrid>
                     {sessions.isLoading && <Loader size="sm" />}
                     {sessions.isError && (
                       <Card withBorder>
@@ -457,6 +561,33 @@ const ExperimentWorkspacePage = () => {
               onClick={() => void handlePublish()}
             >
               Confirmar publicación
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={closeOpened}
+        onClose={closeModal.close}
+        title="Cerrar recepción"
+        centered
+      >
+        <Stack>
+          <Text>
+            No se podrán iniciar nuevas participaciones ni enviar respuestas
+            pendientes.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={closeModal.close}>
+              Cancelar
+            </Button>
+            <Button
+              color="red"
+              leftSection={<IconLock size={18} />}
+              loading={close.isExecuting}
+              onClick={() => void handleClose()}
+            >
+              Cerrar recepción
             </Button>
           </Group>
         </Stack>

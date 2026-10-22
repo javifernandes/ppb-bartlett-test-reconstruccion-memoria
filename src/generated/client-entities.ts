@@ -64,6 +64,15 @@ export const Experiment = defineClientEntity(ExperimentSchema, {
       }),
       output: ExperimentSchema,
     }),
+    close: defineClientDomainOperation({
+      authority: 'server',
+      exposure: 'bridge',
+      bridge: {
+        invalidate: [["Experiment"]],
+      },
+      input: graphSchema.object({ experiment: field.ref(ExperimentSchema) }),
+      output: ExperimentSchema,
+    }),
   },
 });
 
@@ -100,6 +109,7 @@ export const ParticipantSession = defineClientEntity(ParticipantSessionSchema, {
       },
       input: graphSchema.object({
         session: field.ref(ParticipantSessionSchema),
+        experiment: field.ref(ExperimentSchema),
         recallText: field.nonEmptyString({ trim: true }),
         submittedAt: field.nonEmptyString({ trim: true }),
       }),

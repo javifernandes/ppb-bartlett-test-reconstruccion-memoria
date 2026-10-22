@@ -204,5 +204,48 @@ export const Experiment = entity({
         return published;
       },
     }),
+    close: operation({
+      input: graphSchema.object({ experiment: field.ref(self) }),
+      output: self,
+      bridge: { invalidate: [["Experiment"]] },
+      *run({ experiment }) {
+        const current = yield* experiment.resolve();
+
+        if (!current) {
+          return yield* failOperation(
+            "experiment_not_found",
+            "El experimento no existe.",
+          );
+        }
+
+        if (current.status !== "published") {
+          return yield* failOperation(
+            "experiment_not_closable",
+            "Sólo se pueden cerrar experimentos publicados.",
+          );
+        }
+
+        const [closed] = yield* commands
+          .where((candidate) => candidate.id.eq(current.id))
+          .updateReturning({ status: "closed" }, [
+            "id",
+            "title",
+            "participantTitle",
+            "introduction",
+            "consentText",
+            "story",
+            "recallInstructions",
+            "intervalSeconds",
+            "distractorEnabled",
+            "status",
+            "createdAt",
+            "publishedAt",
+            "publicToken",
+          ])
+          .run();
+
+        return closed;
+      },
+    }),
   }),
 });

@@ -88,6 +88,7 @@ describe("Bartlett application bootstrap", () => {
 
     const submitted = await ParticipantSession.submitRecall({
       session: ParticipantSession.refById("session-test"),
+      experiment: Experiment.refById("experiment-test"),
       recallText: "Recuerdo que la historia había sido editada.",
       submittedAt: "2026-10-22T13:10:00.000Z",
     });
@@ -97,6 +98,44 @@ describe("Bartlett application bootstrap", () => {
         status: "submitted",
         recallText: "Recuerdo que la historia había sido editada.",
       },
+    });
+
+    await ParticipantSession.start({
+      id: "session-pending",
+      experiment: Experiment.refById("experiment-test"),
+      startedAt: "2026-10-22T13:11:00.000Z",
+    });
+    await ParticipantSession.startRecall({
+      session: ParticipantSession.refById("session-pending"),
+    });
+
+    const closed = await Experiment.close({
+      experiment: Experiment.refById("experiment-test"),
+    });
+    expect(closed).toMatchObject({
+      ok: true,
+      value: { status: "closed" },
+    });
+
+    const rejectedSubmission = await ParticipantSession.submitRecall({
+      session: ParticipantSession.refById("session-pending"),
+      experiment: Experiment.refById("experiment-test"),
+      recallText: "Esta respuesta llegó después del cierre.",
+      submittedAt: "2026-10-22T13:12:00.000Z",
+    });
+    expect(rejectedSubmission).toMatchObject({
+      ok: false,
+      failure: { reason: "experiment_not_accepting_responses" },
+    });
+
+    const rejectedSession = await ParticipantSession.start({
+      id: "session-too-late",
+      experiment: Experiment.refById("experiment-test"),
+      startedAt: "2026-10-22T13:13:00.000Z",
+    });
+    expect(rejectedSession).toMatchObject({
+      ok: false,
+      failure: { reason: "experiment_not_accepting_participants" },
     });
 
     const experiments = await BartlettApplication.graph.read(

@@ -92,18 +92,31 @@ export const ParticipantSession = entity({
     submitRecall: operation({
       input: graphSchema.object({
         session: field.ref(self),
+        experiment: field.ref(Experiment),
         recallText: field.nonEmptyString({ trim: true }),
         submittedAt: field.nonEmptyString({ trim: true }),
       }),
       output: self,
       bridge: { invalidate: [["ParticipantSession"]] },
-      *run({ session, recallText, submittedAt }) {
+      *run({ session, experiment, recallText, submittedAt }) {
         const current = yield* session.resolve();
 
         if (!current || current.status !== "recalling") {
           return yield* failOperation(
             "participant_session_not_recalling",
             "La sesión no está esperando una reconstrucción.",
+          );
+        }
+
+        const target = yield* experiment.resolve();
+        if (
+          !target ||
+          target.id !== current.experiment.locator.id ||
+          target.status !== "published"
+        ) {
+          return yield* failOperation(
+            "experiment_not_accepting_responses",
+            "El experimento ya no recibe respuestas.",
           );
         }
 

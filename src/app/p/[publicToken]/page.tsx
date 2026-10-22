@@ -139,6 +139,7 @@ const PublicParticipationPage = () => {
     setErrorMessage(undefined);
     const result = await submitRecall.executeAsync({
       session: ParticipantSession.refById(sessionId),
+      experiment: Experiment.refById(experiment.data.id),
       recallText: recall,
       submittedAt: new Date().toISOString(),
     });
