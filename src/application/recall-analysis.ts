@@ -1,10 +1,15 @@
 import { field, graphSchema } from "@ontahi/core/data-graph";
 import { entity } from "@ontahi/core/entity";
 import { failOperation } from "@ontahi/core/runtime/server";
+import { Effect, Either } from "effect";
 
 import { AnalysisRun } from "./analysis-run";
 import { Experiment } from "./experiment";
 import { ParticipantSession } from "./participant-session";
+import {
+  analyzeRecallWithDeepSeek,
+  type RecallAnalysisModelResult,
+} from "./recall-analysis-model";
 
 export type RecallPhenomenonKind =
   | "omission"
@@ -137,6 +142,11 @@ export const RecallAnalysis = entity({
     experiment: field.ref(Experiment),
     status: field.enum(["completed"] as const),
     rubricVersion: field.nonEmptyString({ trim: true }),
+    analyzerProvider: field.nonEmptyString({ trim: true }),
+    analyzerModel: field.nonEmptyString({ trim: true }),
+    promptVersion: field.nonEmptyString({ trim: true }),
+    inputTokens: field.nullable(field.integer({ min: 0 })),
+    outputTokens: field.nullable(field.integer({ min: 0 })),
     retainedUnitsCount: field.integer({ min: 0 }),
     omittedUnitsCount: field.integer({ min: 0 }),
     intrusionCount: field.integer({ min: 0 }),
@@ -180,10 +190,39 @@ export const RecallAnalysis = entity({
           );
         }
 
-        const result = analyzeRecallHeuristically(
-          targetExperiment.story,
-          participantSession.recallText,
-        );
+        let result: RecallAnalysisModelResult;
+        if (process.env.RECALL_ANALYSIS_PROVIDER === "deepseek") {
+          const attempted = yield* Effect.either(
+            Effect.tryPromise(() =>
+              analyzeRecallWithDeepSeek(
+                targetExperiment.story,
+                participantSession.recallText!,
+              ),
+            ),
+          );
+          if (Either.isLeft(attempted)) {
+            return yield* failOperation(
+              "recall_analysis_provider_failed",
+              attempted.left instanceof Error
+                ? attempted.left.message
+                : "No se pudo obtener el análisis del modelo.",
+            );
+          }
+          result = attempted.right;
+        } else {
+          result = {
+            ...analyzeRecallHeuristically(
+              targetExperiment.story,
+              participantSession.recallText,
+            ),
+            provider: "local",
+            model: "heuristic-v1",
+            rubricVersion: "bartlett-heuristic-v1",
+            promptVersion: "none",
+            inputTokens: null,
+            outputTokens: null,
+          };
+        }
 
         return yield* commands
           .insertReturning(
@@ -193,8 +232,16 @@ export const RecallAnalysis = entity({
               session,
               experiment,
               status: "completed",
-              rubricVersion: "bartlett-heuristic-v1",
-              ...result,
+              rubricVersion: result.rubricVersion,
+              analyzerProvider: result.provider,
+              analyzerModel: result.model,
+              promptVersion: result.promptVersion,
+              inputTokens: result.inputTokens,
+              outputTokens: result.outputTokens,
+              retainedUnitsCount: result.retainedUnitsCount,
+              omittedUnitsCount: result.omittedUnitsCount,
+              intrusionCount: result.intrusionCount,
+              phenomena: result.phenomena,
               createdAt,
             },
             [
@@ -204,6 +251,11 @@ export const RecallAnalysis = entity({
               "experiment",
               "status",
               "rubricVersion",
+              "analyzerProvider",
+              "analyzerModel",
+              "promptVersion",
+              "inputTokens",
+              "outputTokens",
               "retainedUnitsCount",
               "omittedUnitsCount",
               "intrusionCount",

@@ -298,9 +298,8 @@ const AnalysisPage = () => {
                     <div>
                       <Title order={2}>Fenómenos detectados</Title>
                       <Text c="dimmed">
-                        Detección heurística basada en unidades narrativas y
-                        coincidencia léxica. Las interpretaciones requieren
-                        revisión humana.
+                        Detección automática con evidencia textual. Las
+                        interpretaciones requieren revisión humana.
                       </Text>
                     </div>
                     <SimpleGrid cols={{ base: 1, sm: 3 }}>

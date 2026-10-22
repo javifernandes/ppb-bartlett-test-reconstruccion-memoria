@@ -9,6 +9,7 @@ import {
   RecallAnalysis,
 } from "./graph";
 import { analyzeRecallHeuristically } from "./recall-analysis";
+import { parseRecallAnalysisOutput } from "./recall-analysis-model";
 
 describe("Bartlett application bootstrap", () => {
   it("runs a Query and an Operation against in-memory storage", async () => {
@@ -171,7 +172,7 @@ describe("Bartlett application bootstrap", () => {
       ok: true,
       value: {
         status: "running",
-        analyzerVersion: "heuristic-v1",
+        analyzerVersion: "local:heuristic-v1",
       },
     });
 
@@ -227,6 +228,34 @@ describe("Bartlett application bootstrap", () => {
       "Reconstrucción de una historia — prueba piloto",
     ]);
     vi.useRealTimers();
+  });
+
+  it("valida estrictamente la salida estructurada del analizador", () => {
+    expect(
+      parseRecallAnalysisOutput({
+        retainedUnitsCount: 1,
+        omittedUnitsCount: 1,
+        intrusionCount: 0,
+        phenomena: [
+          {
+            kind: "omission",
+            storyExcerpt: "Una canoa se acercó.",
+            recallExcerpt: null,
+            explanation: "No se recordó la llegada de la canoa.",
+            confidence: 0.9,
+          },
+        ],
+      }),
+    ).toMatchObject({ retainedUnitsCount: 1, omittedUnitsCount: 1 });
+
+    expect(() =>
+      parseRecallAnalysisOutput({
+        retainedUnitsCount: 1,
+        omittedUnitsCount: 0,
+        intrusionCount: 0,
+        phenomena: [{ kind: "inventado", confidence: 8 }],
+      }),
+    ).toThrow("fenómeno inválido");
   });
 
   it("detects omission and intrusion candidates with textual evidence", () => {

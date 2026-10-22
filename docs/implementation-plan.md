@@ -104,9 +104,9 @@ controlado. Éste es el primer hito de producto.
 
 ## Slice 9 — DeepSeek y evaluación
 
-- Implementar DeepSeekRecallAnalysisModel.
-- Validar structured output.
-- Registrar modelo, rúbrica, prompt y uso.
+- [x] Implementar DeepSeekRecallAnalysisModel.
+- [x] Validar structured output y citas de evidencia.
+- [x] Registrar modelo, rúbrica, prompt y uso.
 - Preparar un conjunto pequeño codificado manualmente.
 - Comparar clasificación humana y automática.
 - Ajustar rúbrica y tratamiento de incertidumbre.

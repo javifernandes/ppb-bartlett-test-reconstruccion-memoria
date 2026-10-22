@@ -47,7 +47,10 @@ export const AnalysisRun = entity({
               id,
               experiment,
               status: "running",
-              analyzerVersion: "heuristic-v1",
+              analyzerVersion:
+                process.env.RECALL_ANALYSIS_PROVIDER === "deepseek"
+                  ? `deepseek:${process.env.DEEPSEEK_MODEL?.trim() || "deepseek-chat"}`
+                  : "local:heuristic-v1",
               createdAt,
             },
             ["id", "experiment", "status", "analyzerVersion", "createdAt"],

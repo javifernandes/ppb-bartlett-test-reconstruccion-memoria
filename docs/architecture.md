@@ -174,6 +174,12 @@ OpenAIRecallAnalysisModel     futuro/opcional
 
 La salida se valida contra un schema estricto antes de persistirse.
 
+La implementación actual selecciona el adapter con `RECALL_ANALYSIS_PROVIDER`. Si vale `deepseek`,
+invoca la API desde la Operation del servidor, exige JSON, valida tipos, rangos y que cada evidencia
+sea una cita literal. Sin esa variable usa la heurística local, de modo que desarrollo y demo no
+dependen de una API externa. Cada resultado registra provider, modelo, versión de rúbrica, versión
+de prompt y uso de tokens cuando el proveedor lo informa.
+
 ## Deployment
 
 El deployment se configura recién después de validar localmente experimentos, participación y raw

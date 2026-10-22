@@ -25,7 +25,7 @@ export const AnalysisRunSchema = defineEntitySchema("AnalysisRun", {
     ] as const), analyzerVersion: field.nonEmptyString({ trim: true }), createdAt: field.nonEmptyString({ trim: true }),
 });
 export const RecallAnalysisSchema = defineEntitySchema("RecallAnalysis", {
-    id: field.id(), run: field.ref(AnalysisRunSchema), session: field.ref(ParticipantSessionSchema), experiment: field.ref(ExperimentSchema), status: field.enum(["completed"] as const), rubricVersion: field.nonEmptyString({ trim: true }), retainedUnitsCount: field.integer({ min: 0 }), omittedUnitsCount: field.integer({ min: 0 }), intrusionCount: field.integer({ min: 0 }), phenomena: field.json(), createdAt: field.nonEmptyString({ trim: true }),
+    id: field.id(), run: field.ref(AnalysisRunSchema), session: field.ref(ParticipantSessionSchema), experiment: field.ref(ExperimentSchema), status: field.enum(["completed"] as const), rubricVersion: field.nonEmptyString({ trim: true }), analyzerProvider: field.nonEmptyString({ trim: true }), analyzerModel: field.nonEmptyString({ trim: true }), promptVersion: field.nonEmptyString({ trim: true }), inputTokens: field.nullable(field.integer({ min: 0 })), outputTokens: field.nullable(field.integer({ min: 0 })), retainedUnitsCount: field.integer({ min: 0 }), omittedUnitsCount: field.integer({ min: 0 }), intrusionCount: field.integer({ min: 0 }), phenomena: field.json(), createdAt: field.nonEmptyString({ trim: true }),
 });
 
 export const Experiment = defineClientEntity(ExperimentSchema, {
