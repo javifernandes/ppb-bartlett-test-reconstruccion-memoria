@@ -19,12 +19,14 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useGraphQuery, useOperation } from "@ontahi/react/graph";
-import { IconFlask, IconPlus } from "@tabler/icons-react";
+import { IconPlus } from "@tabler/icons-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "@mantine/form";
 
 import { Experiment } from "@/generated/client-entities";
+
+import { AdminHeader } from "./admin-header";
 
 const ExperimentCard = Experiment.view("ExperimentCard", {
   id: true,
@@ -81,14 +83,7 @@ const HomePage = () => {
 
   return (
     <AppShell header={{ height: 64 }} padding="md">
-      <AppShell.Header px="md">
-        <Group h="100%" justify="space-between">
-          <Group gap="sm">
-            <IconFlask size={24} />
-            <Text fw={600}>Prueba de Bartlett</Text>
-          </Group>
-        </Group>
-      </AppShell.Header>
+      <AdminHeader section="Experimentos" />
 
       <AppShell.Main>
         <Container size="lg" py="xl">

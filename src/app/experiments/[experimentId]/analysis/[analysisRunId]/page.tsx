@@ -15,11 +15,7 @@ import {
   Title,
 } from "@mantine/core";
 import { useGraphQuery } from "@ontahi/react/graph";
-import {
-  IconArrowLeft,
-  IconChevronRight,
-  IconFlask,
-} from "@tabler/icons-react";
+import { IconChevronRight } from "@tabler/icons-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo } from "react";
@@ -30,6 +26,7 @@ import {
   ParticipantSession,
   RecallAnalysis,
 } from "@/generated/client-entities";
+import { AdminHeader } from "@/app/admin-header";
 
 const AnalysisExperiment = Experiment.view("AnalysisExperiment", {
   id: true,
@@ -177,26 +174,15 @@ const AnalysisPage = () => {
 
   return (
     <AppShell header={{ height: 64 }} padding="md">
-      <AppShell.Header px="md">
-        <Group h="100%" gap="sm">
-          <IconFlask size={24} />
-          <Text fw={600}>Prueba de Bartlett</Text>
-        </Group>
-      </AppShell.Header>
+      <AdminHeader
+        section="Análisis"
+        backHref={`/experiments/${experimentId}`}
+        backLabel="Experimento"
+      />
 
       <AppShell.Main>
         <Container size="lg" py="xl">
           <Stack gap="xl">
-            <Button
-              component={Link}
-              href={`/experiments/${experimentId}`}
-              variant="subtle"
-              leftSection={<IconArrowLeft size={18} />}
-              w="fit-content"
-            >
-              Volver al experimento
-            </Button>
-
             {loading && (
               <Group justify="center" py="xl">
                 <Loader />
