@@ -34,11 +34,12 @@ Requiere Node.js 20.9 o superior y pnpm 10.
 
 ```bash
 pnpm install
+cp .env.example .env.local
 pnpm dev
 ```
 
-Sin configuración adicional, el análisis usa la heurística local. Para probar el análisis semántico
-con DeepSeek, crear `.env.local`:
+Next.js lee `.env.local` automáticamente. Sin configuración adicional, el análisis usa la heurística
+local. Para probar el análisis semántico con DeepSeek, editar `.env.local`:
 
 ```dotenv
 RECALL_ANALYSIS_PROVIDER=deepseek
