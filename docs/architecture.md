@@ -140,6 +140,11 @@ La opción más conservadora para el MVP es que el browser invoque Ontahí a tra
 que las tablas de dominio no tengan policies de acceso directo para `anon`. RLS permanece como una
 segunda frontera y protección contra accesos accidentales.
 
+La implementación usa el adapter `@ontahi/supabase` únicamente cuando
+`DATA_GRAPH_PROVIDER=supabase`. El cliente server-side opera con la secret key; las migraciones
+revocan todo acceso de `anon` y `authenticated`, habilitan y fuerzan RLS, y no definen policies
+públicas. El runtime protocol de Next.js y las policies de Ontahí son la única superficie de acceso.
+
 ## Análisis durable
 
 `Experiment.analyze` es una durable Operation. Toma un snapshot de las respuestas elegibles y

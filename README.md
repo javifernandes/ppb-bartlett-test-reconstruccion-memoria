@@ -23,11 +23,11 @@ La [síntesis del producto](./docs/README.md) describe el alcance y enlaza las e
 
 - Next.js 16, React 19 y Mantine 9;
 - Ontahí `1.0.0-alpha.13`, fijado explícitamente;
-- persistencia en memoria;
+- persistencia en memoria para demos y adapter Supabase para uso real;
 - flujo completo de creación, publicación, participación, cierre y exportación;
 - análisis local o mediante DeepSeek con resultados y evidencia por respuesta;
 - Supabase Auth con acceso administrativo por magic link y alta pública deshabilitada;
-- deployment de preview; todavía con persistencia de experimentos en memoria.
+- deployment de preview con persistencia Supabase activable por configuración.
 
 ## Desarrollo local
 
@@ -60,6 +60,12 @@ DEEPSEEK_MODEL=deepseek-chat
 
 Las credenciales se leen únicamente en el servidor. No uses prefijos `NEXT_PUBLIC_` para estas
 variables.
+
+Después de aplicar las migraciones de `supabase/migrations`, activar la persistencia con:
+
+```dotenv
+DATA_GRAPH_PROVIDER=supabase
+```
 
 La aplicación queda disponible en `http://localhost:3000`. Para ejecutar todos los chequeos:
 

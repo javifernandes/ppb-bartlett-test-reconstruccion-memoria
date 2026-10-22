@@ -64,8 +64,8 @@ controlado. Éste es el primer hito de producto.
 - Crear el proyecto separado en Supabase.
 - Integrar Supabase Auth SSR, magic links y principal de Ontahí. **Hecho.**
 - Proteger las pantallas y Operations administrativas. **Hecho.**
-- Incorporar `@ontahi/supabase` con la misma aplicación.
-- Crear migraciones con RLS explícito y permisos fail-closed.
+- Incorporar `@ontahi/supabase` con la misma aplicación. **Hecho.**
+- Crear migraciones con RLS explícito y permisos fail-closed. **Hecho.**
 - Implementar invitación por email, magic links y aceptación de Membership.
 - Verificar migración del flujo completo contra PostgreSQL.
 

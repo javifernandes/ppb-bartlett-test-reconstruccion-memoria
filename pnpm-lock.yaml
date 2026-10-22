@@ -29,6 +29,9 @@ importers:
       '@ontahi/runtime-nextjs':
         specifier: 1.0.0-alpha.13
         version: 1.0.0-alpha.13(@types/node@24.10.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(next@16.4.2(@babel/core@7.29.7)(@types/node@24.10.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.9.3)
+      '@ontahi/supabase':
+        specifier: 1.0.0-alpha.13
+        version: 1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)
       '@supabase/ssr':
         specifier: ^0.12.7
         version: 0.12.7(@supabase/supabase-js@2.118.0)
@@ -647,6 +650,10 @@ packages:
         optional: true
       '@types/react-dom':
         optional: true
+
+  '@ontahi/supabase@1.0.0-alpha.13':
+    resolution: {integrity: sha512-IHZID55aFgu3vTSs9NuZq5vUVZlK4Ajj2zQaSxhjbzfSgXQBPD5xaKXhvvzBmVDuqmOJUOS9zZlyIDJzHlDwjA==}
+    engines: {node: '>=20.19.0'}
 
   '@oxc-project/types@0.155.0':
     resolution: {integrity: sha512-SeE8JPwW1xs1tHeNycjUtUBdhorRa8o4jlvjwk49R7/Z291i+4DQa7JJIgOm/TaYQZx+QrPQbVJ/9c8dMIZN8Q==}
@@ -3380,6 +3387,14 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.2.14
       '@types/react-dom': 19.2.3(@types/react@19.2.14)
+    transitivePeerDependencies:
+      - '@types/node'
+      - typescript
+
+  '@ontahi/supabase@1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)':
+    dependencies:
+      '@ontahi/core': 1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)
+      effect: 3.21.0
     transitivePeerDependencies:
       - '@types/node'
       - typescript

@@ -5,15 +5,26 @@ import { AnalysisRun } from "./analysis-run";
 import { Experiment } from "./experiment";
 import { ParticipantSession } from "./participant-session";
 import { RecallAnalysis } from "./recall-analysis";
+import { createSupabaseBartlettStorage } from "./supabase-storage";
 
 const demoEnabled = process.env.SEED_DEMO_DATA === "true";
+const useSupabaseStorage =
+  process.env.NODE_ENV !== "test" &&
+  !demoEnabled &&
+  process.env.DATA_GRAPH_PROVIDER === "supabase";
 const demoExperimentId = "experiment-complete-demo";
 const demoRunId = "analysis-complete-demo";
 const demoStory =
   "Dos jóvenes bajaron al río para cazar focas. Oyeron gritos de guerra y se escondieron detrás de un tronco. Una canoa con cinco hombres se acercó y los invitó a acompañarlos. Uno de los jóvenes aceptó; el otro regresó a su casa. Al amanecer, el joven que había partido volvió herido y murió después de contar lo ocurrido.";
 
 const createBartlettApplication = () => {
-  const storage = createInMemoryDataGraphStorage({
+  const entities = [
+    Experiment,
+    ParticipantSession,
+    AnalysisRun,
+    RecallAnalysis,
+  ] as const;
+  const inMemoryStorage = createInMemoryDataGraphStorage({
     dataset: {
       Experiment: [
         {
@@ -166,9 +177,11 @@ const createBartlettApplication = () => {
   });
 
   return ontahi({
-    storage,
+    storage: useSupabaseStorage
+      ? createSupabaseBartlettStorage(entities)
+      : inMemoryStorage,
     tasks: inProcessTasks(),
-    entities: [Experiment, ParticipantSession, AnalysisRun, RecallAnalysis],
+    entities,
   });
 };
 
