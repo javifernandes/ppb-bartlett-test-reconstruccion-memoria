@@ -293,7 +293,11 @@ const ResponseDetailPage = () => {
                   </Stack>
                 </Card>
 
-                <Card withBorder padding="lg">
+                <Card
+                  withBorder
+                  padding="lg"
+                  style={{ order: analysis.data ? 1 : undefined }}
+                >
                   <Stack gap="md">
                     <Title order={2}>Comparación</Title>
                     <SimpleGrid cols={{ base: 1, md: 2 }}>
@@ -324,7 +328,7 @@ const ResponseDetailPage = () => {
                 </Card>
 
                 {analysis.data && (
-                  <Card withBorder padding="lg">
+                  <Card withBorder padding="lg" id="fenomenos-detectados">
                     <Stack gap="md">
                       <div>
                         <Title order={2}>Fenómenos detectados</Title>
@@ -401,6 +405,17 @@ const ResponseDetailPage = () => {
                         ),
                       )}
                     </Stack>
+                  </Card>
+                )}
+
+                {!analysis.isLoading && !analysis.data && (
+                  <Card withBorder padding="lg">
+                    <Title order={2}>Análisis no disponible</Title>
+                    <Text c="dimmed" mt="xs">
+                      Esta respuesta todavía no tiene un análisis asociado.
+                      Ejecutá el análisis del experimento para generar sus
+                      fenómenos y evidencias.
+                    </Text>
                   </Card>
                 )}
               </>
