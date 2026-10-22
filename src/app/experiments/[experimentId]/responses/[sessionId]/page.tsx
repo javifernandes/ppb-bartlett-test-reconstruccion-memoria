@@ -67,6 +67,7 @@ const ResponseAnalysis = RecallAnalysis.view("ResponseAnalysis", {
 
 type DisplayPhenomenon = {
   kind:
+    | "retained"
     | "omission"
     | "intrusion"
     | "substitution"
@@ -79,6 +80,7 @@ type DisplayPhenomenon = {
 };
 
 const phenomenonLabels: Record<DisplayPhenomenon["kind"], string> = {
+  retained: "Unidad retenida",
   omission: "Omisión candidata",
   intrusion: "Intrusión candidata",
   substitution: "Sustitución candidata",
@@ -87,6 +89,7 @@ const phenomenonLabels: Record<DisplayPhenomenon["kind"], string> = {
 };
 
 const phenomenonColors: Record<DisplayPhenomenon["kind"], string> = {
+  retained: "green",
   omission: "red",
   intrusion: "grape",
   substitution: "orange",
@@ -95,6 +98,7 @@ const phenomenonColors: Record<DisplayPhenomenon["kind"], string> = {
 };
 
 const phenomenonBackgrounds: Record<DisplayPhenomenon["kind"], string> = {
+  retained: "rgba(64, 192, 87, 0.22)",
   omission: "rgba(250, 82, 82, 0.22)",
   intrusion: "rgba(190, 75, 219, 0.22)",
   substitution: "rgba(253, 126, 20, 0.24)",
@@ -142,6 +146,37 @@ const secondsBetween = (from?: string | null, to?: string | null) =>
 
 const countWords = (value: string) =>
   value.trim().match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
+
+const narrativeUnits = (value: string) =>
+  value
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((unit) => unit.trim())
+    .filter(Boolean);
+
+const significantTokens = (value: string) =>
+  new Set(
+    (
+      value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLocaleLowerCase("es")
+        .match(/[a-z0-9]+/g) ?? []
+    ).filter((token) => token.length > 2),
+  );
+
+const closestRecallUnit = (storyUnit: string, recall: string) => {
+  const sourceTokens = significantTokens(storyUnit);
+  return narrativeUnits(recall).reduce(
+    (best, candidate) => {
+      const candidateTokens = significantTokens(candidate);
+      const score = [...sourceTokens].filter((token) =>
+        candidateTokens.has(token),
+      ).length;
+      return score > best.score ? { value: candidate, score } : best;
+    },
+    { value: null as string | null, score: 0 },
+  ).value;
+};
 
 const AnnotatedText = ({
   text,
@@ -257,10 +292,42 @@ const ResponseDetailPage = () => {
   const analysis = useGraphQuery(analysisQuery);
   const belongsToExperiment =
     response.data?.experiment.locator.id === experimentId;
-  const phenomena = useMemo(
-    () => readPhenomena(analysis.data?.phenomena),
-    [analysis.data?.phenomena],
-  );
+  const phenomena = useMemo(() => {
+    const stored = readPhenomena(analysis.data?.phenomena);
+    if (
+      stored.some((phenomenon) => phenomenon.kind === "retained") ||
+      !analysis.data?.rubricVersion.startsWith("bartlett-heuristic") ||
+      !experiment.data ||
+      !response.data
+    ) {
+      return stored;
+    }
+
+    const omitted = new Set(
+      stored
+        .filter((phenomenon) => phenomenon.kind === "omission")
+        .map((phenomenon) => phenomenon.storyExcerpt)
+        .filter((excerpt): excerpt is string => Boolean(excerpt)),
+    );
+    const inferredRetained = narrativeUnits(experiment.data.story)
+      .filter((unit) => !omitted.has(unit))
+      .slice(0, analysis.data.retainedUnitsCount)
+      .map(
+        (unit): DisplayPhenomenon => ({
+          kind: "retained",
+          storyExcerpt: unit,
+          recallExcerpt: closestRecallUnit(
+            unit,
+            response.data?.recallText ?? "",
+          ),
+          explanation:
+            "Esta unidad fue contabilizada como retenida por el análisis heurístico.",
+          confidence: 0.5,
+        }),
+      );
+
+    return [...inferredRetained, ...stored];
+  }, [analysis.data, experiment.data, response.data]);
   const selected =
     selectedPhenomenon === null ? null : phenomena[selectedPhenomenon];
   const readingSeconds = secondsBetween(

@@ -17,6 +17,7 @@ export type RecallAnalysisModelResult = RecallAnalysisOutput & {
 };
 
 const phenomenonKinds = new Set<RecallPhenomenonKind>([
+  "retained",
   "omission",
   "intrusion",
   "substitution",
@@ -89,6 +90,7 @@ const RUBRIC_VERSION = "bartlett-llm-v1";
 const SYSTEM_PROMPT = `Sos asistente de investigación en psicología cognitiva. Compará una reconstrucción libre con la historia original usando la teoría de memoria reconstructiva de Bartlett.
 
 Clasificá solamente fenómenos respaldados por evidencia textual:
+- retained: una unidad narrativa relevante se conserva en la reconstrucción. Incluí evidencia literal de ambos textos.
 - omission: una unidad narrativa relevante de la historia no aparece en la reconstrucción.
 - intrusion: aparece información que no está respaldada por la historia.
 - substitution: un elemento original fue reemplazado por otro concreto.
@@ -96,6 +98,7 @@ Clasificá solamente fenómenos respaldados por evidencia textual:
 - accentuation: un detalle se vuelve desproporcionadamente central o enfático.
 
 Dividí la historia en unidades narrativas con sentido, no necesariamente oraciones. retainedUnitsCount + omittedUnitsCount debe ser el total de esas unidades. intrusionCount debe coincidir con la cantidad de fenómenos intrusion.
+Incluí un fenómeno retained por cada unidad contabilizada como retenida y un fenómeno omission por cada unidad contabilizada como omitida.
 
 Respondé exclusivamente JSON con esta forma exacta:
 {"retainedUnitsCount":0,"omittedUnitsCount":0,"intrusionCount":0,"phenomena":[{"kind":"omission","storyExcerpt":"cita exacta o null","recallExcerpt":"cita exacta o null","explanation":"explicación breve en castellano","confidence":0.0}]}

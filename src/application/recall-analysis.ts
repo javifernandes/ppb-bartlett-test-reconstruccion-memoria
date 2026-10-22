@@ -12,6 +12,7 @@ import {
 } from "./recall-analysis-model";
 
 export type RecallPhenomenonKind =
+  | "retained"
   | "omission"
   | "intrusion"
   | "substitution"
@@ -75,6 +76,15 @@ const overlap = (source: string, comparisonTokens: Set<string>) => {
   );
 };
 
+const closestUnit = (source: string, candidates: string[]) =>
+  candidates.reduce(
+    (best, candidate) => {
+      const score = overlap(source, new Set(tokens(candidate)));
+      return score > best.score ? { value: candidate, score } : best;
+    },
+    { value: null as string | null, score: 0 },
+  ).value;
+
 export const analyzeRecallHeuristically = (
   story: string,
   recall: string,
@@ -94,7 +104,16 @@ export const analyzeRecallHeuristically = (
 
   for (const storyUnit of storyUnits) {
     const score = overlap(storyUnit, recallTokens);
-    if (score >= 0.5) retainedUnitsCount += 1;
+    if (score >= 0.5) {
+      retainedUnitsCount += 1;
+      phenomena.push({
+        kind: "retained",
+        storyExcerpt: storyUnit,
+        recallExcerpt: closestUnit(storyUnit, recallUnits),
+        explanation: "Esta unidad narrativa se conserva en la reconstrucción.",
+        confidence: Math.round(score * 100) / 100,
+      });
+    }
     if (score < 0.5) {
       omittedUnitsCount += 1;
       phenomena.push({
