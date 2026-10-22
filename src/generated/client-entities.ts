@@ -12,7 +12,7 @@ import {
 } from '@ontahi/core/data-graph';
 
 export const ExperimentSchema = defineEntitySchema("Experiment", {
-    id: field.id(), title: field.nonEmptyString({ trim: true }), status: field.enum(["draft", "published", "closed"] as const), createdAt: field.nonEmptyString({ trim: true }),
+    id: field.id(), title: field.nonEmptyString({ trim: true }), story: field.nonEmptyString({ trim: true }), status: field.enum(["draft", "published", "closed"] as const), createdAt: field.nonEmptyString({ trim: true }),
 }).display({ primary: "title", search: ["title"] });
 
 export const Experiment = defineClientEntity(ExperimentSchema, {
@@ -25,8 +25,21 @@ export const Experiment = defineClientEntity(ExperimentSchema, {
         invalidate: [["Experiment"]],
       },
       input: graphSchema
-        .pick(ExperimentSchema, ["id", "title", "createdAt"])
+        .pick(ExperimentSchema, ["id", "title", "story", "createdAt"])
         .named("CreateExperimentInput"),
+      output: ExperimentSchema,
+    }),
+    updateDraft: defineClientDomainOperation({
+      authority: 'server',
+      exposure: 'bridge',
+      bridge: {
+        invalidate: [["Experiment"]],
+      },
+      input: graphSchema.object({
+        experiment: field.ref(ExperimentSchema),
+        title: ExperimentSchema.fields.title,
+        story: ExperimentSchema.fields.story,
+      }),
       output: ExperimentSchema,
     }),
   },

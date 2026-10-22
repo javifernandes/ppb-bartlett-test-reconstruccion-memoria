@@ -8,14 +8,21 @@ import {
   Container,
   Group,
   Loader,
+  Modal,
   SimpleGrid,
   Stack,
   Text,
+  Textarea,
+  TextInput,
   Title,
 } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useGraphQuery, useOperation } from "@ontahi/react/graph";
 import { IconFlask, IconPlus } from "@tabler/icons-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useForm } from "@mantine/form";
 
 import { Experiment } from "@/generated/client-entities";
 
@@ -31,16 +38,25 @@ const experimentsQuery = Experiment.all()
   .orderBy((experiment) => experiment.title);
 
 const HomePage = () => {
+  const router = useRouter();
+  const [createOpened, createModal] = useDisclosure(false);
   const experiments = useGraphQuery(experimentsQuery);
   const createDraft = useOperation(Experiment.domain.createDraft);
+  const form = useForm({
+    mode: "uncontrolled",
+    initialValues: { title: "", story: "" },
+    validate: {
+      title: (value) => (value.trim() ? null : "Ingresá un nombre."),
+      story: (value) => (value.trim() ? null : "Ingresá la historia."),
+    },
+  });
 
-  const handleCreate = async () => {
+  const handleCreate = form.onSubmit(async (values) => {
+    const id = crypto.randomUUID();
     const result = await createDraft.executeAsync({
-      id: crypto.randomUUID(),
-      title: `Experimento ${new Date().toLocaleTimeString("es-AR", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}`,
+      id,
+      title: values.title,
+      story: values.story,
       createdAt: new Date().toISOString(),
     });
 
@@ -50,6 +66,9 @@ const HomePage = () => {
         message: result.value.title,
         color: "teal",
       });
+      createModal.close();
+      form.reset();
+      router.push(`/experiments/${id}`);
       return;
     }
 
@@ -58,7 +77,7 @@ const HomePage = () => {
       message: result.message,
       color: "red",
     });
-  };
+  });
 
   return (
     <AppShell header={{ height: 64 }} padding="md">
@@ -68,7 +87,6 @@ const HomePage = () => {
             <IconFlask size={24} />
             <Text fw={600}>Prueba de Bartlett</Text>
           </Group>
-          <Badge variant="light">Runtime local · memoria</Badge>
         </Group>
       </AppShell.Header>
 
@@ -81,14 +99,11 @@ const HomePage = () => {
                   Procesos Psicológicos Básicos
                 </Text>
                 <Title order={1}>Experimentos</Title>
-                <Text c="dimmed">
-                  Primer slice ejecutando Query y Operation mediante Ontahí.
-                </Text>
               </div>
               <Button
                 leftSection={<IconPlus size={18} />}
                 loading={createDraft.isExecuting}
-                onClick={() => void handleCreate()}
+                onClick={createModal.open}
               >
                 Nuevo experimento
               </Button>
@@ -109,7 +124,14 @@ const HomePage = () => {
             {experiments.data && (
               <SimpleGrid cols={{ base: 1, sm: 2 }}>
                 {experiments.data.map((experiment) => (
-                  <Card key={experiment.id} withBorder padding="lg">
+                  <Card
+                    key={experiment.id}
+                    component={Link}
+                    href={`/experiments/${experiment.id}`}
+                    withBorder
+                    padding="lg"
+                    style={{ color: "inherit", textDecoration: "none" }}
+                  >
                     <Stack gap="sm">
                       <Group justify="space-between" align="flex-start">
                         <Title order={3}>{experiment.title}</Title>
@@ -129,6 +151,43 @@ const HomePage = () => {
           </Stack>
         </Container>
       </AppShell.Main>
+
+      <Modal
+        opened={createOpened}
+        onClose={createModal.close}
+        title="Nuevo experimento"
+        centered
+      >
+        <form onSubmit={handleCreate}>
+          <Stack>
+            <TextInput
+              label="Nombre del experimento"
+              placeholder="Ej. Prueba piloto"
+              required
+              key={form.key("title")}
+              {...form.getInputProps("title")}
+            />
+            <Textarea
+              label="Historia"
+              description="El texto que leerán los participantes."
+              placeholder="Pegá la historia completa…"
+              minRows={8}
+              autosize
+              required
+              key={form.key("story")}
+              {...form.getInputProps("story")}
+            />
+            <Group justify="flex-end">
+              <Button variant="default" onClick={createModal.close}>
+                Cancelar
+              </Button>
+              <Button type="submit" loading={createDraft.isExecuting}>
+                Crear borrador
+              </Button>
+            </Group>
+          </Stack>
+        </form>
+      </Modal>
     </AppShell>
   );
 };

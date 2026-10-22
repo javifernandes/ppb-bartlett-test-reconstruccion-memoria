@@ -9,6 +9,8 @@ const storage = createInMemoryDataGraphStorage({
       {
         id: "experiment-wizard-of-oz",
         title: "Reconstrucción de una historia — prueba piloto",
+        story:
+          "Dos jóvenes de Egulac bajaron al río para cazar focas. Mientras estaban allí, una canoa con cinco hombres se acercó.",
         status: "draft",
         createdAt: "2026-10-22T00:00:00.000Z",
       },

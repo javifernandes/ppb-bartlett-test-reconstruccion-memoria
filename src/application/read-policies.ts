@@ -14,6 +14,7 @@ const ExperimentReadPolicy = {
   fields: {
     id: { select: true, filter: ["eq", "in"] },
     title: { select: true, filter: ["eq", "in"], order: true },
+    story: { select: true },
     status: { select: true, filter: ["eq", "in"] },
     createdAt: { select: true, order: true },
   },

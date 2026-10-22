@@ -26,7 +26,7 @@ Slice 0 ejecutable en local:
 - Next.js 16, React 19 y Mantine 9;
 - Ontahí `1.0.0-alpha.13`, fijado explícitamente;
 - persistencia en memoria con un experimento de ejemplo;
-- lectura reactiva y operación `createDraft` a través del bridge de Ontahí;
+- creación y edición de experimentos en borrador a través del bridge de Ontahí;
 - sin autenticación, servicios externos ni deployment todavía.
 
 ## Desarrollo local

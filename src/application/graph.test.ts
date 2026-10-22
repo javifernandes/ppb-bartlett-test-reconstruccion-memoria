@@ -14,10 +14,22 @@ describe("Bartlett application bootstrap", () => {
     const created = await Experiment.createDraft({
       id: "experiment-test",
       title: "Experimento de prueba",
+      story: "Una historia de prueba suficientemente concreta.",
       createdAt: "2026-10-22T12:00:00.000Z",
     });
 
     expect(created.ok).toBe(true);
+
+    const updated = await Experiment.updateDraft({
+      experiment: Experiment.refById("experiment-test"),
+      title: "Experimento editado",
+      story: "La historia fue editada.",
+    });
+
+    expect(updated).toMatchObject({
+      ok: true,
+      value: { title: "Experimento editado" },
+    });
 
     const experiments = await BartlettApplication.graph.read(
       query(Experiment).orderBy((experiment) => experiment.title),
@@ -25,7 +37,7 @@ describe("Bartlett application bootstrap", () => {
     );
 
     expect(experiments.map((experiment) => experiment.title)).toEqual([
-      "Experimento de prueba",
+      "Experimento editado",
       "Reconstrucción de una historia — prueba piloto",
     ]);
   });
