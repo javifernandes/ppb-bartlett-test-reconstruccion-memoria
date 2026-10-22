@@ -6,18 +6,20 @@ import {
   Center,
   Checkbox,
   Container,
+  Group,
   Loader,
   Paper,
   Progress,
+  SimpleGrid,
   Stack,
   Text,
   Textarea,
   Title,
 } from "@mantine/core";
 import { useGraphQuery, useOperation } from "@ontahi/react/graph";
-import { IconCheck } from "@tabler/icons-react";
+import { IconCheck, IconRefresh } from "@tabler/icons-react";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Experiment, ParticipantSession } from "@/generated/client-entities";
 
@@ -31,6 +33,12 @@ const PublicExperiment = Experiment.view("PublicExperiment", {
   intervalSeconds: true,
   distractorEnabled: true,
   status: true,
+});
+
+const ResumableSession = ParticipantSession.view("ResumableSession", {
+  id: true,
+  status: true,
+  intervalStartedAt: true,
 });
 
 type ParticipantStep =
@@ -48,11 +56,57 @@ const progressByStep: Record<ParticipantStep, number> = {
   complete: 100,
 };
 
+const stepByStatus = {
+  reading: "reading",
+  interval: "interval",
+  recalling: "recall",
+  submitted: "complete",
+} as const;
+
+const cookieName = (publicToken: string) => `bartlett_session_${publicToken}`;
+
+const readSessionCookie = (publicToken: string) => {
+  if (typeof document === "undefined") return undefined;
+  const prefix = `${encodeURIComponent(cookieName(publicToken))}=`;
+  const value = document.cookie
+    .split("; ")
+    .find((entry) => entry.startsWith(prefix))
+    ?.slice(prefix.length);
+  return value ? decodeURIComponent(value) : undefined;
+};
+
+const writeSessionCookie = (publicToken: string, sessionId: string) => {
+  const secure = location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${encodeURIComponent(cookieName(publicToken))}=${encodeURIComponent(sessionId)}; Path=/p/${publicToken}; Max-Age=604800; SameSite=Lax${secure}`;
+};
+
+const createDistractorValues = (seed: string) => {
+  let state = [...seed].reduce(
+    (value, character) => (value * 31 + character.charCodeAt(0)) >>> 0,
+    2166136261,
+  );
+  const values = new Set<number>();
+  while (values.size < 8) {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    values.add(10 + (state % 90));
+  }
+  const shuffled = [...values];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    const target = state % (index + 1);
+    [shuffled[index], shuffled[target]] = [shuffled[target], shuffled[index]];
+  }
+  return shuffled;
+};
+
 const PublicParticipationPage = () => {
   const { publicToken } = useParams<{ publicToken: string }>();
   const [step, setStep] = useState<ParticipantStep>("introduction");
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [sessionId, setSessionId] = useState<string>();
+  const [intervalStartedAt, setIntervalStartedAt] = useState<string>();
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [recall, setRecall] = useState("");
   const [errorMessage, setErrorMessage] = useState<string>();
   const experimentQuery = useMemo(
@@ -64,11 +118,75 @@ const PublicParticipationPage = () => {
     [publicToken],
   );
   const experiment = useGraphQuery(experimentQuery);
+  const sessionQuery = useMemo(
+    () =>
+      ParticipantSession.all()
+        .where((session) => session.id.eq(sessionId ?? "missing-session"))
+        .as(ResumableSession)
+        .first(),
+    [sessionId],
+  );
+  const savedSession = useGraphQuery(sessionQuery);
   const startSession = useOperation(ParticipantSession.domain.start);
+  const finishReadingOperation = useOperation(
+    ParticipantSession.domain.finishReading,
+  );
   const startRecall = useOperation(ParticipantSession.domain.startRecall);
   const submitRecall = useOperation(ParticipantSession.domain.submitRecall);
+  const distractorValues = useMemo(
+    () => createDistractorValues(sessionId ?? publicToken),
+    [publicToken, sessionId],
+  );
+  const expectedNumbers = useMemo(
+    () => [...distractorValues].sort((left, right) => right - left),
+    [distractorValues],
+  );
+  const distractorComplete =
+    selectedNumbers.length === expectedNumbers.length &&
+    selectedNumbers.every((value, index) => value === expectedNumbers[index]);
 
-  if (experiment.isLoading) {
+  useEffect(() => {
+    const frame = requestAnimationFrame(() =>
+      setSessionId(readSessionCookie(publicToken)),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [publicToken]);
+
+  useEffect(() => {
+    if (!sessionId || savedSession.isLoading) return;
+    if (!savedSession.data) return;
+
+    const restoredSession = savedSession.data;
+    const frame = requestAnimationFrame(() => {
+      setStep(stepByStatus[restoredSession.status]);
+      setIntervalStartedAt(restoredSession.intervalStartedAt ?? undefined);
+      if (restoredSession.status === "interval" && experiment.data) {
+        const availableAt =
+          Date.parse(restoredSession.intervalStartedAt ?? "") +
+          experiment.data.intervalSeconds * 1000;
+        setRemainingSeconds(
+          Math.max(0, Math.ceil((availableAt - Date.now()) / 1000)),
+        );
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [experiment.data, savedSession.data, savedSession.isLoading, sessionId]);
+
+  useEffect(() => {
+    if (step !== "interval" || !intervalStartedAt || !experiment.data) return;
+    const updateRemaining = () => {
+      const availableAt =
+        Date.parse(intervalStartedAt) + experiment.data.intervalSeconds * 1000;
+      setRemainingSeconds(
+        Math.max(0, Math.ceil((availableAt - Date.now()) / 1000)),
+      );
+    };
+    updateRemaining();
+    const timer = window.setInterval(updateRemaining, 250);
+    return () => window.clearInterval(timer);
+  }, [experiment.data, intervalStartedAt, step]);
+
+  if (experiment.isLoading || (sessionId && savedSession.isLoading)) {
     return (
       <Center mih="100dvh">
         <Loader />
@@ -107,8 +225,28 @@ const PublicParticipationPage = () => {
       return;
     }
 
+    writeSessionCookie(publicToken, id);
+    setSelectedNumbers([]);
     setSessionId(id);
     setStep("reading");
+  };
+
+  const finishReading = async () => {
+    if (!sessionId) return;
+    setErrorMessage(undefined);
+    const result = await finishReadingOperation.executeAsync({
+      session: ParticipantSession.refById(sessionId),
+      experiment: Experiment.refById(experiment.data.id),
+    });
+
+    if (!result.ok) {
+      setErrorMessage(result.message);
+      return;
+    }
+
+    setIntervalStartedAt(result.value.intervalStartedAt ?? undefined);
+    setRemainingSeconds(experiment.data.intervalSeconds);
+    setStep(stepByStatus[result.value.status]);
   };
 
   const beginRecall = async () => {
@@ -116,6 +254,7 @@ const PublicParticipationPage = () => {
     setErrorMessage(undefined);
     const result = await startRecall.executeAsync({
       session: ParticipantSession.refById(sessionId),
+      experiment: Experiment.refById(experiment.data.id),
     });
 
     if (!result.ok) {
@@ -124,14 +263,6 @@ const PublicParticipationPage = () => {
     }
 
     setStep("recall");
-  };
-
-  const finishReading = () => {
-    if (experiment.data.intervalSeconds > 0) {
-      setStep("interval");
-      return;
-    }
-    void beginRecall();
   };
 
   const submit = async () => {
@@ -190,8 +321,8 @@ const PublicParticipationPage = () => {
         <Button
           size="lg"
           fullWidth
-          loading={startRecall.isExecuting}
-          onClick={finishReading}
+          loading={finishReadingOperation.isExecuting}
+          onClick={() => void finishReading()}
         >
           Terminé de leer
         </Button>
@@ -199,19 +330,81 @@ const PublicParticipationPage = () => {
     ),
     interval: (
       <Stack gap="lg" ta="center" align="center">
-        <Title order={1}>Pausa</Title>
+        <Title order={1}>Actividad</Title>
         <Text size="lg">
-          Esperá {experiment.data.intervalSeconds} segundos antes de continuar.
+          {remainingSeconds > 0
+            ? `Podés continuar en ${remainingSeconds} segundos.`
+            : "El intervalo terminó."}
         </Text>
+        <Progress
+          value={
+            experiment.data.intervalSeconds > 0
+              ? ((experiment.data.intervalSeconds - remainingSeconds) /
+                  experiment.data.intervalSeconds) *
+                100
+              : 100
+          }
+          w="100%"
+          animated={remainingSeconds > 0}
+        />
         {experiment.data.distractorEnabled && (
           <Paper withBorder p="lg" w="100%">
-            <Text fw={600}>Actividad</Text>
-            <Text c="dimmed">Contá hacia atrás de tres en tres desde 100.</Text>
+            <Stack gap="md">
+              <div>
+                <Text fw={700}>Ordená los números de mayor a menor</Text>
+                <Text c="dimmed" size="sm">
+                  Tocá cada número en el orden correcto.
+                </Text>
+              </div>
+              <SimpleGrid cols={4} spacing="sm">
+                {distractorValues.map((value) => (
+                  <Button
+                    key={value}
+                    variant="light"
+                    size="lg"
+                    disabled={selectedNumbers.includes(value)}
+                    onClick={() =>
+                      setSelectedNumbers((current) => [...current, value])
+                    }
+                  >
+                    {value}
+                  </Button>
+                ))}
+              </SimpleGrid>
+              <Text mih={24} fw={600}>
+                {selectedNumbers.length > 0
+                  ? selectedNumbers.join(" › ")
+                  : "Tu orden aparecerá acá"}
+              </Text>
+              {selectedNumbers.length === expectedNumbers.length &&
+                !distractorComplete && (
+                  <Text c="red">Ese orden no es correcto. Probá de nuevo.</Text>
+                )}
+              {distractorComplete && (
+                <Text c="teal" fw={600}>
+                  ¡Orden correcto!
+                </Text>
+              )}
+              <Group justify="center">
+                <Button
+                  variant="subtle"
+                  leftSection={<IconRefresh size={18} />}
+                  disabled={selectedNumbers.length === 0}
+                  onClick={() => setSelectedNumbers([])}
+                >
+                  Reiniciar
+                </Button>
+              </Group>
+            </Stack>
           </Paper>
         )}
         <Button
           size="lg"
           fullWidth
+          disabled={
+            remainingSeconds > 0 ||
+            (experiment.data.distractorEnabled && !distractorComplete)
+          }
           loading={startRecall.isExecuting}
           onClick={() => void beginRecall()}
         >

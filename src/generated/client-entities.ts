@@ -15,7 +15,9 @@ export const ExperimentSchema = defineEntitySchema("Experiment", {
     id: field.id(), title: field.nonEmptyString({ trim: true }), participantTitle: field.nonEmptyString({ trim: true }), introduction: field.nonEmptyString({ trim: true }), consentText: field.nonEmptyString({ trim: true }), story: field.nonEmptyString({ trim: true }), recallInstructions: field.nonEmptyString({ trim: true }), intervalSeconds: field.integer({ min: 0, max: 3600 }), distractorEnabled: field.boolean(), status: field.enum(["draft", "published", "closed"] as const), createdAt: field.nonEmptyString({ trim: true }), publishedAt: field.nullable(field.nonEmptyString({ trim: true })), publicToken: field.nullable(field.nonEmptyString({ trim: true })),
 }).display({ primary: "title", search: ["title"] });
 export const ParticipantSessionSchema = defineEntitySchema("ParticipantSession", {
-    id: field.id(), experiment: field.ref(ExperimentSchema), status: field.enum(["reading", "recalling", "submitted"] as const), startedAt: field.nonEmptyString({ trim: true }), recallText: field.nullable(field.nonEmptyString({ trim: true })), submittedAt: field.nullable(field.nonEmptyString({ trim: true })),
+    id: field.id(), experiment: field.ref(ExperimentSchema), status: field.enum([
+        "reading", "interval", "recalling", "submitted",
+    ] as const), startedAt: field.nonEmptyString({ trim: true }), intervalStartedAt: field.nullable(field.nonEmptyString({ trim: true })), recallText: field.nullable(field.nonEmptyString({ trim: true })), submittedAt: field.nullable(field.nonEmptyString({ trim: true })),
 });
 
 export const Experiment = defineClientEntity(ExperimentSchema, {
@@ -92,13 +94,28 @@ export const ParticipantSession = defineClientEntity(ParticipantSessionSchema, {
       }),
       output: ParticipantSessionSchema,
     }),
+    finishReading: defineClientDomainOperation({
+      authority: 'server',
+      exposure: 'bridge',
+      bridge: {
+        invalidate: [["ParticipantSession"]],
+      },
+      input: graphSchema.object({
+        session: field.ref(ParticipantSessionSchema),
+        experiment: field.ref(ExperimentSchema),
+      }),
+      output: ParticipantSessionSchema,
+    }),
     startRecall: defineClientDomainOperation({
       authority: 'server',
       exposure: 'bridge',
       bridge: {
         invalidate: [["ParticipantSession"]],
       },
-      input: graphSchema.object({ session: field.ref(ParticipantSessionSchema) }),
+      input: graphSchema.object({
+        session: field.ref(ParticipantSessionSchema),
+        experiment: field.ref(ExperimentSchema),
+      }),
       output: ParticipantSessionSchema,
     }),
     submitRecall: defineClientDomainOperation({

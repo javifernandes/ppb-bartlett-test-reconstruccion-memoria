@@ -1,10 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { query } from "@ontahi/core/data-graph";
 
 import { BartlettApplication, Experiment, ParticipantSession } from "./graph";
 
 describe("Bartlett application bootstrap", () => {
   it("runs a Query and an Operation against in-memory storage", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-10-22T13:05:00.000Z"));
     const initial = await BartlettApplication.graph.read(query(Experiment), {
       scope: "bootstrap.initial-experiments",
     });
@@ -78,8 +80,28 @@ describe("Bartlett application bootstrap", () => {
       value: { status: "reading" },
     });
 
+    const interval = await ParticipantSession.finishReading({
+      session: ParticipantSession.refById("session-test"),
+      experiment: Experiment.refById("experiment-test"),
+    });
+    expect(interval).toMatchObject({
+      ok: true,
+      value: { status: "interval" },
+    });
+
+    const tooEarly = await ParticipantSession.startRecall({
+      session: ParticipantSession.refById("session-test"),
+      experiment: Experiment.refById("experiment-test"),
+    });
+    expect(tooEarly).toMatchObject({
+      ok: false,
+      failure: { reason: "participant_interval_not_finished" },
+    });
+
+    vi.advanceTimersByTime(30_000);
     const recalling = await ParticipantSession.startRecall({
       session: ParticipantSession.refById("session-test"),
+      experiment: Experiment.refById("experiment-test"),
     });
     expect(recalling).toMatchObject({
       ok: true,
@@ -105,8 +127,14 @@ describe("Bartlett application bootstrap", () => {
       experiment: Experiment.refById("experiment-test"),
       startedAt: "2026-10-22T13:11:00.000Z",
     });
+    await ParticipantSession.finishReading({
+      session: ParticipantSession.refById("session-pending"),
+      experiment: Experiment.refById("experiment-test"),
+    });
+    vi.advanceTimersByTime(30_000);
     await ParticipantSession.startRecall({
       session: ParticipantSession.refById("session-pending"),
+      experiment: Experiment.refById("experiment-test"),
     });
 
     const closed = await Experiment.close({
@@ -147,5 +175,6 @@ describe("Bartlett application bootstrap", () => {
       "Experimento editado",
       "Reconstrucción de una historia — prueba piloto",
     ]);
+    vi.useRealTimers();
   });
 });

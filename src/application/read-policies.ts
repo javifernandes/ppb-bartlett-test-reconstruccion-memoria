@@ -40,6 +40,7 @@ const ParticipantSessionReadPolicy = {
     experiment: { select: true, filter: ["eq", "in"] },
     status: { select: true, filter: ["eq", "in"] },
     startedAt: { select: true, order: true },
+    intervalStartedAt: { select: true },
     recallText: { select: true },
     submittedAt: { select: true, order: true },
   },

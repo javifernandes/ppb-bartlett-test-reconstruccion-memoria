@@ -9,8 +9,14 @@ export const ParticipantSession = entity({
   fields: {
     id: field.id(),
     experiment: field.ref(Experiment),
-    status: field.enum(["reading", "recalling", "submitted"] as const),
+    status: field.enum([
+      "reading",
+      "interval",
+      "recalling",
+      "submitted",
+    ] as const),
     startedAt: field.nonEmptyString({ trim: true }),
+    intervalStartedAt: field.nullable(field.nonEmptyString({ trim: true })),
     recallText: field.nullable(field.nonEmptyString({ trim: true })),
     submittedAt: field.nullable(field.nonEmptyString({ trim: true })),
   },
@@ -45,6 +51,7 @@ export const ParticipantSession = entity({
               experiment,
               status: "reading",
               startedAt,
+              intervalStartedAt: null,
               recallText: null,
               submittedAt: null,
             },
@@ -53,6 +60,7 @@ export const ParticipantSession = entity({
               "experiment",
               "status",
               "startedAt",
+              "intervalStartedAt",
               "recallText",
               "submittedAt",
             ],
@@ -60,17 +68,84 @@ export const ParticipantSession = entity({
           .run();
       },
     }),
-    startRecall: operation({
-      input: graphSchema.object({ session: field.ref(self) }),
+    finishReading: operation({
+      input: graphSchema.object({
+        session: field.ref(self),
+        experiment: field.ref(Experiment),
+      }),
       output: self,
       bridge: { invalidate: [["ParticipantSession"]] },
-      *run({ session }) {
+      *run({ session, experiment }) {
         const current = yield* session.resolve();
+        const target = yield* experiment.resolve();
 
-        if (!current || current.status !== "reading") {
+        if (
+          !current ||
+          !target ||
+          target.id !== current.experiment.locator.id ||
+          target.status !== "published" ||
+          current.status !== "reading"
+        ) {
           return yield* failOperation(
             "participant_session_not_reading",
             "La sesión no puede avanzar a la reconstrucción.",
+          );
+        }
+
+        const hasInterval = target.intervalSeconds > 0;
+        const [updated] = yield* commands
+          .where((candidate) => candidate.id.eq(current.id))
+          .updateReturning(
+            {
+              status: hasInterval ? "interval" : "recalling",
+              intervalStartedAt: hasInterval ? new Date().toISOString() : null,
+            },
+            [
+              "id",
+              "experiment",
+              "status",
+              "startedAt",
+              "intervalStartedAt",
+              "recallText",
+              "submittedAt",
+            ],
+          )
+          .run();
+
+        return updated;
+      },
+    }),
+    startRecall: operation({
+      input: graphSchema.object({
+        session: field.ref(self),
+        experiment: field.ref(Experiment),
+      }),
+      output: self,
+      bridge: { invalidate: [["ParticipantSession"]] },
+      *run({ session, experiment }) {
+        const current = yield* session.resolve();
+        const target = yield* experiment.resolve();
+
+        if (
+          !current ||
+          !target ||
+          target.id !== current.experiment.locator.id ||
+          target.status !== "published" ||
+          current.status !== "interval" ||
+          !current.intervalStartedAt
+        ) {
+          return yield* failOperation(
+            "participant_session_not_in_interval",
+            "La sesión no está en el intervalo previo a la reconstrucción.",
+          );
+        }
+
+        const availableAt =
+          Date.parse(current.intervalStartedAt) + target.intervalSeconds * 1000;
+        if (Date.now() < availableAt) {
+          return yield* failOperation(
+            "participant_interval_not_finished",
+            "Todavía no terminó el intervalo configurado.",
           );
         }
 
@@ -81,6 +156,7 @@ export const ParticipantSession = entity({
             "experiment",
             "status",
             "startedAt",
+            "intervalStartedAt",
             "recallText",
             "submittedAt",
           ])
@@ -127,6 +203,7 @@ export const ParticipantSession = entity({
             "experiment",
             "status",
             "startedAt",
+            "intervalStartedAt",
             "recallText",
             "submittedAt",
           ])
