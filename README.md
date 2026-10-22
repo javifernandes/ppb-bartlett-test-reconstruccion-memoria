@@ -38,6 +38,15 @@ cp .env.example .env.local
 pnpm dev
 ```
 
+Para arrancar con un experimento completo, dos respuestas y análisis de ejemplo:
+
+```bash
+pnpm dev:demo
+```
+
+El modo demo sólo precarga fixtures en la memoria del proceso local; no llama a DeepSeek ni se
+activa en Vercel salvo que se configure `SEED_DEMO_DATA=true` explícitamente.
+
 Next.js lee `.env.local` automáticamente. Sin configuración adicional, el análisis usa la heurística
 local. Para probar el análisis semántico con DeepSeek, editar `.env.local`:
 

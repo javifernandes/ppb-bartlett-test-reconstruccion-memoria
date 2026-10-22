@@ -48,10 +48,6 @@ const ResponseAnalysis = RecallAnalysis.view("ResponseAnalysis", {
   id: true,
   session: true,
   rubricVersion: true,
-  analyzerProvider: true,
-  analyzerModel: true,
-  inputTokens: true,
-  outputTokens: true,
   retainedUnitsCount: true,
   omittedUnitsCount: true,
   intrusionCount: true,
@@ -336,10 +332,7 @@ const ResponseDetailPage = () => {
                           Resultado automático para revisión humana.
                         </Text>
                         <Text size="sm" c="dimmed" mt={4}>
-                          Analizador: {analysis.data.analyzerProvider} /{" "}
-                          {analysis.data.analyzerModel}
-                          {analysis.data.inputTokens !== null &&
-                            ` · ${analysis.data.inputTokens + (analysis.data.outputTokens ?? 0)} tokens`}
+                          Rúbrica: {analysis.data.rubricVersion}
                         </Text>
                       </div>
                       <SimpleGrid cols={{ base: 1, sm: 3 }}>

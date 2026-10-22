@@ -12,6 +12,7 @@
     "codegen": "ontahi-codegen",
     "codegen:check": "ontahi-codegen --check",
     "dev": "pnpm codegen && next dev --webpack",
+    "dev:demo": "SEED_DEMO_DATA=true pnpm dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --no-warn-ignored",
