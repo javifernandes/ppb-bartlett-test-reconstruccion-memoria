@@ -77,7 +77,14 @@ const readSessionCookie = (publicToken: string) => {
 
 const writeSessionCookie = (publicToken: string, sessionId: string) => {
   const secure = location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${encodeURIComponent(cookieName(publicToken))}=${encodeURIComponent(sessionId)}; Path=/p/${publicToken}; Max-Age=604800; SameSite=Lax${secure}`;
+  const name = encodeURIComponent(cookieName(publicToken));
+  const value = encodeURIComponent(sessionId);
+
+  // Older versions scoped this cookie to the participant page. The runtime
+  // bridge lives at /api/runtime, so that scope prevented the server from
+  // authorizing a session resume after a browser refresh.
+  document.cookie = `${name}=; Path=/p/${publicToken}; Max-Age=0; SameSite=Lax${secure}`;
+  document.cookie = `${name}=${value}; Path=/; Max-Age=604800; SameSite=Lax${secure}`;
 };
 
 const recallDraftKey = (publicToken: string, sessionId: string) =>
@@ -177,9 +184,13 @@ const PublicParticipationPage = () => {
     selectedNumbers.every((value, index) => value === expectedNumbers[index]);
 
   useEffect(() => {
-    const frame = requestAnimationFrame(() =>
-      setSessionId(readSessionCookie(publicToken)),
-    );
+    const frame = requestAnimationFrame(() => {
+      const savedSessionId = readSessionCookie(publicToken);
+      if (savedSessionId) {
+        writeSessionCookie(publicToken, savedSessionId);
+      }
+      setSessionId(savedSessionId);
+    });
     return () => cancelAnimationFrame(frame);
   }, [publicToken]);
 
@@ -407,13 +418,17 @@ const PublicParticipationPage = () => {
                   Tocá cada número en el orden correcto.
                 </Text>
               </div>
-              <SimpleGrid cols={4} spacing="sm">
+              <SimpleGrid cols={4} spacing="xs">
                 {distractorValues.map((value) => (
                   <Button
                     key={value}
                     variant="light"
                     size="lg"
+                    px={0}
+                    fullWidth
                     disabled={selectedNumbers.includes(value)}
+                    style={{ minWidth: 0 }}
+                    styles={{ label: { overflow: "visible" } }}
                     onClick={() =>
                       setSelectedNumbers((current) => [...current, value])
                     }
