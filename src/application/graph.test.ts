@@ -6,7 +6,9 @@ import {
   BartlettApplication,
   Experiment,
   ParticipantSession,
+  RecallAnalysis,
 } from "./graph";
+import { analyzeRecallHeuristically } from "./recall-analysis";
 
 describe("Bartlett application bootstrap", () => {
   it("runs a Query and an Operation against in-memory storage", async () => {
@@ -168,9 +170,30 @@ describe("Bartlett application bootstrap", () => {
     expect(analysis).toMatchObject({
       ok: true,
       value: {
-        status: "completed",
-        analyzerVersion: "deterministic-v1",
+        status: "running",
+        analyzerVersion: "heuristic-v1",
       },
+    });
+
+    const recallAnalysis = await RecallAnalysis.analyze({
+      id: "recall-analysis-test",
+      run: AnalysisRun.refById("analysis-test"),
+      session: ParticipantSession.refById("session-test"),
+      experiment: Experiment.refById("experiment-test"),
+      createdAt: "2026-10-22T13:12:31.000Z",
+    });
+    expect(recallAnalysis).toMatchObject({
+      ok: true,
+      value: { status: "completed", rubricVersion: "bartlett-heuristic-v1" },
+    });
+
+    const finishedAnalysis = await AnalysisRun.finish({
+      run: AnalysisRun.refById("analysis-test"),
+      hasErrors: false,
+    });
+    expect(finishedAnalysis).toMatchObject({
+      ok: true,
+      value: { status: "completed" },
     });
 
     const rejectedSubmission = await ParticipantSession.submitRecall({
@@ -204,5 +227,21 @@ describe("Bartlett application bootstrap", () => {
       "Reconstrucción de una historia — prueba piloto",
     ]);
     vi.useRealTimers();
+  });
+
+  it("detects omission and intrusion candidates with textual evidence", () => {
+    const result = analyzeRecallHeuristically(
+      "Dos jóvenes bajaron al río para cazar focas. Una canoa se acercó.",
+      "Los jóvenes fueron a la montaña. Allí encontraron un automóvil rojo.",
+    );
+
+    expect(result.omittedUnitsCount).toBeGreaterThan(0);
+    expect(result.intrusionCount).toBeGreaterThan(0);
+    expect(result.phenomena).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: "omission" }),
+        expect.objectContaining({ kind: "intrusion" }),
+      ]),
+    );
   });
 });

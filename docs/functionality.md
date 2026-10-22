@@ -108,6 +108,11 @@ Las primeras métricas candidatas son:
 Toda clasificación automática debe incluir evidencia de la historia y de la respuesta, nivel de
 confianza y versión de rúbrica. Racionalización y acentuación no se presentan como hechos objetivos.
 
+La implementación local inicial usa una heurística léxica versionada para validar el lifecycle de
+análisis, la evidencia y las agregaciones. Sus omisiones e intrusiones son candidatos para revisión
+humana, no resultados equivalentes a una codificación experta. El adapter de modelo reemplazará esta
+heurística sin cambiar el contrato persistido ni las pantallas.
+
 ## Fuera del MVP
 
 - Registro público de administradores.

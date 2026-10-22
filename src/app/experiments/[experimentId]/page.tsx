@@ -43,6 +43,7 @@ import {
   AnalysisRun,
   Experiment,
   ParticipantSession,
+  RecallAnalysis,
 } from "@/generated/client-entities";
 
 const ExperimentWorkspace = Experiment.view("ExperimentWorkspace", {
@@ -128,6 +129,8 @@ const ExperimentWorkspacePage = () => {
   const publish = useOperation(Experiment.domain.publish);
   const close = useOperation(Experiment.domain.close);
   const startAnalysis = useOperation(AnalysisRun.domain.start);
+  const analyzeRecall = useOperation(RecallAnalysis.domain.analyze);
+  const finishAnalysis = useOperation(AnalysisRun.domain.finish);
   const [publishOpened, publishModal] = useDisclosure(false);
   const [closeOpened, closeModal] = useDisclosure(false);
   const form = useForm({
@@ -309,6 +312,32 @@ const ExperimentWorkspacePage = () => {
     });
 
     if (result.ok) {
+      let hasErrors = false;
+      const completedSessions = (sessions.data ?? []).filter(
+        (session) => session.status === "submitted",
+      );
+      for (const session of completedSessions) {
+        const recallResult = await analyzeRecall.executeAsync({
+          id: crypto.randomUUID(),
+          run: AnalysisRun.refById(id),
+          session: ParticipantSession.refById(session.id),
+          experiment: Experiment.refById(experimentId),
+          createdAt: new Date().toISOString(),
+        });
+        if (!recallResult.ok) hasErrors = true;
+      }
+      const finished = await finishAnalysis.executeAsync({
+        run: AnalysisRun.refById(id),
+        hasErrors,
+      });
+      if (!finished.ok) {
+        notifications.show({
+          title: "El análisis quedó incompleto",
+          message: finished.message,
+          color: "red",
+        });
+        return;
+      }
       router.push(`/experiments/${experimentId}/analysis/${id}`);
       return;
     }
@@ -404,7 +433,11 @@ const ExperimentWorkspacePage = () => {
                     {experiment.data.status === "closed" && (
                       <Button
                         leftSection={<IconChartBar size={18} />}
-                        loading={startAnalysis.isExecuting}
+                        loading={
+                          startAnalysis.isExecuting ||
+                          analyzeRecall.isExecuting ||
+                          finishAnalysis.isExecuting
+                        }
                         onClick={() => void handleAnalysis()}
                       >
                         {analysisRuns.data?.length

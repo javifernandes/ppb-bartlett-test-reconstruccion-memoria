@@ -20,7 +20,11 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo } from "react";
 
-import { Experiment, ParticipantSession } from "@/generated/client-entities";
+import {
+  Experiment,
+  ParticipantSession,
+  RecallAnalysis,
+} from "@/generated/client-entities";
 
 const ResponseExperiment = Experiment.view("ResponseExperiment", {
   id: true,
@@ -39,6 +43,50 @@ const ResponseDetail = ParticipantSession.view("ResponseDetail", {
   recallText: true,
   submittedAt: true,
 });
+
+const ResponseAnalysis = RecallAnalysis.view("ResponseAnalysis", {
+  id: true,
+  session: true,
+  rubricVersion: true,
+  retainedUnitsCount: true,
+  omittedUnitsCount: true,
+  intrusionCount: true,
+  phenomena: true,
+  createdAt: true,
+});
+
+type DisplayPhenomenon = {
+  kind:
+    | "omission"
+    | "intrusion"
+    | "substitution"
+    | "rationalization"
+    | "accentuation";
+  storyExcerpt: string | null;
+  recallExcerpt: string | null;
+  explanation: string;
+  confidence: number;
+};
+
+const phenomenonLabels: Record<DisplayPhenomenon["kind"], string> = {
+  omission: "Omisión candidata",
+  intrusion: "Intrusión candidata",
+  substitution: "Sustitución candidata",
+  rationalization: "Racionalización posible",
+  accentuation: "Acentuación posible",
+};
+
+const readPhenomena = (value: unknown): DisplayPhenomenon[] =>
+  Array.isArray(value)
+    ? value.filter(
+        (item): item is DisplayPhenomenon =>
+          typeof item === "object" &&
+          item !== null &&
+          "kind" in item &&
+          "explanation" in item &&
+          "confidence" in item,
+      )
+    : [];
 
 const statusDetails = {
   reading: { label: "Leyendo", color: "blue" },
@@ -87,6 +135,18 @@ const ResponseDetailPage = () => {
   );
   const experiment = useGraphQuery(experimentQuery);
   const response = useGraphQuery(responseQuery);
+  const analysisQuery = useMemo(
+    () =>
+      RecallAnalysis.all()
+        .where((analysis) =>
+          analysis.session.eq(ParticipantSession.refById(sessionId)),
+        )
+        .as(ResponseAnalysis)
+        .orderBy((analysis) => analysis.createdAt.desc())
+        .first(),
+    [sessionId],
+  );
+  const analysis = useGraphQuery(analysisQuery);
   const belongsToExperiment =
     response.data?.experiment.locator.id === experimentId;
 
@@ -112,7 +172,9 @@ const ResponseDetailPage = () => {
               Volver al experimento
             </Button>
 
-            {(experiment.isLoading || response.isLoading) && (
+            {(experiment.isLoading ||
+              response.isLoading ||
+              analysis.isLoading) && (
               <Group justify="center" py="xl">
                 <Loader />
               </Group>
@@ -256,6 +318,81 @@ const ResponseDetailPage = () => {
                     </SimpleGrid>
                   </Stack>
                 </Card>
+
+                {analysis.data && (
+                  <Card withBorder padding="lg">
+                    <Stack gap="md">
+                      <div>
+                        <Title order={2}>Fenómenos detectados</Title>
+                        <Text c="dimmed">
+                          Resultado heurístico para revisión humana.
+                        </Text>
+                      </div>
+                      <SimpleGrid cols={{ base: 1, sm: 3 }}>
+                        <div>
+                          <Text size="sm" c="dimmed">
+                            Unidades retenidas
+                          </Text>
+                          <Text size="xl" fw={700}>
+                            {analysis.data.retainedUnitsCount}
+                          </Text>
+                        </div>
+                        <div>
+                          <Text size="sm" c="dimmed">
+                            Omisiones candidatas
+                          </Text>
+                          <Text size="xl" fw={700}>
+                            {analysis.data.omittedUnitsCount}
+                          </Text>
+                        </div>
+                        <div>
+                          <Text size="sm" c="dimmed">
+                            Intrusiones candidatas
+                          </Text>
+                          <Text size="xl" fw={700}>
+                            {analysis.data.intrusionCount}
+                          </Text>
+                        </div>
+                      </SimpleGrid>
+                      {readPhenomena(analysis.data.phenomena).map(
+                        (phenomenon, index) => (
+                          <Paper
+                            key={`${phenomenon.kind}-${index}`}
+                            withBorder
+                            p="md"
+                          >
+                            <Group justify="space-between" mb="xs">
+                              <Badge variant="light">
+                                {phenomenonLabels[phenomenon.kind]}
+                              </Badge>
+                              <Text size="sm" c="dimmed">
+                                Confianza{" "}
+                                {Math.round(phenomenon.confidence * 100)} %
+                              </Text>
+                            </Group>
+                            <Text>{phenomenon.explanation}</Text>
+                            {phenomenon.storyExcerpt && (
+                              <Text mt="sm" size="sm">
+                                <Text component="span" fw={600}>
+                                  Historia:{" "}
+                                </Text>
+                                “{phenomenon.storyExcerpt}”
+                              </Text>
+                            )}
+                            {phenomenon.recallExcerpt && (
+                              <Text mt="xs" size="sm">
+                                <Text component="span" fw={600}>
+                                  Reconstrucción:{" "}
+                                </Text>
+                                “{phenomenon.recallExcerpt}”
+                              </Text>
+                            )}
+                          </Paper>
+                        ),
+                      )}
+                    </Stack>
+                  </Card>
+                )}
               </>
             )}
           </Stack>

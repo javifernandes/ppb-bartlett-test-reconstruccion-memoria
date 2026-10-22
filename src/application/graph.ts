@@ -4,6 +4,7 @@ import { inProcessTasks, ontahi } from "@ontahi/core/runtime/server";
 import { AnalysisRun } from "./analysis-run";
 import { Experiment } from "./experiment";
 import { ParticipantSession } from "./participant-session";
+import { RecallAnalysis } from "./recall-analysis";
 
 const createBartlettApplication = () => {
   const storage = createInMemoryDataGraphStorage({
@@ -31,13 +32,14 @@ const createBartlettApplication = () => {
       ],
       ParticipantSession: [],
       AnalysisRun: [],
+      RecallAnalysis: [],
     },
   });
 
   return ontahi({
     storage,
     tasks: inProcessTasks(),
-    entities: [Experiment, ParticipantSession, AnalysisRun],
+    entities: [Experiment, ParticipantSession, AnalysisRun, RecallAnalysis],
   });
 };
 
@@ -50,4 +52,4 @@ export const BartlettApplication =
     ? (developmentGlobal.bartlettApplication ??= createBartlettApplication())
     : createBartlettApplication();
 
-export { AnalysisRun, Experiment, ParticipantSession };
+export { AnalysisRun, Experiment, ParticipantSession, RecallAnalysis };

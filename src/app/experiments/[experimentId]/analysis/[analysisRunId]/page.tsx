@@ -28,6 +28,7 @@ import {
   AnalysisRun,
   Experiment,
   ParticipantSession,
+  RecallAnalysis,
 } from "@/generated/client-entities";
 
 const AnalysisExperiment = Experiment.view("AnalysisExperiment", {
@@ -53,6 +54,16 @@ const AnalyzedResponse = ParticipantSession.view("AnalyzedResponse", {
   recallingStartedAt: true,
   submittedAt: true,
   recallText: true,
+});
+
+const RecallAnalysisRow = RecallAnalysis.view("RecallAnalysisRow", {
+  id: true,
+  run: true,
+  session: true,
+  retainedUnitsCount: true,
+  omittedUnitsCount: true,
+  intrusionCount: true,
+  phenomena: true,
 });
 
 const countWords = (value: string) =>
@@ -110,9 +121,22 @@ const AnalysisPage = () => {
   const experiment = useGraphQuery(experimentQuery);
   const run = useGraphQuery(runQuery);
   const responses = useGraphQuery(responsesQuery);
+  const recallAnalysesQuery = useMemo(
+    () =>
+      RecallAnalysis.all()
+        .where((analysis) =>
+          analysis.run.eq(AnalysisRun.refById(analysisRunId)),
+        )
+        .as(RecallAnalysisRow),
+    [analysisRunId],
+  );
+  const recallAnalyses = useGraphQuery(recallAnalysesQuery);
   const validRun = run.data?.experiment.locator.id === experimentId;
   const storyWordCount = countWords(experiment.data?.story ?? "");
   const responseMetrics = (responses.data ?? []).map((response) => {
+    const semanticAnalysis = recallAnalyses.data?.find(
+      (analysis) => analysis.session.locator.id === response.id,
+    );
     const wordCount = countWords(response.recallText ?? "");
     return {
       ...response,
@@ -128,6 +152,7 @@ const AnalysisPage = () => {
         response.submittedAt,
       ),
       totalSeconds: secondsBetween(response.startedAt, response.submittedAt),
+      semanticAnalysis,
     };
   });
   const wordCounts = responseMetrics.map((response) => response.wordCount);
@@ -137,9 +162,18 @@ const AnalysisPage = () => {
   const recallTimes = responseMetrics.flatMap((response) =>
     response.recallSeconds === undefined ? [] : [response.recallSeconds],
   );
-  const loading = experiment.isLoading || run.isLoading || responses.isLoading;
+  const semanticAnalyses = recallAnalyses.data ?? [];
+  const loading =
+    experiment.isLoading ||
+    run.isLoading ||
+    responses.isLoading ||
+    recallAnalyses.isLoading;
   const invalid =
-    experiment.isError || run.isError || responses.isError || !validRun;
+    experiment.isError ||
+    run.isError ||
+    responses.isError ||
+    recallAnalyses.isError ||
+    !validRun;
 
   return (
     <AppShell header={{ height: 64 }} padding="md">
@@ -178,7 +212,7 @@ const AnalysisPage = () => {
               </Card>
             )}
 
-            {experiment.data && run.data && validRun && !responses.isError && (
+            {experiment.data && run.data && validRun && !invalid && (
               <>
                 <Group justify="space-between" align="flex-start">
                   <div>
@@ -192,7 +226,11 @@ const AnalysisPage = () => {
                     </Text>
                   </div>
                   <Badge variant="light" color="teal" size="lg">
-                    Completado
+                    {run.data.status === "completed_with_errors"
+                      ? "Completado con errores"
+                      : run.data.status === "running"
+                        ? "En curso"
+                        : "Completado"}
                   </Badge>
                 </Group>
 
@@ -258,6 +296,57 @@ const AnalysisPage = () => {
                 <Card withBorder padding="lg">
                   <Stack gap="md">
                     <div>
+                      <Title order={2}>Fenómenos detectados</Title>
+                      <Text c="dimmed">
+                        Detección heurística basada en unidades narrativas y
+                        coincidencia léxica. Las interpretaciones requieren
+                        revisión humana.
+                      </Text>
+                    </div>
+                    <SimpleGrid cols={{ base: 1, sm: 3 }}>
+                      <div>
+                        <Text size="sm" c="dimmed">
+                          Unidades retenidas
+                        </Text>
+                        <Text size="xl" fw={700}>
+                          {semanticAnalyses.reduce(
+                            (total, analysis) =>
+                              total + analysis.retainedUnitsCount,
+                            0,
+                          )}
+                        </Text>
+                      </div>
+                      <div>
+                        <Text size="sm" c="dimmed">
+                          Omisiones candidatas
+                        </Text>
+                        <Text size="xl" fw={700}>
+                          {semanticAnalyses.reduce(
+                            (total, analysis) =>
+                              total + analysis.omittedUnitsCount,
+                            0,
+                          )}
+                        </Text>
+                      </div>
+                      <div>
+                        <Text size="sm" c="dimmed">
+                          Intrusiones candidatas
+                        </Text>
+                        <Text size="xl" fw={700}>
+                          {semanticAnalyses.reduce(
+                            (total, analysis) =>
+                              total + analysis.intrusionCount,
+                            0,
+                          )}
+                        </Text>
+                      </div>
+                    </SimpleGrid>
+                  </Stack>
+                </Card>
+
+                <Card withBorder padding="lg">
+                  <Stack gap="md">
+                    <div>
                       <Title order={2}>Respuestas analizadas</Title>
                       <Text c="dimmed">
                         Seleccioná una respuesta para compararla con la historia
@@ -279,6 +368,8 @@ const AnalysisPage = () => {
                               <Table.Th>Lectura</Table.Th>
                               <Table.Th>Reconstrucción</Table.Th>
                               <Table.Th>Tiempo total</Table.Th>
+                              <Table.Th>Omisiones</Table.Th>
+                              <Table.Th>Intrusiones</Table.Th>
                               <Table.Th />
                             </Table.Tr>
                           </Table.Thead>
@@ -304,6 +395,14 @@ const AnalysisPage = () => {
                                   {response.totalSeconds === undefined
                                     ? "—"
                                     : formatSeconds(response.totalSeconds)}
+                                </Table.Td>
+                                <Table.Td>
+                                  {response.semanticAnalysis
+                                    ?.omittedUnitsCount ?? "—"}
+                                </Table.Td>
+                                <Table.Td>
+                                  {response.semanticAnalysis?.intrusionCount ??
+                                    "—"}
                                 </Table.Td>
                                 <Table.Td>
                                   <Button

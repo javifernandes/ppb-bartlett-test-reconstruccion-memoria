@@ -20,7 +20,12 @@ export const ParticipantSessionSchema = defineEntitySchema("ParticipantSession",
     ] as const), startedAt: field.nonEmptyString({ trim: true }), intervalStartedAt: field.nullable(field.nonEmptyString({ trim: true })), recallingStartedAt: field.nullable(field.nonEmptyString({ trim: true })), lastActivityAt: field.nonEmptyString({ trim: true }), recallText: field.nullable(field.nonEmptyString({ trim: true })), submittedAt: field.nullable(field.nonEmptyString({ trim: true })),
 });
 export const AnalysisRunSchema = defineEntitySchema("AnalysisRun", {
-    id: field.id(), experiment: field.ref(ExperimentSchema), status: field.enum(["completed"] as const), analyzerVersion: field.nonEmptyString({ trim: true }), createdAt: field.nonEmptyString({ trim: true }),
+    id: field.id(), experiment: field.ref(ExperimentSchema), status: field.enum([
+        "running", "completed", "completed_with_errors",
+    ] as const), analyzerVersion: field.nonEmptyString({ trim: true }), createdAt: field.nonEmptyString({ trim: true }),
+});
+export const RecallAnalysisSchema = defineEntitySchema("RecallAnalysis", {
+    id: field.id(), run: field.ref(AnalysisRunSchema), session: field.ref(ParticipantSessionSchema), experiment: field.ref(ExperimentSchema), status: field.enum(["completed"] as const), rubricVersion: field.nonEmptyString({ trim: true }), retainedUnitsCount: field.integer({ min: 0 }), omittedUnitsCount: field.integer({ min: 0 }), intrusionCount: field.integer({ min: 0 }), phenomena: field.json(), createdAt: field.nonEmptyString({ trim: true }),
 });
 
 export const Experiment = defineClientEntity(ExperimentSchema, {
@@ -154,9 +159,42 @@ export const AnalysisRun = defineClientEntity(AnalysisRunSchema, {
       }),
       output: AnalysisRunSchema,
     }),
+    finish: defineClientDomainOperation({
+      authority: 'server',
+      exposure: 'bridge',
+      bridge: {
+        invalidate: [["AnalysisRun"]],
+      },
+      input: graphSchema.object({
+        run: field.ref(AnalysisRunSchema),
+        hasErrors: field.boolean(),
+      }),
+      output: AnalysisRunSchema,
+    }),
+  },
+});
+
+export const RecallAnalysis = defineClientEntity(RecallAnalysisSchema, {
+
+  domainOperations: {
+    analyze: defineClientDomainOperation({
+      authority: 'server',
+      exposure: 'bridge',
+      bridge: {
+        invalidate: [["RecallAnalysis"]],
+      },
+      input: graphSchema.object({
+        id: RecallAnalysisSchema.fields.id,
+        run: field.ref(AnalysisRunSchema),
+        session: field.ref(ParticipantSessionSchema),
+        experiment: field.ref(ExperimentSchema),
+        createdAt: RecallAnalysisSchema.fields.createdAt,
+      }),
+      output: RecallAnalysisSchema,
+    }),
   },
 });
 
 export const clientApplication = defineClientApplication({
-  entities: [Experiment, ParticipantSession, AnalysisRun],
+  entities: [Experiment, ParticipantSession, AnalysisRun, RecallAnalysis],
 });

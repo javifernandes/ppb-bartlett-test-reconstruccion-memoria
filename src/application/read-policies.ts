@@ -3,6 +3,7 @@ import type { GraphReadPolicy } from "@ontahi/core/data-graph";
 import { AnalysisRun } from "./analysis-run";
 import { Experiment } from "./experiment";
 import { ParticipantSession } from "./participant-session";
+import { RecallAnalysis } from "./recall-analysis";
 
 export type LocalRuntimeAuthority = {
   principal: null;
@@ -65,8 +66,30 @@ const AnalysisRunReadPolicy = {
   scope: "all",
 } satisfies GraphReadPolicy<typeof AnalysisRun, LocalRuntimeAuthority>;
 
+const RecallAnalysisReadPolicy = {
+  entity: RecallAnalysis,
+  modes: ["get", "run", "count"],
+  cardinalities: ["one", "many"],
+  maxLimit: 500,
+  fields: {
+    id: { select: true, filter: ["eq", "in"] },
+    run: { select: true, filter: ["eq", "in"] },
+    session: { select: true, filter: ["eq", "in"] },
+    experiment: { select: true, filter: ["eq", "in"] },
+    status: { select: true, filter: ["eq", "in"] },
+    rubricVersion: { select: true },
+    retainedUnitsCount: { select: true, order: true },
+    omittedUnitsCount: { select: true, order: true },
+    intrusionCount: { select: true, order: true },
+    phenomena: { select: true },
+    createdAt: { select: true, order: true },
+  },
+  scope: "all",
+} satisfies GraphReadPolicy<typeof RecallAnalysis, LocalRuntimeAuthority>;
+
 export const localGraphReadPolicies = [
   ExperimentReadPolicy,
   ParticipantSessionReadPolicy,
   AnalysisRunReadPolicy,
+  RecallAnalysisReadPolicy,
 ] as const;
