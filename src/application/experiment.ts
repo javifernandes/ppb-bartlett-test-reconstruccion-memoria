@@ -160,7 +160,6 @@ export const Experiment = entity({
         publicToken: field.nonEmptyString({ trim: true }),
       }),
       output: self,
-      bridge: { invalidate: [["Experiment"]] },
       *run({ experiment, publishedAt, publicToken }) {
         const current = yield* experiment.resolve();
 

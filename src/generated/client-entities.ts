@@ -65,7 +65,6 @@ export const Experiment = defineClientEntity(ExperimentSchema, {
       authority: 'server',
       exposure: 'bridge',
       bridge: {
-        invalidate: [["Experiment"]],
       },
       input: graphSchema.object({
         experiment: field.ref(ExperimentSchema),

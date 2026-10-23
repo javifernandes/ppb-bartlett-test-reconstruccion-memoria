@@ -211,6 +211,7 @@ const ExperimentWorkspacePage = () => {
   });
 
   const handlePublish = async () => {
+    publishModal.close();
     const result = await publish.executeAsync({
       experiment: Experiment.refById(experimentId),
       publishedAt: new Date().toISOString(),
@@ -218,15 +219,16 @@ const ExperimentWorkspacePage = () => {
     });
 
     if (result.ok) {
-      publishModal.close();
       notifications.show({
         title: "Experimento publicado",
         message: "El experimento quedó bloqueado para edición.",
         color: "teal",
       });
+      window.location.reload();
       return;
     }
 
+    publishModal.open();
     notifications.show({
       title: "No se pudo publicar",
       message: result.message,
