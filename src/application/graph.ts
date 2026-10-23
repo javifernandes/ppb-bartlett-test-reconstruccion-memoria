@@ -190,7 +190,7 @@ const developmentGlobal = globalThis as typeof globalThis & {
 };
 
 export const BartlettApplication =
-  process.env.NODE_ENV === "development"
+  process.env.NODE_ENV === "development" && !useSupabaseStorage
     ? (developmentGlobal.bartlettApplication ??= createBartlettApplication())
     : createBartlettApplication();
 
