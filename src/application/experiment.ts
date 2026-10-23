@@ -255,14 +255,6 @@ export const Experiment = entity({
       requires: [app.require.authenticated()],
       input: graphSchema.object({ experiment: field.ref(self) }),
       output: self,
-      bridge: {
-        invalidate: [
-          ["Experiment"],
-          ["ParticipantSession"],
-          ["AnalysisRun"],
-          ["RecallAnalysis"],
-        ],
-      },
       *run({ experiment }) {
         const current = yield* experiment.resolve();
 
