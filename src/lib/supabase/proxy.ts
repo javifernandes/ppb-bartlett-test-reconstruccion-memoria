@@ -3,6 +3,17 @@ import { NextResponse, type NextRequest } from "next/server";
 
 export const updateSupabaseSession = async (request: NextRequest) => {
   let response = NextResponse.next({ request });
+  const pathname = request.nextUrl.pathname;
+  const runtimeOrPublicRoute =
+    pathname.startsWith("/api/runtime") ||
+    pathname.startsWith("/auth/") ||
+    pathname.startsWith("/p/");
+
+  // The runtime route resolves its own authority, while auth callbacks and
+  // participant pages are public. Avoid a second concurrent getUser call for
+  // every graph request, especially immediately after an OAuth callback.
+  if (runtimeOrPublicRoute) return response;
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
@@ -26,12 +37,7 @@ export const updateSupabaseSession = async (request: NextRequest) => {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const pathname = request.nextUrl.pathname;
-  const publicRoute =
-    pathname === "/login" ||
-    pathname.startsWith("/auth/") ||
-    pathname.startsWith("/p/") ||
-    pathname.startsWith("/api/runtime");
+  const publicRoute = pathname === "/login";
 
   if (!user && !publicRoute) {
     const loginUrl = request.nextUrl.clone();

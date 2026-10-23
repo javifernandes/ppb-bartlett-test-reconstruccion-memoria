@@ -145,6 +145,25 @@ const HomePage = () => {
               analysisRuns.isError) && (
               <Card withBorder>
                 <Text c="red">No se pudieron cargar los experimentos.</Text>
+                {process.env.NODE_ENV === "development" && (
+                  <Stack gap={2} mt="xs">
+                    {experiments.error && (
+                      <Text size="xs" c="dimmed">
+                        Experimentos: {experiments.error.message}
+                      </Text>
+                    )}
+                    {participants.error && (
+                      <Text size="xs" c="dimmed">
+                        Participaciones: {participants.error.message}
+                      </Text>
+                    )}
+                    {analysisRuns.error && (
+                      <Text size="xs" c="dimmed">
+                        Análisis: {analysisRuns.error.message}
+                      </Text>
+                    )}
+                  </Stack>
+                )}
               </Card>
             )}
 
