@@ -267,18 +267,18 @@ const ExperimentWorkspacePage = () => {
   };
 
   const handleDelete = async () => {
+    const deletedExperimentTitle = experiment.data?.title;
     const result = await deletePermanently.executeAsync({
       experiment: Experiment.refById(experimentId),
     });
 
     if (result.ok) {
-      deleteModal.close();
       notifications.show({
         title: "Experimento eliminado",
-        message: result.value.title,
+        message: deletedExperimentTitle ?? "El experimento fue eliminado.",
         color: "teal",
       });
-      router.push("/");
+      window.location.replace("/");
       return;
     }
 
