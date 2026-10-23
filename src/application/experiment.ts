@@ -251,5 +251,56 @@ export const Experiment = entity({
         return closed;
       },
     }),
+    deletePermanently: operation({
+      requires: [app.require.authenticated()],
+      input: graphSchema.object({ experiment: field.ref(self) }),
+      output: self,
+      bridge: {
+        invalidate: [
+          ["Experiment"],
+          ["ParticipantSession"],
+          ["AnalysisRun"],
+          ["RecallAnalysis"],
+        ],
+      },
+      *run({ experiment }) {
+        const current = yield* experiment.resolve();
+
+        if (!current) {
+          return yield* failOperation(
+            "experiment_not_found",
+            "El experimento no existe.",
+          );
+        }
+
+        const [deleted] = yield* commands
+          .where((candidate) => candidate.id.eq(current.id))
+          .deleteManyReturning([
+            "id",
+            "title",
+            "participantTitle",
+            "introduction",
+            "consentText",
+            "story",
+            "recallInstructions",
+            "intervalSeconds",
+            "distractorEnabled",
+            "status",
+            "createdAt",
+            "publishedAt",
+            "publicToken",
+          ])
+          .run();
+
+        if (!deleted) {
+          return yield* failOperation(
+            "experiment_not_found",
+            "El experimento no existe.",
+          );
+        }
+
+        return deleted;
+      },
+    }),
   }),
 });

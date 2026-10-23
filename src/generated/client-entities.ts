@@ -83,6 +83,20 @@ export const Experiment = defineClientEntity(ExperimentSchema, {
       input: graphSchema.object({ experiment: field.ref(ExperimentSchema) }),
       output: ExperimentSchema,
     }),
+    deletePermanently: defineClientDomainOperation({
+      authority: 'server',
+      exposure: 'bridge',
+      bridge: {
+        invalidate: [
+          ["Experiment"],
+          ["ParticipantSession"],
+          ["AnalysisRun"],
+          ["RecallAnalysis"],
+        ],
+      },
+      input: graphSchema.object({ experiment: field.ref(ExperimentSchema) }),
+      output: ExperimentSchema,
+    }),
   },
 });
 

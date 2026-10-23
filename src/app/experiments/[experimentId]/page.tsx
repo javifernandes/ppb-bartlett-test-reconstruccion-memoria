@@ -33,6 +33,7 @@ import {
   IconLock,
   IconRefresh,
   IconRocket,
+  IconTrash,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -129,11 +130,13 @@ const ExperimentWorkspacePage = () => {
   const updateDraft = useOperation(Experiment.domain.updateDraft);
   const publish = useOperation(Experiment.domain.publish);
   const close = useOperation(Experiment.domain.close);
+  const deletePermanently = useOperation(Experiment.domain.deletePermanently);
   const startAnalysis = useOperation(AnalysisRun.domain.start);
   const analyzeRecall = useOperation(RecallAnalysis.domain.analyze);
   const finishAnalysis = useOperation(AnalysisRun.domain.finish);
   const [publishOpened, publishModal] = useDisclosure(false);
   const [closeOpened, closeModal] = useDisclosure(false);
+  const [deleteOpened, deleteModal] = useDisclosure(false);
   const form = useForm({
     initialValues: {
       title: "",
@@ -258,6 +261,29 @@ const ExperimentWorkspacePage = () => {
 
     notifications.show({
       title: "No se pudo cerrar el experimento",
+      message: result.message,
+      color: "red",
+    });
+  };
+
+  const handleDelete = async () => {
+    const result = await deletePermanently.executeAsync({
+      experiment: Experiment.refById(experimentId),
+    });
+
+    if (result.ok) {
+      deleteModal.close();
+      notifications.show({
+        title: "Experimento eliminado",
+        message: result.value.title,
+        color: "teal",
+      });
+      router.push("/");
+      return;
+    }
+
+    notifications.show({
+      title: "No se pudo eliminar el experimento",
       message: result.message,
       color: "red",
     });
@@ -679,6 +705,25 @@ const ExperimentWorkspacePage = () => {
                     ))}
                   </Stack>
                 )}
+
+                <Card withBorder padding="lg">
+                  <Group justify="space-between" align="center" wrap="wrap">
+                    <div>
+                      <Text fw={600}>Eliminar experimento</Text>
+                      <Text c="dimmed" size="sm">
+                        Borra también todas sus participaciones y análisis.
+                      </Text>
+                    </div>
+                    <Button
+                      color="red"
+                      variant="light"
+                      leftSection={<IconTrash size={18} />}
+                      onClick={deleteModal.open}
+                    >
+                      Eliminar
+                    </Button>
+                  </Group>
+                </Card>
               </>
             )}
           </Stack>
@@ -733,6 +778,37 @@ const ExperimentWorkspacePage = () => {
               onClick={() => void handleClose()}
             >
               Cerrar recepción
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={deleteOpened}
+        onClose={deleteModal.close}
+        title="Eliminar experimento"
+        centered
+      >
+        <Stack>
+          <Text>
+            Vas a eliminar definitivamente{" "}
+            <strong>{experiment.data?.title}</strong>.
+          </Text>
+          <Text c="dimmed">
+            También se borrarán todas las participaciones, respuestas y corridas
+            de análisis asociadas. Esta acción no se puede deshacer.
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={deleteModal.close}>
+              Cancelar
+            </Button>
+            <Button
+              color="red"
+              leftSection={<IconTrash size={18} />}
+              loading={deletePermanently.isExecuting}
+              onClick={() => void handleDelete()}
+            >
+              Eliminar definitivamente
             </Button>
           </Group>
         </Stack>

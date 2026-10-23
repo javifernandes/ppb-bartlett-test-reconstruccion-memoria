@@ -269,6 +269,24 @@ describe("Bartlett application bootstrap", () => {
       "Experimento editado",
       "Reconstrucción de una historia — prueba piloto",
     ]);
+
+    const deleted = await asAdmin(() =>
+      Experiment.deletePermanently({
+        experiment: Experiment.refById("experiment-test"),
+      }),
+    );
+    expect(deleted).toMatchObject({
+      ok: true,
+      value: { id: "experiment-test", status: "closed" },
+    });
+
+    const afterDeletion = await BartlettApplication.graph.read(
+      query(Experiment),
+      { scope: "bootstrap.after-deletion" },
+    );
+    expect(afterDeletion.map((experiment) => experiment.id)).not.toContain(
+      "experiment-test",
+    );
     vi.useRealTimers();
   });
 
