@@ -22,6 +22,8 @@ import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { Experiment, ParticipantSession } from "@/generated/client-entities";
+import { LanguageSelector, useI18n } from "@/app/i18n";
+import { createId } from "@/lib/create-id";
 
 const PublicExperiment = Experiment.view("PublicExperiment", {
   id: true,
@@ -138,6 +140,7 @@ const createDistractorValues = (seed: string) => {
 };
 
 const PublicParticipationPage = () => {
+  const { t } = useI18n();
   const { publicToken } = useParams<{ publicToken: string }>();
   const [step, setStep] = useState<ParticipantStep>("introduction");
   const [consentAccepted, setConsentAccepted] = useState(false);
@@ -263,9 +266,11 @@ const PublicParticipationPage = () => {
     return (
       <Center mih="100dvh" p="md">
         <Paper withBorder p="lg" maw={560} w="100%">
-          <Title order={2}>Este experimento no está disponible</Title>
+          <Title order={2}>{t("Este experimento no está disponible")}</Title>
           <Text c="dimmed" mt="sm">
-            Revisá que el enlace sea correcto o consultá a quien te lo envió.
+            {t(
+              "Revisá que el enlace sea correcto o consultá a quien te lo envió.",
+            )}
           </Text>
         </Paper>
       </Center>
@@ -274,7 +279,7 @@ const PublicParticipationPage = () => {
 
   const begin = async () => {
     setErrorMessage(undefined);
-    const id = crypto.randomUUID();
+    const id = createId();
     const result = await startSession.executeAsync({
       id,
       experiment: Experiment.refById(experiment.data.id),
@@ -365,7 +370,7 @@ const PublicParticipationPage = () => {
           loading={startSession.isExecuting}
           onClick={() => void begin()}
         >
-          Comenzar
+          {t("Comenzar")}
         </Button>
       </Stack>
     ),
@@ -373,7 +378,7 @@ const PublicParticipationPage = () => {
       <Stack gap="xl">
         <div>
           <Text c="dimmed" size="sm" fw={600} tt="uppercase" mb="xs">
-            Historia
+            {t("Historia")}
           </Text>
           <Title order={1}>{experiment.data.participantTitle}</Title>
         </div>
@@ -386,17 +391,19 @@ const PublicParticipationPage = () => {
           loading={finishReadingOperation.isExecuting}
           onClick={() => void finishReading()}
         >
-          Terminé de leer
+          {t("Terminé de leer")}
         </Button>
       </Stack>
     ),
     interval: (
       <Stack gap="lg" ta="center" align="center">
-        <Title order={1}>Actividad</Title>
+        <Title order={1}>{t("Actividad")}</Title>
         <Text size="lg">
           {remainingSeconds > 0
-            ? `Podés continuar en ${remainingSeconds} segundos.`
-            : "El intervalo terminó."}
+            ? t("Podés continuar en {seconds} segundos.", {
+                seconds: remainingSeconds,
+              })
+            : t("El intervalo terminó.")}
         </Text>
         <Progress
           value={
@@ -413,9 +420,9 @@ const PublicParticipationPage = () => {
           <Paper withBorder p="lg" w="100%">
             <Stack gap="md">
               <div>
-                <Text fw={700}>Ordená los números de mayor a menor</Text>
+                <Text fw={700}>{t("Ordená los números de mayor a menor")}</Text>
                 <Text c="dimmed" size="sm">
-                  Tocá cada número en el orden correcto.
+                  {t("Tocá cada número en el orden correcto.")}
                 </Text>
               </div>
               <SimpleGrid cols={4} spacing="xs">
@@ -440,15 +447,17 @@ const PublicParticipationPage = () => {
               <Text mih={24} fw={600}>
                 {selectedNumbers.length > 0
                   ? selectedNumbers.join(" › ")
-                  : "Tu orden aparecerá acá"}
+                  : t("Tu orden aparecerá acá")}
               </Text>
               {selectedNumbers.length === expectedNumbers.length &&
                 !distractorComplete && (
-                  <Text c="red">Ese orden no es correcto. Probá de nuevo.</Text>
+                  <Text c="red">
+                    {t("Ese orden no es correcto. Probá de nuevo.")}
+                  </Text>
                 )}
               {distractorComplete && (
                 <Text c="teal" fw={600}>
-                  ¡Orden correcto!
+                  {t("¡Orden correcto!")}
                 </Text>
               )}
               <Group justify="center">
@@ -458,7 +467,7 @@ const PublicParticipationPage = () => {
                   disabled={selectedNumbers.length === 0}
                   onClick={() => setSelectedNumbers([])}
                 >
-                  Reiniciar
+                  {t("Reiniciar")}
                 </Button>
               </Group>
             </Stack>
@@ -471,18 +480,18 @@ const PublicParticipationPage = () => {
           loading={startRecall.isExecuting}
           onClick={() => void beginRecall()}
         >
-          Continuar
+          {t("Continuar")}
         </Button>
       </Stack>
     ),
     recall: (
       <Stack gap="lg">
-        <Title order={1}>Reconstruí la historia</Title>
+        <Title order={1}>{t("Reconstruí la historia")}</Title>
         <Text size="lg" style={{ whiteSpace: "pre-wrap" }}>
           {experiment.data.recallInstructions}
         </Text>
         <Textarea
-          label="Tu respuesta"
+          label={t("Tu respuesta")}
           value={recall}
           onChange={(event) => {
             const value = event.currentTarget.value;
@@ -501,7 +510,7 @@ const PublicParticipationPage = () => {
           loading={submitRecall.isExecuting}
           onClick={() => void submit()}
         >
-          Enviar respuesta
+          {t("Enviar respuesta")}
         </Button>
       </Stack>
     ),
@@ -510,9 +519,9 @@ const PublicParticipationPage = () => {
         <Center bg="teal.8" c="white" w={64} h={64} bdrs="50%">
           <IconCheck size={34} />
         </Center>
-        <Title order={1}>¡Gracias por participar!</Title>
+        <Title order={1}>{t("¡Gracias por participar!")}</Title>
         <Text size="lg" c="dimmed">
-          Tu respuesta fue enviada.
+          {t("Tu respuesta fue enviada.")}
         </Text>
       </Stack>
     ),
@@ -522,9 +531,13 @@ const PublicParticipationPage = () => {
     <Box mih="100dvh" bg="var(--mantine-color-body)">
       <Box component="header" p="md">
         <Container size="sm">
-          <Text ta="center" size="sm" c="dimmed">
-            {step === "complete" ? "Completado" : "Prueba de memoria"}
-          </Text>
+          <Group justify="space-between" wrap="nowrap">
+            <Box w={82} />
+            <Text ta="center" size="sm" c="dimmed">
+              {step === "complete" ? t("Completado") : t("Prueba de memoria")}
+            </Text>
+            <LanguageSelector compact />
+          </Group>
         </Container>
       </Box>
       <Progress value={progressByStep[step]} radius={0} size="xs" />

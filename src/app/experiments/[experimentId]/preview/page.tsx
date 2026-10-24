@@ -23,6 +23,7 @@ import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { Experiment } from "@/generated/client-entities";
+import { LanguageSelector, useI18n } from "@/app/i18n";
 
 const ParticipantPreview = Experiment.view("ParticipantPreview", {
   id: true,
@@ -51,6 +52,7 @@ const progressByStep: Record<PreviewStep, number> = {
 };
 
 const ParticipantPreviewPage = () => {
+  const { t } = useI18n();
   const { experimentId } = useParams<{ experimentId: string }>();
   const [step, setStep] = useState<PreviewStep>("introduction");
   const [recall, setRecall] = useState("");
@@ -77,7 +79,7 @@ const ParticipantPreviewPage = () => {
     return (
       <Center mih="100dvh" p="md">
         <Paper withBorder p="lg" maw={560} w="100%">
-          <Text c="red">No se pudo cargar el experimento.</Text>
+          <Text c="red">{t("No se pudo cargar el experimento.")}</Text>
         </Paper>
       </Center>
     );
@@ -87,7 +89,7 @@ const ParticipantPreviewPage = () => {
     introduction: (
       <Stack gap="lg">
         <Badge variant="light" w="fit-content">
-          Vista previa
+          {t("Vista previa")}
         </Badge>
         <Title order={1}>{experiment.data.participantTitle}</Title>
         <Text size="lg" style={{ whiteSpace: "pre-wrap" }}>
@@ -105,7 +107,7 @@ const ParticipantPreviewPage = () => {
           disabled={!consentAccepted}
           onClick={() => setStep("reading")}
         >
-          Comenzar
+          {t("Comenzar")}
         </Button>
       </Stack>
     ),
@@ -113,7 +115,7 @@ const ParticipantPreviewPage = () => {
       <Stack gap="xl">
         <div>
           <Text c="dimmed" size="sm" fw={600} tt="uppercase" mb="xs">
-            Historia
+            {t("Historia")}
           </Text>
           <Title order={1}>{experiment.data.participantTitle}</Title>
         </div>
@@ -127,38 +129,41 @@ const ParticipantPreviewPage = () => {
             setStep(experiment.data.intervalSeconds > 0 ? "interval" : "recall")
           }
         >
-          Terminé de leer
+          {t("Terminé de leer")}
         </Button>
       </Stack>
     ),
     interval: (
       <Stack gap="lg" ta="center" align="center">
-        <Title order={1}>Pausa</Title>
+        <Title order={1}>{t("Pausa")}</Title>
         <Text size="lg">
-          Esperá {experiment.data.intervalSeconds} segundos antes de reconstruir
-          la historia.
+          {t("Esperá {seconds} segundos antes de reconstruir la historia.", {
+            seconds: experiment.data.intervalSeconds,
+          })}
         </Text>
         {experiment.data.distractorEnabled && (
           <Paper withBorder p="lg" w="100%">
-            <Text fw={600}>Distractor</Text>
+            <Text fw={600}>{t("Distractor")}</Text>
             <Text c="dimmed">
-              La actividad distractora se presentará durante este intervalo.
+              {t(
+                "La actividad distractora se presentará durante este intervalo.",
+              )}
             </Text>
           </Paper>
         )}
         <Button size="lg" fullWidth onClick={() => setStep("recall")}>
-          Continuar vista previa
+          {t("Continuar vista previa")}
         </Button>
       </Stack>
     ),
     recall: (
       <Stack gap="lg">
-        <Title order={1}>Reconstruí la historia</Title>
+        <Title order={1}>{t("Reconstruí la historia")}</Title>
         <Text size="lg" style={{ whiteSpace: "pre-wrap" }}>
           {experiment.data.recallInstructions}
         </Text>
         <Textarea
-          label="Tu respuesta"
+          label={t("Tu respuesta")}
           value={recall}
           onChange={(event) => setRecall(event.currentTarget.value)}
           minRows={10}
@@ -172,7 +177,7 @@ const ParticipantPreviewPage = () => {
           disabled={!recall.trim()}
           onClick={() => setStep("complete")}
         >
-          Enviar respuesta
+          {t("Enviar respuesta")}
         </Button>
       </Stack>
     ),
@@ -181,9 +186,9 @@ const ParticipantPreviewPage = () => {
         <Center bg="teal.8" c="white" w={64} h={64} bdrs="50%">
           <IconCheck size={34} />
         </Center>
-        <Title order={1}>¡Gracias por participar!</Title>
+        <Title order={1}>{t("¡Gracias por participar!")}</Title>
         <Text size="lg" c="dimmed">
-          Tu respuesta fue completada.
+          {t("Tu respuesta fue completada.")}
         </Text>
         <Button
           variant="default"
@@ -193,7 +198,7 @@ const ParticipantPreviewPage = () => {
             setStep("introduction");
           }}
         >
-          Reiniciar vista previa
+          {t("Reiniciar vista previa")}
         </Button>
       </Stack>
     ),
@@ -210,11 +215,12 @@ const ParticipantPreviewPage = () => {
               variant="subtle"
               leftSection={<IconArrowLeft size={18} />}
             >
-              Volver
+              {t("Volver")}
             </Button>
             <Text size="sm" c="dimmed">
-              {step === "complete" ? "Completado" : "Prueba de memoria"}
+              {step === "complete" ? t("Completado") : t("Prueba de memoria")}
             </Text>
+            <LanguageSelector compact />
           </Group>
         </Container>
       </Box>

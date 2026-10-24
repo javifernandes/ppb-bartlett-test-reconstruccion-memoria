@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 const RootLayout = ({ children }: Readonly<{ children: ReactNode }>) => (
   <html lang="es" {...mantineHtmlProps}>
     <head>
-      <ColorSchemeScript />
+      <ColorSchemeScript defaultColorScheme="auto" />
     </head>
     <body>
       <Providers>{children}</Providers>

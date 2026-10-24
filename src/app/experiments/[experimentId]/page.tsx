@@ -31,21 +31,25 @@ import {
   IconDownload,
   IconEye,
   IconLock,
+  IconQrcode,
   IconRefresh,
   IconRocket,
   IconTrash,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 
+import { AdminHeader } from "@/app/admin-header";
+import { useI18n } from "@/app/i18n";
 import {
   AnalysisRun,
   Experiment,
   ParticipantSession,
   RecallAnalysis,
 } from "@/generated/client-entities";
-import { AdminHeader } from "@/app/admin-header";
+import { createId } from "@/lib/create-id";
 
 const ExperimentWorkspace = Experiment.view("ExperimentWorkspace", {
   id: true,
@@ -96,6 +100,7 @@ const elapsedSeconds = (from?: string | null, to?: string | null) => {
 };
 
 const ExperimentWorkspacePage = () => {
+  const { t } = useI18n();
   const { experimentId } = useParams<{ experimentId: string }>();
   const router = useRouter();
   const experimentQuery = useMemo(
@@ -130,6 +135,8 @@ const ExperimentWorkspacePage = () => {
   const [publishOpened, publishModal] = useDisclosure(false);
   const [closeOpened, closeModal] = useDisclosure(false);
   const [deleteOpened, deleteModal] = useDisclosure(false);
+  const [qrOpened, qrModal] = useDisclosure(false);
+  const [publicOrigin, setPublicOrigin] = useState("");
   const updateDraft = useOperation(Experiment.domain.updateDraft);
   const publish = useOperation(Experiment.domain.publish, {
     onSuccess: () => {
@@ -242,7 +249,7 @@ const ExperimentWorkspacePage = () => {
     const result = await publish.executeAsync({
       experiment: Experiment.refById(experimentId),
       publishedAt: new Date().toISOString(),
-      publicToken: crypto.randomUUID(),
+      publicToken: createId(),
     });
 
     if (!result.ok) {
@@ -259,10 +266,15 @@ const ExperimentWorkspacePage = () => {
     const url = `${window.location.origin}/p/${publicToken}`;
     await navigator.clipboard.writeText(url);
     notifications.show({
-      title: "Enlace copiado",
-      message: "Ya podés compartirlo con participantes.",
+      title: t("Enlace copiado"),
+      message: t("Ya podés compartirlo con participantes."),
       color: "teal",
     });
+  };
+
+  const openQr = () => {
+    setPublicOrigin(window.location.origin);
+    qrModal.open();
   };
 
   const handleClose = async () => {
@@ -335,7 +347,7 @@ const ExperimentWorkspacePage = () => {
       return;
     }
 
-    const id = crypto.randomUUID();
+    const id = createId();
     const result = await startAnalysis.executeAsync({
       id,
       experiment: Experiment.refById(experimentId),
@@ -349,7 +361,7 @@ const ExperimentWorkspacePage = () => {
       );
       for (const session of completedSessions) {
         const recallResult = await analyzeRecall.executeAsync({
-          id: crypto.randomUUID(),
+          id: createId(),
           run: AnalysisRun.refById(id),
           session: ParticipantSession.refById(session.id),
           experiment: Experiment.refById(experimentId),
@@ -383,7 +395,7 @@ const ExperimentWorkspacePage = () => {
   return (
     <AppShell header={{ height: 64 }} padding="md">
       <AdminHeader
-        section={experiment.data?.title ?? "Experimento"}
+        section={experiment.data?.title ?? t("Experimento")}
         backHref="/"
       />
 
@@ -398,7 +410,7 @@ const ExperimentWorkspacePage = () => {
 
             {experiment.isError && (
               <Card withBorder>
-                <Text c="red">No se pudo cargar el experimento.</Text>
+                <Text c="red">{t("No se pudo cargar el experimento.")}</Text>
               </Card>
             )}
 
@@ -407,7 +419,7 @@ const ExperimentWorkspacePage = () => {
                 <Group justify="space-between" align="flex-start" wrap="wrap">
                   <div>
                     <Title order={1}>{experiment.data.title}</Title>
-                    <Text c="dimmed">Configuración del experimento</Text>
+                    <Text c="dimmed">{t("Configuración del experimento")}</Text>
                   </div>
                   <Group>
                     <Badge
@@ -417,10 +429,10 @@ const ExperimentWorkspacePage = () => {
                       }
                     >
                       {experiment.data.status === "published"
-                        ? "Publicado"
+                        ? t("Publicado")
                         : experiment.data.status === "closed"
-                          ? "Cerrado"
-                          : "Borrador"}
+                          ? t("Cerrado")
+                          : t("Borrador")}
                     </Badge>
                     <Button
                       component={Link}
@@ -428,7 +440,7 @@ const ExperimentWorkspacePage = () => {
                       variant="default"
                       leftSection={<IconEye size={18} />}
                     >
-                      Vista previa
+                      {t("Vista previa")}
                     </Button>
                     {experiment.data.status === "draft" && (
                       <Button
@@ -436,7 +448,7 @@ const ExperimentWorkspacePage = () => {
                         onClick={publishModal.open}
                         disabled={form.isDirty()}
                       >
-                        Publicar
+                        {t("Publicar")}
                       </Button>
                     )}
                     {experiment.data.status === "published" && (
@@ -446,7 +458,7 @@ const ExperimentWorkspacePage = () => {
                         leftSection={<IconLock size={18} />}
                         onClick={closeModal.open}
                       >
-                        Cerrar recepción
+                        {t("Cerrar recepción")}
                       </Button>
                     )}
                     {experiment.data.status === "closed" && (
@@ -456,7 +468,7 @@ const ExperimentWorkspacePage = () => {
                             leftSection={<IconChartBar size={18} />}
                             onClick={() => void handleAnalysis()}
                           >
-                            Ver último análisis
+                            {t("Ver último análisis")}
                           </Button>
                         ) : null}
                         <Button
@@ -482,8 +494,8 @@ const ExperimentWorkspacePage = () => {
                           }
                         >
                           {analysisRuns.data?.length
-                            ? "Analizar nuevamente"
-                            : "Analizar resultados"}
+                            ? t("Analizar nuevamente")
+                            : t("Analizar resultados")}
                         </Button>
                       </>
                     )}
@@ -494,10 +506,10 @@ const ExperimentWorkspacePage = () => {
                   experiment.data.publicToken && (
                     <Card withBorder padding="lg">
                       <Stack gap="sm">
-                        <Text fw={600}>Enlace para participantes</Text>
+                        <Text fw={600}>{t("Enlace para participantes")}</Text>
                         <Group align="flex-end">
                           <TextInput
-                            aria-label="Enlace para participantes"
+                            aria-label={t("Enlace para participantes")}
                             value={`/p/${experiment.data.publicToken}`}
                             readOnly
                             style={{ flex: 1 }}
@@ -511,7 +523,14 @@ const ExperimentWorkspacePage = () => {
                               )
                             }
                           >
-                            Copiar
+                            {t("Copiar")}
+                          </Button>
+                          <Button
+                            variant="light"
+                            leftSection={<IconQrcode size={18} />}
+                            onClick={openQr}
+                          >
+                            {t("Mostrar QR")}
                           </Button>
                         </Group>
                       </Stack>
@@ -522,15 +541,17 @@ const ExperimentWorkspacePage = () => {
                   <form onSubmit={handleSave}>
                     <Stack gap="lg">
                       <TextInput
-                        label="Nombre del experimento"
-                        description="Sólo lo ven los administradores."
+                        label={t("Nombre del experimento")}
+                        description={t("Sólo lo ven los administradores.")}
                         required
                         disabled={experiment.data.status !== "draft"}
                         {...form.getInputProps("title")}
                       />
                       <Textarea
-                        label="Historia"
-                        description="El texto se mostrará a los participantes durante la etapa de lectura."
+                        label={t("Historia")}
+                        description={t(
+                          "El texto se mostrará a los participantes durante la etapa de lectura.",
+                        )}
                         minRows={12}
                         autosize
                         required
@@ -538,8 +559,10 @@ const ExperimentWorkspacePage = () => {
                         {...form.getInputProps("story")}
                       />
                       <NumberInput
-                        label="Intervalo antes de reconstruir"
-                        description="Duración en segundos. Usá 0 para pasar directamente."
+                        label={t("Intervalo antes de reconstruir")}
+                        description={t(
+                          "Duración en segundos. Usá 0 para pasar directamente.",
+                        )}
                         min={0}
                         max={3600}
                         suffix=" s"
@@ -547,7 +570,7 @@ const ExperimentWorkspacePage = () => {
                         {...form.getInputProps("intervalSeconds")}
                       />
                       <Switch
-                        label="Usar distractor durante el intervalo"
+                        label={t("Usar distractor durante el intervalo")}
                         disabled={experiment.data.status !== "draft"}
                         {...form.getInputProps("distractorEnabled", {
                           type: "checkbox",
@@ -556,7 +579,7 @@ const ExperimentWorkspacePage = () => {
                       <Accordion variant="contained">
                         <Accordion.Item value="participant-copy">
                           <Accordion.Control>
-                            Textos e instrucciones
+                            {t("Textos e instrucciones")}
                           </Accordion.Control>
                           <Accordion.Panel>
                             <Stack gap="lg">
@@ -733,6 +756,43 @@ const ExperimentWorkspacePage = () => {
           </Stack>
         </Container>
       </AppShell.Main>
+
+      <Modal
+        opened={qrOpened}
+        onClose={qrModal.close}
+        title={t("Código QR para participantes")}
+        centered
+        size="auto"
+      >
+        <Stack align="center" gap="lg">
+          <Text c="dimmed" ta="center">
+            {t("Escaneá el código para abrir el experimento.")}
+          </Text>
+          {publicOrigin && experiment.data?.publicToken ? (
+            <Card bg="white" p="md" radius="md">
+              <QRCodeSVG
+                value={`${publicOrigin}/p/${experiment.data.publicToken}`}
+                size={280}
+                marginSize={1}
+                level="M"
+              />
+            </Card>
+          ) : (
+            <Loader />
+          )}
+          <Text
+            size="xs"
+            c="dimmed"
+            ta="center"
+            maw={320}
+            style={{ overflowWrap: "anywhere" }}
+          >
+            {publicOrigin && experiment.data?.publicToken
+              ? `${publicOrigin}/p/${experiment.data.publicToken}`
+              : ""}
+          </Text>
+        </Stack>
+      </Modal>
 
       <Modal
         opened={publishOpened}

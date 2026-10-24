@@ -27,6 +27,7 @@ import {
   RecallAnalysis,
 } from "@/generated/client-entities";
 import { AdminHeader } from "@/app/admin-header";
+import { useI18n } from "@/app/i18n";
 
 const AnalysisExperiment = Experiment.view("AnalysisExperiment", {
   id: true,
@@ -84,6 +85,7 @@ const formatSeconds = (value: number) => {
 };
 
 const AnalysisPage = () => {
+  const { locale, t } = useI18n();
   const { experimentId, analysisRunId } = useParams<{
     experimentId: string;
     analysisRunId: string;
@@ -176,7 +178,9 @@ const AnalysisPage = () => {
     <AppShell header={{ height: 64 }} padding="md">
       <AdminHeader
         section={
-          experiment.data ? `${experiment.data.title} · Análisis` : "Análisis"
+          experiment.data
+            ? `${experiment.data.title} · ${t("Análisis")}`
+            : t("Análisis")
         }
         backHref={`/experiments/${experimentId}`}
       />
@@ -192,9 +196,9 @@ const AnalysisPage = () => {
 
             {invalid && !loading && (
               <Card withBorder>
-                <Title order={2}>No se pudo cargar el análisis</Title>
+                <Title order={2}>{t("No se pudo cargar el análisis")}</Title>
                 <Text c="dimmed" mt="xs">
-                  Revisá que corresponda a este experimento.
+                  {t("Revisá que corresponda a este experimento.")}
                 </Text>
               </Card>
             )}
@@ -206,10 +210,12 @@ const AnalysisPage = () => {
                     <Text c="dimmed" size="sm">
                       {experiment.data.title}
                     </Text>
-                    <Title order={1}>Análisis descriptivo</Title>
+                    <Title order={1}>{t("Análisis descriptivo")}</Title>
                     <Text c="dimmed">
                       Calculado el{" "}
-                      {new Date(run.data.createdAt).toLocaleString("es-AR")}
+                      {new Date(run.data.createdAt).toLocaleString(
+                        locale === "es" ? "es-AR" : "en-US",
+                      )}
                     </Text>
                     <Badge
                       mt="sm"
@@ -222,22 +228,22 @@ const AnalysisPage = () => {
                     >
                       {run.data.analyzerVersion.startsWith("deepseek:")
                         ? `DeepSeek · ${run.data.analyzerVersion.replace("deepseek:", "")}`
-                        : "Heurístico local"}
+                        : t("Heurístico local")}
                     </Badge>
                   </div>
                   <Badge variant="light" color="teal" size="lg">
                     {run.data.status === "completed_with_errors"
-                      ? "Completado con errores"
+                      ? t("Completado con errores")
                       : run.data.status === "running"
-                        ? "En curso"
-                        : "Completado"}
+                        ? t("En curso")
+                        : t("Completado")}
                   </Badge>
                 </Group>
 
                 <SimpleGrid cols={{ base: 1, xs: 2, md: 3 }}>
                   <Card withBorder>
                     <Text size="sm" c="dimmed">
-                      Respuestas
+                      {t("Respuestas")}
                     </Text>
                     <Text size="xl" fw={700}>
                       {responseMetrics.length}
@@ -245,7 +251,7 @@ const AnalysisPage = () => {
                   </Card>
                   <Card withBorder>
                     <Text size="sm" c="dimmed">
-                      Palabras de la historia
+                      {t("Palabras de la historia")}
                     </Text>
                     <Text size="xl" fw={700}>
                       {storyWordCount}
@@ -253,7 +259,7 @@ const AnalysisPage = () => {
                   </Card>
                   <Card withBorder>
                     <Text size="sm" c="dimmed">
-                      Promedio de palabras
+                      {t("Promedio de palabras")}
                     </Text>
                     <Text size="xl" fw={700}>
                       {wordCounts.length > 0
@@ -263,7 +269,7 @@ const AnalysisPage = () => {
                   </Card>
                   <Card withBorder>
                     <Text size="sm" c="dimmed">
-                      Extensión relativa promedio
+                      {t("Extensión relativa promedio")}
                     </Text>
                     <Text size="xl" fw={700}>
                       {storyWordCount > 0 && wordCounts.length > 0
@@ -273,7 +279,7 @@ const AnalysisPage = () => {
                   </Card>
                   <Card withBorder>
                     <Text size="sm" c="dimmed">
-                      Lectura promedio
+                      {t("Lectura promedio")}
                     </Text>
                     <Text size="xl" fw={700}>
                       {readingTimes.length > 0
@@ -283,7 +289,7 @@ const AnalysisPage = () => {
                   </Card>
                   <Card withBorder>
                     <Text size="sm" c="dimmed">
-                      Reconstrucción promedio
+                      {t("Reconstrucción promedio")}
                     </Text>
                     <Text size="xl" fw={700}>
                       {recallTimes.length > 0
@@ -296,16 +302,17 @@ const AnalysisPage = () => {
                 <Card withBorder padding="lg">
                   <Stack gap="md">
                     <div>
-                      <Title order={2}>Fenómenos detectados</Title>
+                      <Title order={2}>{t("Fenómenos detectados")}</Title>
                       <Text c="dimmed">
-                        Detección automática con evidencia textual. Las
-                        interpretaciones requieren revisión humana.
+                        {t(
+                          "Detección automática con evidencia textual. Las interpretaciones requieren revisión humana.",
+                        )}
                       </Text>
                     </div>
                     <SimpleGrid cols={{ base: 1, sm: 3 }}>
                       <div>
                         <Text size="sm" c="dimmed">
-                          Unidades retenidas
+                          {t("Unidades retenidas")}
                         </Text>
                         <Text size="xl" fw={700}>
                           {semanticAnalyses.reduce(
@@ -317,7 +324,7 @@ const AnalysisPage = () => {
                       </div>
                       <div>
                         <Text size="sm" c="dimmed">
-                          Omisiones candidatas
+                          {t("Omisiones candidatas")}
                         </Text>
                         <Text size="xl" fw={700}>
                           {semanticAnalyses.reduce(
@@ -329,7 +336,7 @@ const AnalysisPage = () => {
                       </div>
                       <div>
                         <Text size="sm" c="dimmed">
-                          Intrusiones candidatas
+                          {t("Intrusiones candidatas")}
                         </Text>
                         <Text size="xl" fw={700}>
                           {semanticAnalyses.reduce(
@@ -346,36 +353,39 @@ const AnalysisPage = () => {
                 <Card withBorder padding="lg">
                   <Stack gap="md">
                     <div>
-                      <Title order={2}>Respuestas analizadas</Title>
+                      <Title order={2}>{t("Respuestas analizadas")}</Title>
                       <Text c="dimmed">
-                        Seleccioná una respuesta para compararla con la historia
-                        original.
+                        {t(
+                          "Seleccioná una respuesta para compararla con la historia original.",
+                        )}
                       </Text>
                     </div>
                     {responseMetrics.length === 0 ? (
                       <Text c="dimmed">
-                        No hay respuestas completas para analizar.
+                        {t("No hay respuestas completas para analizar.")}
                       </Text>
                     ) : (
                       <Table.ScrollContainer minWidth={760}>
                         <Table verticalSpacing="sm" highlightOnHover>
                           <Table.Thead>
                             <Table.Tr>
-                              <Table.Th>Respuesta</Table.Th>
-                              <Table.Th>Palabras</Table.Th>
-                              <Table.Th>Extensión relativa</Table.Th>
-                              <Table.Th>Lectura</Table.Th>
-                              <Table.Th>Reconstrucción</Table.Th>
-                              <Table.Th>Tiempo total</Table.Th>
-                              <Table.Th>Omisiones</Table.Th>
-                              <Table.Th>Intrusiones</Table.Th>
+                              <Table.Th>{t("Respuesta")}</Table.Th>
+                              <Table.Th>{t("Palabras")}</Table.Th>
+                              <Table.Th>{t("Extensión relativa")}</Table.Th>
+                              <Table.Th>{t("Lectura")}</Table.Th>
+                              <Table.Th>{t("Reconstrucción")}</Table.Th>
+                              <Table.Th>{t("Tiempo total")}</Table.Th>
+                              <Table.Th>{t("Omisiones")}</Table.Th>
+                              <Table.Th>{t("Intrusiones")}</Table.Th>
                               <Table.Th />
                             </Table.Tr>
                           </Table.Thead>
                           <Table.Tbody>
                             {responseMetrics.map((response, index) => (
                               <Table.Tr key={response.id}>
-                                <Table.Td>Respuesta {index + 1}</Table.Td>
+                                <Table.Td>
+                                  {t("Respuesta")} {index + 1}
+                                </Table.Td>
                                 <Table.Td>{response.wordCount}</Table.Td>
                                 <Table.Td>
                                   {response.relativeLength.toFixed(1)} %

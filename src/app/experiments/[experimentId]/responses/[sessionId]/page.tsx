@@ -31,6 +31,7 @@ import {
   RecallAnalysis,
 } from "@/generated/client-entities";
 import { AdminHeader } from "@/app/admin-header";
+import { useI18n } from "@/app/i18n";
 
 const ResponseExperiment = Experiment.view("ResponseExperiment", {
   id: true,
@@ -217,6 +218,7 @@ const AnnotatedText = ({
 };
 
 const ResponseDetailPage = () => {
+  const { t } = useI18n();
   const [analysisVisible, setAnalysisVisible] = useState(false);
   const [selectedPhenomenon, setSelectedPhenomenon] = useState<number | null>(
     null,
@@ -289,8 +291,8 @@ const ResponseDetailPage = () => {
       <AdminHeader
         section={
           experiment.data
-            ? `${experiment.data.title} · Respuesta`
-            : "Respuesta individual"
+            ? `${experiment.data.title} · ${t("Respuesta")}`
+            : t("Respuesta individual")
         }
         backHref={
           requestedRunId
@@ -314,9 +316,11 @@ const ResponseDetailPage = () => {
               !experiment.isLoading &&
               !response.isLoading && (
                 <Card withBorder>
-                  <Title order={2}>No se encontró la participación</Title>
+                  <Title order={2}>
+                    {t("No se encontró la participación")}
+                  </Title>
                   <Text c="dimmed" mt="xs">
-                    Revisá que el enlace corresponda a este experimento.
+                    {t("Revisá que el enlace corresponda a este experimento.")}
                   </Text>
                 </Card>
               )}
@@ -329,7 +333,7 @@ const ResponseDetailPage = () => {
                   </Text>
                   <Group justify="space-between" align="flex-start" mt={4}>
                     <div>
-                      <Title order={1}>Respuesta individual</Title>
+                      <Title order={1}>{t("Respuesta individual")}</Title>
                       <Text c="dimmed" ff="monospace" size="sm">
                         {response.data.id}
                       </Text>
@@ -339,7 +343,7 @@ const ResponseDetailPage = () => {
                       variant="light"
                       color={statusDetails[response.data.status].color}
                     >
-                      {statusDetails[response.data.status].label}
+                      {t(statusDetails[response.data.status].label)}
                     </Badge>
                   </Group>
                 </div>
@@ -347,7 +351,7 @@ const ResponseDetailPage = () => {
                 <SimpleGrid cols={{ base: 1, sm: 3 }}>
                   <Card withBorder>
                     <Text size="sm" c="dimmed">
-                      Tiempo total
+                      {t("Tiempo total")}
                     </Text>
                     <Text size="xl" fw={700}>
                       {durationBetween(
@@ -359,7 +363,7 @@ const ResponseDetailPage = () => {
                   </Card>
                   <Card withBorder>
                     <Text size="sm" c="dimmed">
-                      Lectura
+                      {t("Lectura")}
                     </Text>
                     <Text size="xl" fw={700}>
                       {durationBetween(
@@ -371,7 +375,7 @@ const ResponseDetailPage = () => {
                   </Card>
                   <Card withBorder>
                     <Text size="sm" c="dimmed">
-                      Reconstrucción
+                      {t("Reconstrucción")}
                     </Text>
                     <Text size="xl" fw={700}>
                       {durationBetween(
@@ -386,7 +390,7 @@ const ResponseDetailPage = () => {
                 <Card withBorder padding="md">
                   <Group justify="space-between" align="flex-end" mb="sm">
                     <div>
-                      <Text fw={600}>Recorrido</Text>
+                      <Text fw={600}>{t("Recorrido")}</Text>
                       <Text size="xs" c="dimmed">
                         {formatDate(response.data.startedAt)} →{" "}
                         {formatDate(response.data.submittedAt)}
@@ -394,7 +398,7 @@ const ResponseDetailPage = () => {
                     </div>
                     <Group gap="md" visibleFrom="sm">
                       <Text size="xs" c="dimmed">
-                        Lectura{" "}
+                        {t("Lectura")}{" "}
                         {durationBetween(
                           response.data.startedAt,
                           response.data.intervalStartedAt ??
@@ -403,7 +407,7 @@ const ResponseDetailPage = () => {
                       </Text>
                       {intervalSeconds > 0 && (
                         <Text size="xs" c="dimmed">
-                          Intervalo{" "}
+                          {t("Intervalo")}{" "}
                           {durationBetween(
                             response.data.intervalStartedAt,
                             response.data.recallingStartedAt,
@@ -411,7 +415,7 @@ const ResponseDetailPage = () => {
                         </Text>
                       )}
                       <Text size="xs" c="dimmed">
-                        Reconstrucción{" "}
+                        {t("Reconstrucción")}{" "}
                         {durationBetween(
                           response.data.recallingStartedAt,
                           response.data.submittedAt ??
@@ -457,9 +461,11 @@ const ResponseDetailPage = () => {
                   <Stack gap="md">
                     <Group justify="space-between" align="center">
                       <div>
-                        <Title order={2}>Comparación</Title>
+                        <Title order={2}>{t("Comparación")}</Title>
                         <Text c="dimmed" size="sm">
-                          Historia original y reconstrucción de la persona.
+                          {t(
+                            "Historia original y reconstrucción de la persona.",
+                          )}
                         </Text>
                       </div>
                       {analysis.data && (
@@ -480,8 +486,8 @@ const ResponseDetailPage = () => {
                           onClick={() => setAnalysisVisible((value) => !value)}
                         >
                           {analysisVisible
-                            ? "Ocultar análisis"
-                            : "Mostrar análisis"}
+                            ? t("Ocultar análisis")
+                            : t("Mostrar análisis")}
                         </Button>
                       )}
                     </Group>
@@ -512,7 +518,7 @@ const ResponseDetailPage = () => {
                     <SimpleGrid cols={{ base: 1, md: 2 }}>
                       <Paper withBorder p="md">
                         <Text size="sm" c="dimmed" fw={600} mb="sm">
-                          Historia original ·{" "}
+                          {t("Historia original")} ·{" "}
                           {countWords(experiment.data.story)} palabras
                         </Text>
                         <Text
@@ -533,7 +539,7 @@ const ResponseDetailPage = () => {
                       </Paper>
                       <Paper withBorder p="md">
                         <Text size="sm" c="dimmed" fw={600} mb="sm">
-                          Reconstrucción ·{" "}
+                          {t("Reconstrucción")} ·{" "}
                           {countWords(response.data.recallText ?? "")} palabras
                         </Text>
                         <Text
@@ -553,7 +559,7 @@ const ResponseDetailPage = () => {
                               response.data.recallText
                             )
                           ) : (
-                            "La persona todavía no envió una respuesta."
+                            t("La persona todavía no envió una respuesta.")
                           )}
                         </Text>
                       </Paper>
@@ -566,10 +572,11 @@ const ResponseDetailPage = () => {
                       <Stack gap="md">
                         <Group justify="space-between">
                           <div>
-                            <Text fw={600}>Análisis asistido</Text>
+                            <Text fw={600}>{t("Análisis asistido")}</Text>
                             <Text size="sm" c="dimmed">
-                              Seleccioná una marca en los textos para
-                              inspeccionarla.
+                              {t(
+                                "Seleccioná una marca en los textos para inspeccionarla.",
+                              )}
                             </Text>
                           </div>
                           <Text size="xs" c="dimmed">
@@ -590,7 +597,7 @@ const ResponseDetailPage = () => {
                                 {phenomenonLabels[selected.kind]}
                               </Badge>
                               <Text size="sm" c="dimmed">
-                                Confianza{" "}
+                                {t("Confianza")}{" "}
                                 {Math.round(selected.confidence * 100)} %
                               </Text>
                             </Group>

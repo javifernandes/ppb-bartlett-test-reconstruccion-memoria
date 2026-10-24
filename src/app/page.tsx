@@ -29,8 +29,10 @@ import {
   Experiment,
   ParticipantSession,
 } from "@/generated/client-entities";
+import { createId } from "@/lib/create-id";
 
 import { AdminHeader } from "./admin-header";
+import { useI18n } from "./i18n";
 
 const ExperimentCard = Experiment.view("ExperimentCard", {
   id: true,
@@ -66,6 +68,7 @@ const analysisRunSummariesQuery = AnalysisRun.all()
   .orderBy((run) => run.createdAt.desc());
 
 const HomePage = () => {
+  const { locale, t } = useI18n();
   const router = useRouter();
   const [createOpened, createModal] = useDisclosure(false);
   const experiments = useGraphQuery(experimentsQuery);
@@ -76,13 +79,13 @@ const HomePage = () => {
     mode: "uncontrolled",
     initialValues: { title: "", story: "" },
     validate: {
-      title: (value) => (value.trim() ? null : "Ingresá un nombre."),
-      story: (value) => (value.trim() ? null : "Ingresá la historia."),
+      title: (value) => (value.trim() ? null : t("Ingresá un nombre.")),
+      story: (value) => (value.trim() ? null : t("Ingresá la historia.")),
     },
   });
 
   const handleCreate = form.onSubmit(async (values) => {
-    const id = crypto.randomUUID();
+    const id = createId();
     const result = await createDraft.executeAsync({
       id,
       title: values.title,
@@ -92,7 +95,7 @@ const HomePage = () => {
 
     if (result.ok) {
       notifications.show({
-        title: "Borrador creado",
+        title: t("Borrador creado"),
         message: result.value.title,
         color: "teal",
       });
@@ -103,7 +106,7 @@ const HomePage = () => {
     }
 
     notifications.show({
-      title: "No se pudo crear el borrador",
+      title: t("No se pudo crear el borrador"),
       message: result.message,
       color: "red",
     });
@@ -111,7 +114,7 @@ const HomePage = () => {
 
   return (
     <AppShell header={{ height: 64 }} padding="md">
-      <AdminHeader section="Experimentos" />
+      <AdminHeader section={t("Experimentos")} />
 
       <AppShell.Main>
         <Container size="lg" py="xl">
@@ -119,16 +122,16 @@ const HomePage = () => {
             <Group justify="space-between" align="flex-end">
               <div>
                 <Text c="dimmed" size="sm" fw={500} tt="uppercase">
-                  Procesos Psicológicos Básicos
+                  {t("Procesos Psicológicos Básicos")}
                 </Text>
-                <Title order={1}>Experimentos</Title>
+                <Title order={1}>{t("Experimentos")}</Title>
               </div>
               <Button
                 leftSection={<IconPlus size={18} />}
                 loading={createDraft.isExecuting}
                 onClick={createModal.open}
               >
-                Nuevo experimento
+                {t("Nuevo experimento")}
               </Button>
             </Group>
 
@@ -144,7 +147,9 @@ const HomePage = () => {
               participants.isError ||
               analysisRuns.isError) && (
               <Card withBorder>
-                <Text c="red">No se pudieron cargar los experimentos.</Text>
+                <Text c="red">
+                  {t("No se pudieron cargar los experimentos.")}
+                </Text>
                 {process.env.NODE_ENV === "development" && (
                   <Stack gap={2} mt="xs">
                     {experiments.error && (
@@ -154,7 +159,7 @@ const HomePage = () => {
                     )}
                     {participants.error && (
                       <Text size="xs" c="dimmed">
-                        Participaciones: {participants.error.message}
+                        {t("Participaciones")}: {participants.error.message}
                       </Text>
                     )}
                     {analysisRuns.error && (
@@ -213,10 +218,10 @@ const HomePage = () => {
                             }
                           >
                             {experiment.status === "published"
-                              ? "Publicado"
+                              ? t("Publicado")
                               : experiment.status === "closed"
-                                ? "Cerrado"
-                                : "Borrador"}
+                                ? t("Cerrado")
+                                : t("Borrador")}
                           </Badge>
                         </Group>
 
@@ -224,16 +229,16 @@ const HomePage = () => {
                           <Group gap="xs">
                             <Text c="dimmed" size="sm">
                               {experiment.intervalSeconds > 0
-                                ? `Intervalo de ${experiment.intervalSeconds} s`
-                                : "Sin intervalo"}
+                                ? `${experiment.intervalSeconds} s`
+                                : t("Sin intervalo")}
                             </Text>
                             <Text c="dimmed" size="sm">
                               ·
                             </Text>
                             <Text c="dimmed" size="sm">
                               {experiment.distractorEnabled
-                                ? "Con distractor"
-                                : "Sin distractor"}
+                                ? t("Con distractor")
+                                : t("Sin distractor")}
                             </Text>
                           </Group>
                         )}
@@ -245,7 +250,7 @@ const HomePage = () => {
                                 {submitted}
                               </Text>
                               <Text c="dimmed" size="xs">
-                                respuestas
+                                {t("respuestas")}
                               </Text>
                             </div>
                             <div>
@@ -253,15 +258,17 @@ const HomePage = () => {
                                 {active}
                               </Text>
                               <Text c="dimmed" size="xs">
-                                en curso
+                                {t("en curso")}
                               </Text>
                             </div>
                             {experiment.publishedAt && (
                               <Text c="dimmed" size="sm" ml="auto">
-                                Desde{" "}
+                                {t("Desde")}{" "}
                                 {new Date(
                                   experiment.publishedAt,
-                                ).toLocaleDateString("es-AR")}
+                                ).toLocaleDateString(
+                                  locale === "es" ? "es-AR" : "en-US",
+                                )}
                               </Text>
                             )}
                           </Group>
@@ -273,31 +280,31 @@ const HomePage = () => {
                               <Text component="span" fw={700}>
                                 {submitted}
                               </Text>{" "}
-                              respuestas · {runs.length}{" "}
-                              {runs.length === 1 ? "corrida" : "corridas"}
+                              {t("respuestas")} · {runs.length}{" "}
+                              {t(runs.length === 1 ? "corrida" : "corridas")}
                             </Text>
                             <Text c="dimmed" size="sm">
                               {analyzerLabel
-                                ? `Último: ${analyzerLabel}`
-                                : "Todavía no fue analizado"}
+                                ? `${t("Último")}: ${analyzerLabel}`
+                                : t("Todavía no fue analizado")}
                             </Text>
                           </Stack>
                         )}
 
                         <Group justify="space-between" mt="auto">
                           <Text c="dimmed" size="xs">
-                            Creado{" "}
+                            {t("Creado")}{" "}
                             {new Date(experiment.createdAt).toLocaleDateString(
-                              "es-AR",
+                              locale === "es" ? "es-AR" : "en-US",
                             )}
                           </Text>
                           <Group gap={4}>
                             <Text fw={600} size="sm">
                               {experiment.status === "draft"
-                                ? "Continuar configuración"
+                                ? t("Continuar configuración")
                                 : experiment.status === "published"
-                                  ? "Monitorear"
-                                  : "Ver resultados"}
+                                  ? t("Monitorear")
+                                  : t("Ver resultados")}
                             </Text>
                             <IconChevronRight size={16} />
                           </Group>
@@ -315,22 +322,22 @@ const HomePage = () => {
       <Modal
         opened={createOpened}
         onClose={createModal.close}
-        title="Nuevo experimento"
+        title={t("Nuevo experimento")}
         centered
       >
         <form onSubmit={handleCreate}>
           <Stack>
             <TextInput
-              label="Nombre del experimento"
-              placeholder="Ej. Prueba piloto"
+              label={t("Nombre del experimento")}
+              placeholder={t("Ej. Prueba piloto")}
               required
               key={form.key("title")}
               {...form.getInputProps("title")}
             />
             <Textarea
-              label="Historia"
-              description="El texto que leerán los participantes."
-              placeholder="Pegá la historia completa…"
+              label={t("Historia")}
+              description={t("El texto que leerán los participantes.")}
+              placeholder={t("Pegá la historia completa…")}
               minRows={8}
               autosize
               required
@@ -339,10 +346,10 @@ const HomePage = () => {
             />
             <Group justify="flex-end">
               <Button variant="default" onClick={createModal.close}>
-                Cancelar
+                {t("Cancelar")}
               </Button>
               <Button type="submit" loading={createDraft.isExecuting}>
-                Crear borrador
+                {t("Crear borrador")}
               </Button>
             </Group>
           </Stack>

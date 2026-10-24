@@ -1,6 +1,7 @@
-import { Container, Stack, Text, Title } from "@mantine/core";
+import { Container, Stack } from "@mantine/core";
 
 import { LoginForm } from "./login-form";
+import { LoginCopy } from "./login-copy";
 
 const LoginPage = async ({
   searchParams,
@@ -13,17 +14,7 @@ const LoginPage = async ({
   return (
     <Container size={440} py={{ base: 48, sm: 96 }}>
       <Stack gap="xl">
-        <div>
-          <Title order={1}>Prueba de Bartlett</Title>
-          <Text c="dimmed" mt="xs">
-            Ingresá al espacio de administración.
-          </Text>
-        </div>
-        {params.error && (
-          <Text c="red">
-            El enlace no es válido o ya venció. Pedí uno nuevo.
-          </Text>
-        )}
+        <LoginCopy invalid={Boolean(params.error)} />
         <LoginForm next={next} />
       </Stack>
     </Container>

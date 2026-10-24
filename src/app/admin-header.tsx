@@ -16,6 +16,7 @@ import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 import { signOut } from "./login/actions";
+import { LanguageSelector, useI18n } from "./i18n";
 
 export const AdminHeader = ({
   section,
@@ -24,6 +25,7 @@ export const AdminHeader = ({
   section: string;
   backHref?: string;
 }) => {
+  const { t } = useI18n();
   const [email, setEmail] = useState<string>();
 
   useEffect(() => {
@@ -52,7 +54,7 @@ export const AdminHeader = ({
           <Group gap="sm" wrap="nowrap">
             <IconFlask size={24} />
             <Text fw={600} visibleFrom="sm" truncate>
-              Prueba de Bartlett
+              {t("Prueba de Bartlett")}
             </Text>
           </Group>
         </UnstyledButton>
@@ -62,8 +64,8 @@ export const AdminHeader = ({
             <UnstyledButton
               component={Link}
               href={backHref}
-              aria-label="Volver"
-              title="Volver"
+              aria-label={t("Volver")}
+              title={t("Volver")}
             >
               <IconArrowLeft size={19} />
             </UnstyledButton>
@@ -80,18 +82,19 @@ export const AdminHeader = ({
         </Group>
 
         <Group gap="xs" wrap="nowrap" justify="flex-end">
+          <LanguageSelector compact />
           {email && (
             <Text size="sm" c="dimmed" visibleFrom="md" truncate maw={240}>
               {email}
             </Text>
           )}
           <Box component="form" action={signOut}>
-            <Tooltip label="Cerrar sesión">
+            <Tooltip label={t("Cerrar sesión")}>
               <ActionIcon
                 type="submit"
                 variant="subtle"
                 color="gray"
-                aria-label="Cerrar sesión"
+                aria-label={t("Cerrar sesión")}
               >
                 <IconLogout size={19} />
               </ActionIcon>

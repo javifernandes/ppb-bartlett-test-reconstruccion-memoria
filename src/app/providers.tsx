@@ -17,6 +17,8 @@ import { useState, type ReactNode } from "react";
 
 import { clientApplication } from "@/generated/client-entities";
 
+import { I18nProvider } from "./i18n";
+
 const theme = createTheme({
   primaryColor: "teal",
   defaultRadius: "md",
@@ -66,22 +68,24 @@ export const Providers = ({ children }: { children: ReactNode }) => {
 
   return (
     <MantineProvider theme={theme} defaultColorScheme="auto">
-      <Notifications />
-      <QueryClientProvider client={queryClient}>
-        <OntahiGraphProvider
-          runtime={{ name: "browser" }}
-          identity={{ principal: null, cacheScope: "local-development" }}
-          client={graphClient}
-        >
-          {children}
-          {diagnostics ? (
-            <OntahiDevtools
-              diagnostics={diagnostics}
-              runtimeTransport={runtimeTransport}
-            />
-          ) : null}
-        </OntahiGraphProvider>
-      </QueryClientProvider>
+      <I18nProvider>
+        <Notifications />
+        <QueryClientProvider client={queryClient}>
+          <OntahiGraphProvider
+            runtime={{ name: "browser" }}
+            identity={{ principal: null, cacheScope: "local-development" }}
+            client={graphClient}
+          >
+            {children}
+            {diagnostics ? (
+              <OntahiDevtools
+                diagnostics={diagnostics}
+                runtimeTransport={runtimeTransport}
+              />
+            ) : null}
+          </OntahiGraphProvider>
+        </QueryClientProvider>
+      </I18nProvider>
     </MantineProvider>
   );
 };

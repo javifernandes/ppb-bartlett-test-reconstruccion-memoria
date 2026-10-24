@@ -18,11 +18,14 @@ import { useActionState, useState } from "react";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
+import { useI18n } from "../i18n";
+
 import { requestMagicLink, type LoginState } from "./actions";
 
 const initialState: LoginState = { status: "idle" };
 
 export const LoginForm = ({ next }: { next: string }) => {
+  const { t } = useI18n();
   const [state, action, pending] = useActionState(
     requestMagicLink,
     initialState,
@@ -44,7 +47,7 @@ export const LoginForm = ({ next }: { next: string }) => {
 
     if (error) {
       setGooglePending(false);
-      setGoogleError("No se pudo iniciar el acceso con Google.");
+      setGoogleError(t("No se pudo iniciar el acceso con Google."));
     }
   };
 
@@ -59,7 +62,7 @@ export const LoginForm = ({ next }: { next: string }) => {
           disabled={pending}
           onClick={() => void signInWithGoogle()}
         >
-          Continuar con Google
+          {t("Continuar con Google")}
         </Button>
         {googleError && (
           <Alert color="red" icon={<IconInfoCircle />}>
@@ -67,7 +70,7 @@ export const LoginForm = ({ next }: { next: string }) => {
           </Alert>
         )}
 
-        <Divider label="o ingresá por email" labelPosition="center" />
+        <Divider label={t("o ingresá por email")} labelPosition="center" />
 
         <input type="hidden" name="next" value={next} />
         <TextInput
@@ -92,10 +95,10 @@ export const LoginForm = ({ next }: { next: string }) => {
           loading={pending}
           disabled={googlePending || state.status === "sent"}
         >
-          Enviar enlace mágico
+          {t("Enviar enlace mágico")}
         </Button>
         <Text size="sm" c="dimmed">
-          El acceso está limitado a los integrantes invitados del equipo.
+          {t("El acceso está limitado a los integrantes invitados del equipo.")}
         </Text>
       </Stack>
     </Paper>
