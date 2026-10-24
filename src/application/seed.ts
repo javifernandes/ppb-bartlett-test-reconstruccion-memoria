@@ -1,19 +1,59 @@
-import { createEntityRef } from "@ontahi/core/data-graph";
-
-import { AnalysisRun } from "./analysis-run";
-import { Experiment } from "./experiment";
-import { ParticipantSession } from "./participant-session";
-
 const demoExperimentId = "experiment-complete-demo";
 const bilingualDemoExperimentId = "experiment-bilingual-demo";
 const demoRunId = "analysis-complete-demo";
 const demoStory =
   "Dos jóvenes bajaron al río para cazar focas. Oyeron gritos de guerra y se escondieron detrás de un tronco. Una canoa con cinco hombres se acercó y los invitó a acompañarlos. Uno de los jóvenes aceptó; el otro regresó a su casa. Al amanecer, el joven que había partido volvió herido y murió después de contar lo ocurrido.";
 
-const experimentRef = (id: string) => createEntityRef(Experiment, { id });
-const analysisRunRef = (id: string) => createEntityRef(AnalysisRun, { id });
-const participantSessionRef = (id: string) =>
-  createEntityRef(ParticipantSession, { id });
+const createBilingualDemoSessions = () =>
+  Array.from({ length: 72 }, (_, index) => {
+    const startedAt = new Date(Date.UTC(2026, 9, 24, 10, index * 4));
+    const status =
+      index % 9 === 0
+        ? ("reading" as const)
+        : index % 9 === 1
+          ? ("interval" as const)
+          : index % 9 === 2
+            ? ("recalling" as const)
+            : ("submitted" as const);
+    const intervalStartedAt =
+      status === "reading"
+        ? null
+        : new Date(startedAt.getTime() + 45_000).toISOString();
+    const recallingStartedAt =
+      status === "reading" || status === "interval"
+        ? null
+        : new Date(startedAt.getTime() + 55_000).toISOString();
+    const submittedAt =
+      status === "submitted"
+        ? new Date(
+            startedAt.getTime() + (95 + (index % 7) * 12) * 1_000,
+          ).toISOString()
+        : null;
+    const lastActivityAt =
+      submittedAt ??
+      recallingStartedAt ??
+      intervalStartedAt ??
+      new Date(startedAt.getTime() + 25_000).toISOString();
+    const contentLanguage = index % 3 === 0 ? ("en" as const) : ("es" as const);
+
+    return {
+      id: `session-bilingual-${String(index + 1).padStart(3, "0")}`,
+      experiment: bilingualDemoExperimentId,
+      contentLanguage,
+      status,
+      startedAt: startedAt.toISOString(),
+      intervalStartedAt,
+      recallingStartedAt,
+      lastActivityAt,
+      recallText:
+        status === "submitted"
+          ? contentLanguage === "es"
+            ? `Dos jóvenes estaban junto al río. Llegó una canoa y uno acompañó a los guerreros. Reconstrucción ${index + 1}.`
+            : `Two young men were by the river. A canoe arrived and one joined the warriors. Recall ${index + 1}.`
+          : null,
+      submittedAt,
+    };
+  });
 
 export const createBartlettSeed = (demoEnabled: boolean) => ({
   Experiment: [
@@ -103,9 +143,10 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
   ],
   ParticipantSession: demoEnabled
     ? [
+        ...createBilingualDemoSessions(),
         {
           id: "session-demo-1",
-          experiment: experimentRef(demoExperimentId),
+          experiment: demoExperimentId,
           contentLanguage: "es" as const,
           status: "submitted" as const,
           startedAt: "2026-10-22T09:05:00.000Z",
@@ -118,7 +159,7 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
         },
         {
           id: "session-demo-2",
-          experiment: experimentRef(demoExperimentId),
+          experiment: demoExperimentId,
           contentLanguage: "es" as const,
           status: "submitted" as const,
           startedAt: "2026-10-22T09:10:00.000Z",
@@ -135,7 +176,7 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
     ? [
         {
           id: demoRunId,
-          experiment: experimentRef(demoExperimentId),
+          experiment: demoExperimentId,
           status: "completed" as const,
           analyzerVersion: "local:demo-fixture-v1",
           createdAt: "2026-10-22T09:15:00.000Z",
@@ -146,9 +187,9 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
     ? [
         {
           id: "recall-analysis-demo-1",
-          run: analysisRunRef(demoRunId),
-          session: participantSessionRef("session-demo-1"),
-          experiment: experimentRef(demoExperimentId),
+          run: demoRunId,
+          session: "session-demo-1",
+          experiment: demoExperimentId,
           status: "completed" as const,
           rubricVersion: "bartlett-demo-v1",
           analyzerProvider: "fixture",
@@ -173,9 +214,9 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
         },
         {
           id: "recall-analysis-demo-2",
-          run: analysisRunRef(demoRunId),
-          session: participantSessionRef("session-demo-2"),
-          experiment: experimentRef(demoExperimentId),
+          run: demoRunId,
+          session: "session-demo-2",
+          experiment: demoExperimentId,
           status: "completed" as const,
           rubricVersion: "bartlett-demo-v1",
           analyzerProvider: "fixture",

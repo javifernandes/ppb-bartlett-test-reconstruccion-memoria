@@ -10,8 +10,21 @@ import {
 } from "./graph";
 import { analyzeRecallHeuristically } from "./recall-analysis";
 import { parseRecallAnalysisOutput } from "./recall-analysis-model";
+import { createBartlettSeed } from "./seed";
 
 describe("Bartlett application bootstrap", () => {
+  it("genera un volumen realista de participaciones para la demo local", () => {
+    const seed = createBartlettSeed(true);
+    const bilingualSessions = seed.ParticipantSession.filter(
+      (session) => session.experiment === "experiment-bilingual-demo",
+    );
+
+    expect(bilingualSessions).toHaveLength(72);
+    expect(
+      bilingualSessions.filter((session) => session.status === "submitted"),
+    ).toHaveLength(48);
+  });
+
   it("rechaza operaciones administrativas sin un principal", async () => {
     const result = await Experiment.createDraft({
       id: "experiment-unauthorized",

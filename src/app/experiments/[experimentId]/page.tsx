@@ -11,6 +11,8 @@ import {
   Loader,
   Modal,
   NumberInput,
+  Paper,
+  Progress,
   Select,
   SimpleGrid,
   Stack,
@@ -18,6 +20,7 @@ import {
   Text,
   Textarea,
   TextInput,
+  Table,
   Title,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
@@ -109,8 +112,22 @@ const elapsedSeconds = (from?: string | null, to?: string | null) => {
   );
 };
 
+const elapsedNumber = (from?: string | null, to?: string | null) => {
+  const value = elapsedSeconds(from, to);
+  return value ? Number(value) : undefined;
+};
+
+const formatDuration = (seconds?: number) => {
+  if (seconds === undefined) return "—";
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return minutes > 0 ? `${minutes} min ${remainder} s` : `${remainder} s`;
+};
+
+type SessionFilter = "all" | "submitted" | "reading" | "interval" | "recalling";
+
 const ExperimentWorkspacePage = () => {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const { experimentId } = useParams<{ experimentId: string }>();
   const router = useRouter();
   const experimentQuery = useMemo(
@@ -147,6 +164,12 @@ const ExperimentWorkspacePage = () => {
   const [deleteOpened, deleteModal] = useDisclosure(false);
   const [qrOpened, qrModal] = useDisclosure(false);
   const [publicOrigin, setPublicOrigin] = useState("");
+  const [sessionFilter, setSessionFilter] = useState<SessionFilter>("all");
+  const [languageFilter, setLanguageFilter] = useState<"all" | "es" | "en">(
+    "all",
+  );
+  const [sessionSearch, setSessionSearch] = useState("");
+  const [visibleSessionCount, setVisibleSessionCount] = useState(20);
   const updateDraft = useOperation(Experiment.domain.updateDraft);
   const publish = useOperation(Experiment.domain.publish, {
     onSuccess: () => {
@@ -470,6 +493,55 @@ const ExperimentWorkspacePage = () => {
     });
   };
 
+  const sessionRows = sessions.data ?? [];
+  const completedSessions = sessionRows.filter(
+    (session) => session.status === "submitted",
+  );
+  const activeSessions = sessionRows.filter(
+    (session) => session.status !== "submitted",
+  );
+  const completionRate =
+    sessionRows.length > 0
+      ? Math.round((completedSessions.length / sessionRows.length) * 100)
+      : 0;
+  const completedDurations = completedSessions.flatMap((session) => {
+    const duration = elapsedNumber(session.startedAt, session.submittedAt);
+    return duration === undefined ? [] : [duration];
+  });
+  const averageDuration =
+    completedDurations.length > 0
+      ? Math.round(
+          completedDurations.reduce((total, value) => total + value, 0) /
+            completedDurations.length,
+        )
+      : undefined;
+  const latestActivity = sessionRows.reduce<string | undefined>(
+    (latest, session) =>
+      !latest || Date.parse(session.lastActivityAt) > Date.parse(latest)
+        ? session.lastActivityAt
+        : latest,
+    undefined,
+  );
+  const filteredSessions = sessionRows.filter((session) => {
+    if (sessionFilter !== "all" && session.status !== sessionFilter)
+      return false;
+    if (languageFilter !== "all" && session.contentLanguage !== languageFilter)
+      return false;
+    const search = sessionSearch.trim().toLocaleLowerCase();
+    return (
+      !search ||
+      session.id.toLocaleLowerCase().includes(search) ||
+      session.recallText?.toLocaleLowerCase().includes(search)
+    );
+  });
+  const visibleSessions = filteredSessions.slice(0, visibleSessionCount);
+  const latestActivityLabel = latestActivity
+    ? new Date(latestActivity).toLocaleString(
+        locale === "es" ? "es-AR" : "en-US",
+        { dateStyle: "short", timeStyle: "short" },
+      )
+    : "—";
+
   return (
     <AppShell header={{ height: 64 }} padding="md">
       <AdminHeader
@@ -497,7 +569,13 @@ const ExperimentWorkspacePage = () => {
                 <Group justify="space-between" align="flex-start" wrap="wrap">
                   <div>
                     <Title order={1}>{experiment.data.title}</Title>
-                    <Text c="dimmed">{t("Configuración del experimento")}</Text>
+                    <Text c="dimmed">
+                      {experiment.data.status === "published"
+                        ? t("Recolección en curso")
+                        : experiment.data.status === "closed"
+                          ? t("Resultados del experimento")
+                          : t("Configuración del experimento")}
+                    </Text>
                   </div>
                   <Group>
                     <Badge
@@ -582,9 +660,24 @@ const ExperimentWorkspacePage = () => {
 
                 {experiment.data.status === "published" &&
                   experiment.data.publicToken && (
-                    <Card withBorder padding="lg">
-                      <Stack gap="sm">
-                        <Text fw={600}>{t("Enlace para participantes")}</Text>
+                    <Card
+                      withBorder
+                      padding="xl"
+                      style={{
+                        borderColor: "var(--mantine-color-teal-7)",
+                        background:
+                          "linear-gradient(135deg, color-mix(in srgb, var(--mantine-color-teal-9) 18%, transparent), transparent 65%)",
+                      }}
+                    >
+                      <Stack gap="md">
+                        <div>
+                          <Title order={2}>{t("Compartir experimento")}</Title>
+                          <Text c="dimmed" size="sm">
+                            {t(
+                              "Compartí el enlace o mostrá el código QR para sumar participantes.",
+                            )}
+                          </Text>
+                        </div>
                         <Group align="flex-end">
                           <TextInput
                             aria-label={t("Enlace para participantes")}
@@ -615,346 +708,548 @@ const ExperimentWorkspacePage = () => {
                     </Card>
                   )}
 
-                <Card withBorder padding="lg">
-                  <form onSubmit={handleSave}>
-                    <Stack gap="lg">
-                      <TextInput
-                        label={t("Nombre del experimento")}
-                        description={t("Sólo lo ven los administradores.")}
-                        required
-                        disabled={experiment.data.status !== "draft"}
-                        {...form.getInputProps("title")}
-                      />
-                      <Textarea
-                        label={t("Historia")}
-                        description={t(
-                          "El texto se mostrará a los participantes durante la etapa de lectura.",
-                        )}
-                        minRows={12}
-                        autosize
-                        required
-                        disabled={experiment.data.status !== "draft"}
-                        {...form.getInputProps("story")}
-                      />
-                      <NumberInput
-                        label={t("Intervalo antes de reconstruir")}
-                        description={t(
-                          "Duración en segundos. Usá 0 para pasar directamente.",
-                        )}
-                        min={0}
-                        max={3600}
-                        suffix=" s"
-                        disabled={experiment.data.status !== "draft"}
-                        {...form.getInputProps("intervalSeconds")}
-                      />
-                      <Switch
-                        label={t("Usar distractor durante el intervalo")}
-                        disabled={experiment.data.status !== "draft"}
-                        {...form.getInputProps("distractorEnabled", {
-                          type: "checkbox",
-                        })}
-                      />
-                      <Accordion variant="contained">
-                        <Accordion.Item value="participant-copy">
-                          <Accordion.Control>
-                            {t("Textos e instrucciones")}
-                          </Accordion.Control>
-                          <Accordion.Panel>
-                            <Stack gap="lg">
-                              <TextInput
-                                label="Título para participantes"
-                                description="Por defecto puede ser igual al nombre del experimento."
-                                required
-                                disabled={experiment.data.status !== "draft"}
-                                {...form.getInputProps("participantTitle")}
-                              />
-                              <Textarea
-                                label="Introducción"
-                                minRows={3}
-                                autosize
-                                required
-                                disabled={experiment.data.status !== "draft"}
-                                {...form.getInputProps("introduction")}
-                              />
-                              <Textarea
-                                label="Consentimiento"
-                                minRows={3}
-                                autosize
-                                required
-                                disabled={experiment.data.status !== "draft"}
-                                {...form.getInputProps("consentText")}
-                              />
-                              <Textarea
-                                label="Instrucciones de reconstrucción"
-                                minRows={3}
-                                autosize
-                                required
-                                disabled={experiment.data.status !== "draft"}
-                                {...form.getInputProps("recallInstructions")}
-                              />
-                            </Stack>
-                          </Accordion.Panel>
-                        </Accordion.Item>
-                        <Accordion.Item value="languages">
-                          <Accordion.Control icon={<IconLanguage size={18} />}>
-                            {t("Idiomas y variantes")}
-                          </Accordion.Control>
-                          <Accordion.Panel>
-                            <Stack gap="lg">
-                              <Select
-                                label={t("Idioma principal del contenido")}
-                                description={t(
-                                  "No afecta el idioma de la interfaz administrativa.",
+                {experiment.data.status === "draft" && (
+                  <Card withBorder padding="lg">
+                    <form onSubmit={handleSave}>
+                      <Stack gap="lg">
+                        <TextInput
+                          label={t("Nombre del experimento")}
+                          description={t("Sólo lo ven los administradores.")}
+                          required
+                          disabled={experiment.data.status !== "draft"}
+                          {...form.getInputProps("title")}
+                        />
+                        <Textarea
+                          label={t("Historia")}
+                          description={t(
+                            "El texto se mostrará a los participantes durante la etapa de lectura.",
+                          )}
+                          minRows={12}
+                          autosize
+                          required
+                          disabled={experiment.data.status !== "draft"}
+                          {...form.getInputProps("story")}
+                        />
+                        <NumberInput
+                          label={t("Intervalo antes de reconstruir")}
+                          description={t(
+                            "Duración en segundos. Usá 0 para pasar directamente.",
+                          )}
+                          min={0}
+                          max={3600}
+                          suffix=" s"
+                          disabled={experiment.data.status !== "draft"}
+                          {...form.getInputProps("intervalSeconds")}
+                        />
+                        <Switch
+                          label={t("Usar distractor durante el intervalo")}
+                          disabled={experiment.data.status !== "draft"}
+                          {...form.getInputProps("distractorEnabled", {
+                            type: "checkbox",
+                          })}
+                        />
+                        <Accordion variant="contained">
+                          <Accordion.Item value="participant-copy">
+                            <Accordion.Control>
+                              {t("Textos e instrucciones")}
+                            </Accordion.Control>
+                            <Accordion.Panel>
+                              <Stack gap="lg">
+                                <TextInput
+                                  label="Título para participantes"
+                                  description="Por defecto puede ser igual al nombre del experimento."
+                                  required
+                                  disabled={experiment.data.status !== "draft"}
+                                  {...form.getInputProps("participantTitle")}
+                                />
+                                <Textarea
+                                  label="Introducción"
+                                  minRows={3}
+                                  autosize
+                                  required
+                                  disabled={experiment.data.status !== "draft"}
+                                  {...form.getInputProps("introduction")}
+                                />
+                                <Textarea
+                                  label="Consentimiento"
+                                  minRows={3}
+                                  autosize
+                                  required
+                                  disabled={experiment.data.status !== "draft"}
+                                  {...form.getInputProps("consentText")}
+                                />
+                                <Textarea
+                                  label="Instrucciones de reconstrucción"
+                                  minRows={3}
+                                  autosize
+                                  required
+                                  disabled={experiment.data.status !== "draft"}
+                                  {...form.getInputProps("recallInstructions")}
+                                />
+                              </Stack>
+                            </Accordion.Panel>
+                          </Accordion.Item>
+                          <Accordion.Item value="languages">
+                            <Accordion.Control
+                              icon={<IconLanguage size={18} />}
+                            >
+                              {t("Idiomas y variantes")}
+                            </Accordion.Control>
+                            <Accordion.Panel>
+                              <Stack gap="lg">
+                                <Select
+                                  label={t("Idioma principal del contenido")}
+                                  description={t(
+                                    "No afecta el idioma de la interfaz administrativa.",
+                                  )}
+                                  data={[
+                                    { value: "es", label: "Español" },
+                                    { value: "en", label: "English" },
+                                  ]}
+                                  allowDeselect={false}
+                                  disabled={
+                                    experiment.data.status !== "draft" ||
+                                    Boolean(form.values.alternateLanguage)
+                                  }
+                                  {...form.getInputProps("primaryLanguage")}
+                                />
+                                {!form.values.alternateLanguage ? (
+                                  <div>
+                                    <Button
+                                      type="button"
+                                      variant="light"
+                                      disabled={
+                                        experiment.data.status !== "draft"
+                                      }
+                                      onClick={() =>
+                                        form.setFieldValue(
+                                          "alternateLanguage",
+                                          form.values.primaryLanguage === "es"
+                                            ? "en"
+                                            : "es",
+                                        )
+                                      }
+                                    >
+                                      {t("Agregar variante en otro idioma")}
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Stack gap="md">
+                                    <Group justify="space-between">
+                                      <div>
+                                        <Text fw={600}>
+                                          {form.values.alternateLanguage ===
+                                          "en"
+                                            ? "English"
+                                            : "Español"}
+                                        </Text>
+                                        <Text size="sm" c="dimmed">
+                                          {t(
+                                            "Los participantes podrán elegir esta versión antes de comenzar.",
+                                          )}
+                                        </Text>
+                                      </div>
+                                      {experiment.data.status === "draft" && (
+                                        <Button
+                                          type="button"
+                                          variant="subtle"
+                                          color="red"
+                                          onClick={() => {
+                                            form.setValues({
+                                              alternateLanguage: "",
+                                              alternateParticipantTitle: "",
+                                              alternateIntroduction: "",
+                                              alternateConsentText: "",
+                                              alternateStory: "",
+                                              alternateRecallInstructions: "",
+                                            });
+                                          }}
+                                        >
+                                          {t("Quitar variante")}
+                                        </Button>
+                                      )}
+                                    </Group>
+                                    <TextInput
+                                      label={t("Título para participantes")}
+                                      required
+                                      disabled={
+                                        experiment.data.status !== "draft"
+                                      }
+                                      {...form.getInputProps(
+                                        "alternateParticipantTitle",
+                                      )}
+                                    />
+                                    <Textarea
+                                      label={t("Introducción")}
+                                      minRows={3}
+                                      autosize
+                                      required
+                                      disabled={
+                                        experiment.data.status !== "draft"
+                                      }
+                                      {...form.getInputProps(
+                                        "alternateIntroduction",
+                                      )}
+                                    />
+                                    <Textarea
+                                      label={t("Consentimiento")}
+                                      minRows={3}
+                                      autosize
+                                      required
+                                      disabled={
+                                        experiment.data.status !== "draft"
+                                      }
+                                      {...form.getInputProps(
+                                        "alternateConsentText",
+                                      )}
+                                    />
+                                    <Textarea
+                                      label={t("Historia")}
+                                      minRows={10}
+                                      autosize
+                                      required
+                                      disabled={
+                                        experiment.data.status !== "draft"
+                                      }
+                                      {...form.getInputProps("alternateStory")}
+                                    />
+                                    <Textarea
+                                      label={t(
+                                        "Instrucciones de reconstrucción",
+                                      )}
+                                      minRows={3}
+                                      autosize
+                                      required
+                                      disabled={
+                                        experiment.data.status !== "draft"
+                                      }
+                                      {...form.getInputProps(
+                                        "alternateRecallInstructions",
+                                      )}
+                                    />
+                                  </Stack>
                                 )}
-                                data={[
-                                  { value: "es", label: "Español" },
-                                  { value: "en", label: "English" },
-                                ]}
-                                allowDeselect={false}
-                                disabled={
-                                  experiment.data.status !== "draft" ||
-                                  Boolean(form.values.alternateLanguage)
-                                }
-                                {...form.getInputProps("primaryLanguage")}
-                              />
-                              {!form.values.alternateLanguage ? (
-                                <div>
-                                  <Button
-                                    type="button"
-                                    variant="light"
-                                    disabled={
-                                      experiment.data.status !== "draft"
-                                    }
-                                    onClick={() =>
-                                      form.setFieldValue(
-                                        "alternateLanguage",
-                                        form.values.primaryLanguage === "es"
-                                          ? "en"
-                                          : "es",
-                                      )
-                                    }
-                                  >
-                                    {t("Agregar variante en otro idioma")}
-                                  </Button>
-                                </div>
-                              ) : (
-                                <Stack gap="md">
-                                  <Group justify="space-between">
-                                    <div>
-                                      <Text fw={600}>
-                                        {form.values.alternateLanguage === "en"
-                                          ? "English"
-                                          : "Español"}
-                                      </Text>
-                                      <Text size="sm" c="dimmed">
-                                        {t(
-                                          "Los participantes podrán elegir esta versión antes de comenzar.",
-                                        )}
-                                      </Text>
-                                    </div>
-                                    {experiment.data.status === "draft" && (
-                                      <Button
-                                        type="button"
-                                        variant="subtle"
-                                        color="red"
-                                        onClick={() => {
-                                          form.setValues({
-                                            alternateLanguage: "",
-                                            alternateParticipantTitle: "",
-                                            alternateIntroduction: "",
-                                            alternateConsentText: "",
-                                            alternateStory: "",
-                                            alternateRecallInstructions: "",
-                                          });
-                                        }}
-                                      >
-                                        {t("Quitar variante")}
-                                      </Button>
-                                    )}
-                                  </Group>
-                                  <TextInput
-                                    label={t("Título para participantes")}
-                                    required
-                                    disabled={
-                                      experiment.data.status !== "draft"
-                                    }
-                                    {...form.getInputProps(
-                                      "alternateParticipantTitle",
-                                    )}
-                                  />
-                                  <Textarea
-                                    label={t("Introducción")}
-                                    minRows={3}
-                                    autosize
-                                    required
-                                    disabled={
-                                      experiment.data.status !== "draft"
-                                    }
-                                    {...form.getInputProps(
-                                      "alternateIntroduction",
-                                    )}
-                                  />
-                                  <Textarea
-                                    label={t("Consentimiento")}
-                                    minRows={3}
-                                    autosize
-                                    required
-                                    disabled={
-                                      experiment.data.status !== "draft"
-                                    }
-                                    {...form.getInputProps(
-                                      "alternateConsentText",
-                                    )}
-                                  />
-                                  <Textarea
-                                    label={t("Historia")}
-                                    minRows={10}
-                                    autosize
-                                    required
-                                    disabled={
-                                      experiment.data.status !== "draft"
-                                    }
-                                    {...form.getInputProps("alternateStory")}
-                                  />
-                                  <Textarea
-                                    label={t("Instrucciones de reconstrucción")}
-                                    minRows={3}
-                                    autosize
-                                    required
-                                    disabled={
-                                      experiment.data.status !== "draft"
-                                    }
-                                    {...form.getInputProps(
-                                      "alternateRecallInstructions",
-                                    )}
-                                  />
-                                </Stack>
-                              )}
-                            </Stack>
-                          </Accordion.Panel>
-                        </Accordion.Item>
-                      </Accordion>
-                      <Group justify="flex-end">
-                        {experiment.data.status === "draft" && (
-                          <Button
-                            type="submit"
-                            leftSection={<IconDeviceFloppy size={18} />}
-                            loading={updateDraft.isExecuting}
-                            disabled={!form.isDirty()}
-                          >
-                            Guardar cambios
-                          </Button>
-                        )}
-                      </Group>
-                    </Stack>
-                  </form>
-                </Card>
+                              </Stack>
+                            </Accordion.Panel>
+                          </Accordion.Item>
+                        </Accordion>
+                        <Group justify="flex-end">
+                          {experiment.data.status === "draft" && (
+                            <Button
+                              type="submit"
+                              leftSection={<IconDeviceFloppy size={18} />}
+                              loading={updateDraft.isExecuting}
+                              disabled={!form.isDirty()}
+                            >
+                              Guardar cambios
+                            </Button>
+                          )}
+                        </Group>
+                      </Stack>
+                    </form>
+                  </Card>
+                )}
 
                 {experiment.data.status !== "draft" && (
-                  <Stack gap="md">
-                    <Group justify="space-between">
-                      <Title order={2}>Respuestas</Title>
-                      <Button
-                        variant="default"
-                        leftSection={<IconDownload size={18} />}
-                        disabled={
-                          !sessions.data?.some(
-                            (session) => session.status === "submitted",
-                          )
-                        }
-                        onClick={exportResponses}
-                      >
-                        Descargar CSV
-                      </Button>
-                    </Group>
-                    <SimpleGrid cols={{ base: 1, xs: 3 }}>
+                  <Stack gap="xl">
+                    <SimpleGrid cols={{ base: 2, sm: 3, md: 5 }}>
                       <Card withBorder padding="md">
                         <Text size="sm" c="dimmed">
-                          Iniciadas
+                          {t("Iniciadas")}
                         </Text>
                         <Text size="xl" fw={700}>
-                          {sessions.data?.length ?? 0}
+                          {sessionRows.length}
                         </Text>
                       </Card>
                       <Card withBorder padding="md">
                         <Text size="sm" c="dimmed">
-                          En curso
+                          {t("Completadas")}
                         </Text>
                         <Text size="xl" fw={700}>
-                          {sessions.data?.filter(
-                            (session) => session.status !== "submitted",
-                          ).length ?? 0}
+                          {completedSessions.length}
                         </Text>
                       </Card>
                       <Card withBorder padding="md">
                         <Text size="sm" c="dimmed">
-                          Completadas
+                          {t("En curso")}
                         </Text>
                         <Text size="xl" fw={700}>
-                          {sessions.data?.filter(
-                            (session) => session.status === "submitted",
-                          ).length ?? 0}
+                          {activeSessions.length}
+                        </Text>
+                      </Card>
+                      <Card withBorder padding="md">
+                        <Text size="sm" c="dimmed">
+                          {t("Finalización")}
+                        </Text>
+                        <Text size="xl" fw={700}>
+                          {completionRate} %
+                        </Text>
+                        <Progress value={completionRate} mt={6} size="xs" />
+                      </Card>
+                      <Card withBorder padding="md">
+                        <Text size="sm" c="dimmed">
+                          {t("Duración promedio")}
+                        </Text>
+                        <Text size="xl" fw={700}>
+                          {formatDuration(averageDuration)}
                         </Text>
                       </Card>
                     </SimpleGrid>
-                    {sessions.isLoading && <Loader size="sm" />}
-                    {sessions.isError && (
-                      <Card withBorder>
-                        <Text c="red">
-                          No se pudieron cargar las respuestas.
-                        </Text>
-                      </Card>
-                    )}
-                    {sessions.data?.length === 0 && (
-                      <Card withBorder>
-                        <Text c="dimmed">Todavía no hay participaciones.</Text>
-                      </Card>
-                    )}
-                    {sessions.data?.map((session) => (
-                      <Card
-                        key={session.id}
-                        component={Link}
-                        href={`/experiments/${experimentId}/responses/${session.id}`}
-                        withBorder
-                        padding="lg"
-                        style={{ color: "inherit", textDecoration: "none" }}
-                      >
-                        <Group justify="space-between" wrap="nowrap">
-                          <Stack gap={4} style={{ minWidth: 0 }}>
-                            <Group gap="xs">
-                              <Badge
-                                variant="light"
-                                color={sessionStatus[session.status].color}
-                              >
-                                {sessionStatus[session.status].label}
-                              </Badge>
-                              <Text size="sm" c="dimmed">
-                                {new Date(session.startedAt).toLocaleString(
-                                  "es-AR",
-                                )}
-                              </Text>
-                            </Group>
-                            <Text
-                              lineClamp={2}
-                              c={session.recallText ? undefined : "dimmed"}
-                            >
-                              {session.recallText ??
-                                "Todavía no envió una respuesta."}
+
+                    <Card withBorder padding="lg">
+                      <Stack gap="md">
+                        <Group justify="space-between" align="flex-start">
+                          <div>
+                            <Title order={2}>{t("Respuestas")}</Title>
+                            <Text c="dimmed" size="sm">
+                              {t("Última actividad")}: {latestActivityLabel}
                             </Text>
-                          </Stack>
-                          <IconChevronRight size={20} />
+                          </div>
+                          <Button
+                            variant="default"
+                            leftSection={<IconDownload size={18} />}
+                            disabled={completedSessions.length === 0}
+                            onClick={exportResponses}
+                          >
+                            {t("Descargar CSV")}
+                          </Button>
                         </Group>
-                      </Card>
-                    ))}
+
+                        <Group align="flex-end" grow wrap="wrap">
+                          <Select
+                            label={t("Estado")}
+                            value={sessionFilter}
+                            data={[
+                              { value: "all", label: t("Todas") },
+                              { value: "submitted", label: t("Completadas") },
+                              { value: "reading", label: t("Leyendo") },
+                              { value: "interval", label: t("En intervalo") },
+                              {
+                                value: "recalling",
+                                label: t("Reconstruyendo"),
+                              },
+                            ]}
+                            allowDeselect={false}
+                            onChange={(value) => {
+                              setSessionFilter(
+                                (value ?? "all") as SessionFilter,
+                              );
+                              setVisibleSessionCount(20);
+                            }}
+                          />
+                          {experiment.data.alternateLanguage && (
+                            <Select
+                              label={t("Idioma")}
+                              value={languageFilter}
+                              data={[
+                                { value: "all", label: t("Todos") },
+                                { value: "es", label: "Español" },
+                                { value: "en", label: "English" },
+                              ]}
+                              allowDeselect={false}
+                              onChange={(value) => {
+                                setLanguageFilter(
+                                  (value ?? "all") as "all" | "es" | "en",
+                                );
+                                setVisibleSessionCount(20);
+                              }}
+                            />
+                          )}
+                          <TextInput
+                            label={t("Buscar")}
+                            placeholder={t("ID o texto de la respuesta")}
+                            value={sessionSearch}
+                            onChange={(event) => {
+                              setSessionSearch(event.currentTarget.value);
+                              setVisibleSessionCount(20);
+                            }}
+                          />
+                        </Group>
+
+                        {sessions.isLoading && <Loader size="sm" />}
+                        {sessions.isError && (
+                          <Text c="red">
+                            {t("No se pudieron cargar las respuestas.")}
+                          </Text>
+                        )}
+                        {!sessions.isLoading &&
+                          filteredSessions.length === 0 && (
+                            <Paper withBorder p="lg">
+                              <Text c="dimmed">
+                                {sessionRows.length === 0
+                                  ? t("Todavía no hay participaciones.")
+                                  : t("No hay respuestas para estos filtros.")}
+                              </Text>
+                            </Paper>
+                          )}
+                        {visibleSessions.length > 0 && (
+                          <Table.ScrollContainer minWidth={720}>
+                            <Table verticalSpacing="sm" highlightOnHover>
+                              <Table.Thead>
+                                <Table.Tr>
+                                  <Table.Th>{t("Estado")}</Table.Th>
+                                  <Table.Th>{t("Inicio")}</Table.Th>
+                                  <Table.Th>{t("Idioma")}</Table.Th>
+                                  <Table.Th>{t("Duración")}</Table.Th>
+                                  <Table.Th>{t("Palabras")}</Table.Th>
+                                  <Table.Th />
+                                </Table.Tr>
+                              </Table.Thead>
+                              <Table.Tbody>
+                                {visibleSessions.map((session) => (
+                                  <Table.Tr key={session.id}>
+                                    <Table.Td>
+                                      <Badge
+                                        variant="light"
+                                        color={
+                                          sessionStatus[session.status].color
+                                        }
+                                      >
+                                        {t(sessionStatus[session.status].label)}
+                                      </Badge>
+                                    </Table.Td>
+                                    <Table.Td>
+                                      <Text size="sm">
+                                        {new Date(
+                                          session.startedAt,
+                                        ).toLocaleString(
+                                          locale === "es" ? "es-AR" : "en-US",
+                                          {
+                                            dateStyle: "short",
+                                            timeStyle: "short",
+                                          },
+                                        )}
+                                      </Text>
+                                      <Text size="xs" c="dimmed" ff="monospace">
+                                        {session.id.slice(0, 8)}
+                                      </Text>
+                                    </Table.Td>
+                                    <Table.Td>
+                                      {session.contentLanguage.toUpperCase()}
+                                    </Table.Td>
+                                    <Table.Td>
+                                      {formatDuration(
+                                        elapsedNumber(
+                                          session.startedAt,
+                                          session.submittedAt ??
+                                            session.lastActivityAt,
+                                        ),
+                                      )}
+                                    </Table.Td>
+                                    <Table.Td>
+                                      {session.recallText
+                                        ? (session.recallText.match(
+                                            /[\p{L}\p{N}]+/gu,
+                                          )?.length ?? 0)
+                                        : "—"}
+                                    </Table.Td>
+                                    <Table.Td ta="right">
+                                      <Button
+                                        component={Link}
+                                        href={`/experiments/${experimentId}/responses/${session.id}`}
+                                        variant="subtle"
+                                        size="compact-sm"
+                                        rightSection={
+                                          <IconChevronRight size={16} />
+                                        }
+                                      >
+                                        {t("Ver")}
+                                      </Button>
+                                    </Table.Td>
+                                  </Table.Tr>
+                                ))}
+                              </Table.Tbody>
+                            </Table>
+                          </Table.ScrollContainer>
+                        )}
+                        {visibleSessionCount < filteredSessions.length && (
+                          <Group justify="center">
+                            <Button
+                              variant="default"
+                              onClick={() =>
+                                setVisibleSessionCount((count) => count + 20)
+                              }
+                            >
+                              {t("Cargar más")} ·{" "}
+                              {filteredSessions.length - visibleSessionCount}
+                            </Button>
+                          </Group>
+                        )}
+                      </Stack>
+                    </Card>
+
+                    <Accordion variant="contained">
+                      <Accordion.Item value="configuration">
+                        <Accordion.Control>
+                          {t("Ver configuración del experimento")}
+                        </Accordion.Control>
+                        <Accordion.Panel>
+                          <Stack gap="lg">
+                            <SimpleGrid cols={{ base: 1, sm: 3 }}>
+                              <div>
+                                <Text size="sm" c="dimmed">
+                                  {t("Idioma principal del contenido")}
+                                </Text>
+                                <Text fw={600}>
+                                  {experiment.data.primaryLanguage === "es"
+                                    ? "Español"
+                                    : "English"}
+                                </Text>
+                              </div>
+                              <div>
+                                <Text size="sm" c="dimmed">
+                                  {t("Intervalo")}
+                                </Text>
+                                <Text fw={600}>
+                                  {experiment.data.intervalSeconds > 0
+                                    ? `${experiment.data.intervalSeconds} s`
+                                    : t("Sin intervalo")}
+                                </Text>
+                              </div>
+                              <div>
+                                <Text size="sm" c="dimmed">
+                                  {t("Distractor")}
+                                </Text>
+                                <Text fw={600}>
+                                  {experiment.data.distractorEnabled
+                                    ? t("Activado")
+                                    : t("Desactivado")}
+                                </Text>
+                              </div>
+                            </SimpleGrid>
+                            <div>
+                              <Text size="sm" c="dimmed" mb={4}>
+                                {t("Historia")}
+                              </Text>
+                              <Text style={{ whiteSpace: "pre-wrap" }}>
+                                {experiment.data.story}
+                              </Text>
+                            </div>
+                            {experiment.data.alternateStory && (
+                              <div>
+                                <Text size="sm" c="dimmed" mb={4}>
+                                  {t("Variante en otro idioma")}
+                                </Text>
+                                <Text style={{ whiteSpace: "pre-wrap" }}>
+                                  {experiment.data.alternateStory}
+                                </Text>
+                              </div>
+                            )}
+                          </Stack>
+                        </Accordion.Panel>
+                      </Accordion.Item>
+                    </Accordion>
                   </Stack>
                 )}
 
                 <Card withBorder padding="lg">
                   <Group justify="space-between" align="center" wrap="wrap">
                     <div>
-                      <Text fw={600}>Eliminar experimento</Text>
+                      <Text fw={600}>{t("Eliminar experimento")}</Text>
                       <Text c="dimmed" size="sm">
-                        Borra también todas sus participaciones y análisis.
+                        {t(
+                          "Borra también todas sus participaciones y análisis.",
+                        )}
                       </Text>
                     </div>
                     <Button
@@ -963,7 +1258,7 @@ const ExperimentWorkspacePage = () => {
                       leftSection={<IconTrash size={18} />}
                       onClick={deleteModal.open}
                     >
-                      Eliminar
+                      {t("Eliminar")}
                     </Button>
                   </Group>
                 </Card>
@@ -1066,21 +1361,22 @@ const ExperimentWorkspacePage = () => {
       <Modal
         opened={deleteOpened}
         onClose={deleteModal.close}
-        title="Eliminar experimento"
+        title={t("Eliminar experimento")}
         centered
       >
         <Stack>
           <Text>
-            Vas a eliminar definitivamente{" "}
+            {t("Vas a eliminar definitivamente")}{" "}
             <strong>{experiment.data?.title}</strong>.
           </Text>
           <Text c="dimmed">
-            También se borrarán todas las participaciones, respuestas y corridas
-            de análisis asociadas. Esta acción no se puede deshacer.
+            {t(
+              "También se borrarán todas las participaciones, respuestas y corridas de análisis asociadas. Esta acción no se puede deshacer.",
+            )}
           </Text>
           <Group justify="flex-end">
             <Button variant="default" onClick={deleteModal.close}>
-              Cancelar
+              {t("Cancelar")}
             </Button>
             <Button
               color="red"
@@ -1088,7 +1384,7 @@ const ExperimentWorkspacePage = () => {
               loading={deletePermanently.isExecuting}
               onClick={() => void handleDelete()}
             >
-              Eliminar definitivamente
+              {t("Eliminar definitivamente")}
             </Button>
           </Group>
         </Stack>
