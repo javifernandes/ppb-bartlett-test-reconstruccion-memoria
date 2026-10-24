@@ -21,17 +21,17 @@ importers:
         specifier: 9.7.3
         version: 9.7.3(@mantine/core@9.7.3(@mantine/hooks@9.7.3(react@19.3.1))(@types/react@19.2.14)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(@mantine/hooks@9.7.3(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@ontahi/core':
-        specifier: 1.0.0-alpha.13
-        version: 1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)
+        specifier: 1.0.0-alpha.14
+        version: 1.0.0-alpha.14(@types/node@24.10.0)(typescript@5.9.3)
       '@ontahi/react':
-        specifier: 1.0.0-alpha.13
-        version: 1.0.0-alpha.13(@tanstack/react-query@5.104.5(@types/react@19.2.14)(react@19.3.1))(@types/node@24.10.0)(@types/react@19.2.14)(react@19.3.1)(typescript@5.9.3)
+        specifier: 1.0.0-alpha.14
+        version: 1.0.0-alpha.14(@tanstack/react-query@5.104.5(@types/react@19.2.14)(react@19.3.1))(@types/node@24.10.0)(@types/react@19.2.14)(react@19.3.1)(typescript@5.9.3)
       '@ontahi/runtime-nextjs':
-        specifier: 1.0.0-alpha.13
-        version: 1.0.0-alpha.13(@types/node@24.10.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(next@16.4.2(@babel/core@7.29.7)(@types/node@24.10.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.9.3)
+        specifier: 1.0.0-alpha.14
+        version: 1.0.0-alpha.14(@types/node@24.10.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(next@16.4.2(@babel/core@7.29.7)(@types/node@24.10.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.9.3)
       '@ontahi/supabase':
-        specifier: 1.0.0-alpha.13
-        version: 1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)
+        specifier: 1.0.0-alpha.14
+        version: 1.0.0-alpha.14(@types/node@24.10.0)(typescript@5.9.3)
       '@supabase/ssr':
         specifier: ^0.12.7
         version: 0.12.7(@supabase/supabase-js@2.118.0)
@@ -58,11 +58,11 @@ importers:
         version: 19.3.1(react@19.3.1)
     devDependencies:
       '@ontahi/codegen':
-        specifier: 1.0.0-alpha.13
-        version: 1.0.0-alpha.13
+        specifier: 1.0.0-alpha.14
+        version: 1.0.0-alpha.14
       '@ontahi/devtools':
-        specifier: 1.0.0-alpha.13
-        version: 1.0.0-alpha.13(@tanstack/react-query@5.104.5(@types/react@19.2.14)(react@19.3.1))(@types/node@24.10.0)(@types/react@19.2.14)(react@19.3.1)(typescript@5.9.3)
+        specifier: 1.0.0-alpha.14
+        version: 1.0.0-alpha.14(@tanstack/react-query@5.104.5(@types/react@19.2.14)(react@19.3.1))(@types/node@24.10.0)(@types/react@19.2.14)(react@19.3.1)(typescript@5.9.3)
       '@types/node':
         specifier: 24.10.0
         version: 24.10.0
@@ -598,17 +598,17 @@ packages:
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
 
-  '@ontahi/codegen@1.0.0-alpha.13':
-    resolution: {integrity: sha512-CnN1kr01Em/LWChwbXOABTz2OWZObGsxdLZfaTbdWd317Ix67ILCVm7BQu7WA+192bzhmY8zbOeZEhqAeHdzMw==}
+  '@ontahi/codegen@1.0.0-alpha.14':
+    resolution: {integrity: sha512-vVSt57NGQINhu0bVGKVcfJZGscuKktTWkSkBr8EWkXOWmfYN8WV5MmqOrJYyMp8eAHC51cQhH/H3dPWcV4p8Eg==}
     engines: {node: '>=20.19.0'}
     hasBin: true
 
-  '@ontahi/core@1.0.0-alpha.13':
-    resolution: {integrity: sha512-Plak2J38QN54padJatZk6yCSWVTNQTnvWLrF3ZKnjihyeOlL5Z6H4r4JkwENhyHI0HEcJ8+cN2hJCpnuy0MEgg==}
+  '@ontahi/core@1.0.0-alpha.14':
+    resolution: {integrity: sha512-CXIfwTo4vsTlAJFpSPecn856Ys8KPmYM5kmIY80iPjlmg9d/M4QWuXswTZknBDiyMtBpWNERtXd74DD/fB8ozQ==}
     engines: {node: '>=20.19.0'}
 
-  '@ontahi/devtools@1.0.0-alpha.13':
-    resolution: {integrity: sha512-UMTfeP6nzDoW5dewzuCgRULOKQy4WW5x/9bGktN1nAl3pgf7MqCglNyW5bFIBj0Px7T51bPylCLK8zIYcVz35A==}
+  '@ontahi/devtools@1.0.0-alpha.14':
+    resolution: {integrity: sha512-AWNYr78i7b1BCEspEutWvU1s+Ol8P9iLs6YupiFZ8I3P09eaS5DHjw7t0YR2uGujkW6Gvs/I+8jhcbswB5CWAA==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       '@types/react': ^18.3.0 || ^19.0.0
@@ -617,16 +617,16 @@ packages:
       '@types/react':
         optional: true
 
-  '@ontahi/language-codemirror@1.0.0-alpha.13':
-    resolution: {integrity: sha512-8UuzDpgHjLAHjhmFjaZu+Q6i7zmqDceA5clBh304mKSmhEUeZat0IQUAnAKcr/4ewglx4cxLo/6Uno/XALQcQA==}
+  '@ontahi/language-codemirror@1.0.0-alpha.14':
+    resolution: {integrity: sha512-anVdv9K2UAVALYUpzMUBxU8AUgxQx+ctrV/iJS5SrOuebS74aM/0d7gQ1fr9MLMD0QJ2b7uYyMvNvEY9dQk3Yw==}
     engines: {node: '>=20.19.0'}
 
-  '@ontahi/language@1.0.0-alpha.13':
-    resolution: {integrity: sha512-FA6zftuaz3/un/Xr5mWPH9QPxmKtZP88CIlcrrLBgLvYPb5gphFRq/eJfaVRIzSxSH7yfT//QXJK2+PF9Kzt2Q==}
+  '@ontahi/language@1.0.0-alpha.14':
+    resolution: {integrity: sha512-NxIe9t+T60wp10MPsxzSQSzPnGAzUv9VqUXoyQKcGyh1r/I+9/V8dLe7zpgZAMG0NVdRcTsj5ahL8QVz6q1grw==}
     engines: {node: '>=20.19.0'}
 
-  '@ontahi/react@1.0.0-alpha.13':
-    resolution: {integrity: sha512-B7RJshKTRzz/MAlGh+6oxUGRCVN1rWSRWwxs1h6fBZ8Sn3EpUcYbpstFT+pXgZ6/cQs7sluj+IXGQEKNGMOxbw==}
+  '@ontahi/react@1.0.0-alpha.14':
+    resolution: {integrity: sha512-l0e2PpV18E2fOn3MFJEpGWkAKLh/Al2UFw7z8OleY13paYUYBzAb9P0oBjV2HVZ5n0+ZUpn/8e5utqBUcqDyZw==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       '@tanstack/react-query': ^5.101.4
@@ -636,8 +636,8 @@ packages:
       '@types/react':
         optional: true
 
-  '@ontahi/runtime-nextjs@1.0.0-alpha.13':
-    resolution: {integrity: sha512-CFDpIjPXwZDIp0dvrjoddRzTnoG6mhILLclgUYHeHUy1yqmm/xL654bbLOcpICJfP+wMdempCNxrkQ68/rs8Cw==}
+  '@ontahi/runtime-nextjs@1.0.0-alpha.14':
+    resolution: {integrity: sha512-3M5fcxkh0uxhx+vEfPP9lQPhGUKEPYgCkBTPOMMvfWAvsgT6ztTiOIeKp/FHtXuk1ix/xiEdtmWy90JMr5kyXQ==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       '@types/react': ^18.3.0 || ^19.0.0
@@ -651,8 +651,8 @@ packages:
       '@types/react-dom':
         optional: true
 
-  '@ontahi/supabase@1.0.0-alpha.13':
-    resolution: {integrity: sha512-IHZID55aFgu3vTSs9NuZq5vUVZlK4Ajj2zQaSxhjbzfSgXQBPD5xaKXhvvzBmVDuqmOJUOS9zZlyIDJzHlDwjA==}
+  '@ontahi/supabase@1.0.0-alpha.14':
+    resolution: {integrity: sha512-3MwNdzyvJHwmcD8LyDf8FhRswaNI5dyNQKPGeatazeBc886vCdtjG33pei1MMRAzeJHAj8CcwenGe7mej6n4Sg==}
     engines: {node: '>=20.19.0'}
 
   '@oxc-project/types@0.155.0':
@@ -3309,11 +3309,11 @@ snapshots:
 
   '@nolyfill/is-core-module@1.0.39': {}
 
-  '@ontahi/codegen@1.0.0-alpha.13':
+  '@ontahi/codegen@1.0.0-alpha.14':
     dependencies:
       typescript: 5.9.3
 
-  '@ontahi/core@1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)':
+  '@ontahi/core@1.0.0-alpha.14(@types/node@24.10.0)(typescript@5.9.3)':
     dependencies:
       effect: 3.21.0
       typia: 12.2.1(@types/node@24.10.0)(typescript@5.9.3)
@@ -3322,15 +3322,15 @@ snapshots:
       - '@types/node'
       - typescript
 
-  '@ontahi/devtools@1.0.0-alpha.13(@tanstack/react-query@5.104.5(@types/react@19.2.14)(react@19.3.1))(@types/node@24.10.0)(@types/react@19.2.14)(react@19.3.1)(typescript@5.9.3)':
+  '@ontahi/devtools@1.0.0-alpha.14(@tanstack/react-query@5.104.5(@types/react@19.2.14)(react@19.3.1))(@types/node@24.10.0)(@types/react@19.2.14)(react@19.3.1)(typescript@5.9.3)':
     dependencies:
       '@codemirror/commands': 6.11.1
       '@codemirror/state': 6.7.6
       '@codemirror/view': 6.43.15
-      '@ontahi/core': 1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)
-      '@ontahi/language': 1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)
-      '@ontahi/language-codemirror': 1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)
-      '@ontahi/react': 1.0.0-alpha.13(@tanstack/react-query@5.104.5(@types/react@19.2.14)(react@19.3.1))(@types/node@24.10.0)(@types/react@19.2.14)(react@19.3.1)(typescript@5.9.3)
+      '@ontahi/core': 1.0.0-alpha.14(@types/node@24.10.0)(typescript@5.9.3)
+      '@ontahi/language': 1.0.0-alpha.14(@types/node@24.10.0)(typescript@5.9.3)
+      '@ontahi/language-codemirror': 1.0.0-alpha.14(@types/node@24.10.0)(typescript@5.9.3)
+      '@ontahi/react': 1.0.0-alpha.14(@tanstack/react-query@5.104.5(@types/react@19.2.14)(react@19.3.1))(@types/node@24.10.0)(@types/react@19.2.14)(react@19.3.1)(typescript@5.9.3)
       react: 19.3.1
       react-json-view-lite: 2.5.0(react@19.3.1)
     optionalDependencies:
@@ -3340,7 +3340,7 @@ snapshots:
       - '@types/node'
       - typescript
 
-  '@ontahi/language-codemirror@1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)':
+  '@ontahi/language-codemirror@1.0.0-alpha.14(@types/node@24.10.0)(typescript@5.9.3)':
     dependencies:
       '@codemirror/autocomplete': 6.20.4
       '@codemirror/commands': 6.11.1
@@ -3349,23 +3349,23 @@ snapshots:
       '@codemirror/state': 6.7.6
       '@codemirror/view': 6.43.15
       '@lezer/highlight': 1.2.5
-      '@ontahi/language': 1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)
+      '@ontahi/language': 1.0.0-alpha.14(@types/node@24.10.0)(typescript@5.9.3)
     transitivePeerDependencies:
       - '@types/node'
       - typescript
 
-  '@ontahi/language@1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)':
+  '@ontahi/language@1.0.0-alpha.14(@types/node@24.10.0)(typescript@5.9.3)':
     dependencies:
       '@lezer/common': 1.5.3
       '@lezer/lr': 1.4.11
-      '@ontahi/core': 1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)
+      '@ontahi/core': 1.0.0-alpha.14(@types/node@24.10.0)(typescript@5.9.3)
     transitivePeerDependencies:
       - '@types/node'
       - typescript
 
-  '@ontahi/react@1.0.0-alpha.13(@tanstack/react-query@5.104.5(@types/react@19.2.14)(react@19.3.1))(@types/node@24.10.0)(@types/react@19.2.14)(react@19.3.1)(typescript@5.9.3)':
+  '@ontahi/react@1.0.0-alpha.14(@tanstack/react-query@5.104.5(@types/react@19.2.14)(react@19.3.1))(@types/node@24.10.0)(@types/react@19.2.14)(react@19.3.1)(typescript@5.9.3)':
     dependencies:
-      '@ontahi/core': 1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)
+      '@ontahi/core': 1.0.0-alpha.14(@types/node@24.10.0)(typescript@5.9.3)
       '@tanstack/react-query': 5.104.5(@types/react@19.2.14)(react@19.3.1)
       react: 19.3.1
     optionalDependencies:
@@ -3374,9 +3374,9 @@ snapshots:
       - '@types/node'
       - typescript
 
-  '@ontahi/runtime-nextjs@1.0.0-alpha.13(@types/node@24.10.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(next@16.4.2(@babel/core@7.29.7)(@types/node@24.10.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.9.3)':
+  '@ontahi/runtime-nextjs@1.0.0-alpha.14(@types/node@24.10.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(next@16.4.2(@babel/core@7.29.7)(@types/node@24.10.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.9.3)':
     dependencies:
-      '@ontahi/core': 1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)
+      '@ontahi/core': 1.0.0-alpha.14(@types/node@24.10.0)(typescript@5.9.3)
       effect: 3.21.0
       next: 16.4.2(@babel/core@7.29.7)(@types/node@24.10.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       next-safe-action: 8.7.3(next@16.4.2(@babel/core@7.29.7)(@types/node@24.10.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -3391,9 +3391,9 @@ snapshots:
       - '@types/node'
       - typescript
 
-  '@ontahi/supabase@1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)':
+  '@ontahi/supabase@1.0.0-alpha.14(@types/node@24.10.0)(typescript@5.9.3)':
     dependencies:
-      '@ontahi/core': 1.0.0-alpha.13(@types/node@24.10.0)(typescript@5.9.3)
+      '@ontahi/core': 1.0.0-alpha.14(@types/node@24.10.0)(typescript@5.9.3)
       effect: 3.21.0
     transitivePeerDependencies:
       - '@types/node'

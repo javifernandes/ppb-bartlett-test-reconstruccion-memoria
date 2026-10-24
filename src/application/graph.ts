@@ -27,7 +27,7 @@ const createBartlettApplication = () => {
 
   return ontahi({
     storage: useSupabaseStorage
-      ? createSupabaseBartlettStorage(entities)
+      ? createSupabaseBartlettStorage()
       : inMemoryStorage,
     tasks: inProcessTasks(),
     entities,

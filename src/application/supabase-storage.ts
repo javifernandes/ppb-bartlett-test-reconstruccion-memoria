@@ -1,15 +1,8 @@
-import type {
-  AnyEntityDefinition,
-  DataGraphDefaultStorage,
-} from "@ontahi/core/data-graph";
 import {
-  applySupabaseDataGraphMappings,
-  createSupabaseDataGraphRuntime,
-  createSupabaseReflectedEntityDataReader,
+  createSupabaseDataGraphStorage,
   supabaseNaming,
 } from "@ontahi/supabase/data-graph";
 import { createClient } from "@supabase/supabase-js";
-import { Effect } from "effect";
 
 const requiredEnvironmentVariable = (name: string) => {
   const value = process.env[name]?.trim();
@@ -17,14 +10,7 @@ const requiredEnvironmentVariable = (name: string) => {
   return value;
 };
 
-export const createSupabaseBartlettStorage = (
-  entities: readonly AnyEntityDefinition[],
-) => {
-  applySupabaseDataGraphMappings({
-    entities,
-    naming: supabaseNaming.snakeCase(),
-  });
-
+export const createSupabaseBartlettStorage = () => {
   const client = createClient(
     requiredEnvironmentVariable("NEXT_PUBLIC_SUPABASE_URL"),
     requiredEnvironmentVariable("SUPABASE_SECRET_KEY"),
@@ -32,20 +18,10 @@ export const createSupabaseBartlettStorage = (
       auth: { persistSession: false, autoRefreshToken: false },
     },
   );
-  const runtime = createSupabaseDataGraphRuntime({
-    getReadClient: () => Effect.succeed(client),
-    getCommandClient: () => Effect.succeed(client),
+  return createSupabaseDataGraphStorage({
+    client,
+    naming: supabaseNaming.snakeCase(),
     createError: ({ message, cause }) =>
       new Error(message, { cause: cause instanceof Error ? cause : undefined }),
-    entities,
   });
-  const reflected = createSupabaseReflectedEntityDataReader({
-    entities,
-    getClient: () => client,
-  });
-
-  return {
-    createRuntime: () => runtime,
-    readEntityData: reflected.readEntityData,
-  } satisfies DataGraphDefaultStorage<typeof runtime>;
 };

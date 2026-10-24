@@ -127,16 +127,43 @@ const ExperimentWorkspacePage = () => {
     [experimentId],
   );
   const analysisRuns = useGraphQuery(analysisRunsQuery);
-  const updateDraft = useOperation(Experiment.domain.updateDraft);
-  const publish = useOperation(Experiment.domain.publish);
-  const close = useOperation(Experiment.domain.close);
-  const deletePermanently = useOperation(Experiment.domain.deletePermanently);
-  const startAnalysis = useOperation(AnalysisRun.domain.start);
-  const analyzeRecall = useOperation(RecallAnalysis.domain.analyze);
-  const finishAnalysis = useOperation(AnalysisRun.domain.finish);
   const [publishOpened, publishModal] = useDisclosure(false);
   const [closeOpened, closeModal] = useDisclosure(false);
   const [deleteOpened, deleteModal] = useDisclosure(false);
+  const updateDraft = useOperation(Experiment.domain.updateDraft);
+  const publish = useOperation(Experiment.domain.publish, {
+    onSuccess: () => {
+      notifications.show({
+        title: "Experimento publicado",
+        message: "El experimento quedó bloqueado para edición.",
+        color: "teal",
+      });
+      window.location.reload();
+    },
+  });
+  const close = useOperation(Experiment.domain.close, {
+    onSuccess: () => {
+      closeModal.close();
+      notifications.show({
+        title: "Recepción cerrada",
+        message: "El experimento ya no acepta nuevas respuestas.",
+        color: "teal",
+      });
+    },
+  });
+  const deletePermanently = useOperation(Experiment.domain.deletePermanently, {
+    onSuccess: () => {
+      notifications.show({
+        title: "Experimento eliminado",
+        message: experiment.data?.title ?? "El experimento fue eliminado.",
+        color: "teal",
+      });
+      window.location.replace("/");
+    },
+  });
+  const startAnalysis = useOperation(AnalysisRun.domain.start);
+  const analyzeRecall = useOperation(RecallAnalysis.domain.analyze);
+  const finishAnalysis = useOperation(AnalysisRun.domain.finish);
   const form = useForm({
     initialValues: {
       title: "",
@@ -218,22 +245,14 @@ const ExperimentWorkspacePage = () => {
       publicToken: crypto.randomUUID(),
     });
 
-    if (result.ok) {
+    if (!result.ok) {
+      publishModal.open();
       notifications.show({
-        title: "Experimento publicado",
-        message: "El experimento quedó bloqueado para edición.",
-        color: "teal",
+        title: "No se pudo publicar",
+        message: result.message,
+        color: "red",
       });
-      window.location.reload();
-      return;
     }
-
-    publishModal.open();
-    notifications.show({
-      title: "No se pudo publicar",
-      message: result.message,
-      color: "red",
-    });
   };
 
   const copyPublicLink = async (publicToken: string) => {
@@ -251,44 +270,27 @@ const ExperimentWorkspacePage = () => {
       experiment: Experiment.refById(experimentId),
     });
 
-    if (result.ok) {
-      closeModal.close();
+    if (!result.ok) {
       notifications.show({
-        title: "Recepción cerrada",
-        message: "El experimento ya no acepta nuevas respuestas.",
-        color: "teal",
+        title: "No se pudo cerrar el experimento",
+        message: result.message,
+        color: "red",
       });
-      return;
     }
-
-    notifications.show({
-      title: "No se pudo cerrar el experimento",
-      message: result.message,
-      color: "red",
-    });
   };
 
   const handleDelete = async () => {
-    const deletedExperimentTitle = experiment.data?.title;
     const result = await deletePermanently.executeAsync({
       experiment: Experiment.refById(experimentId),
     });
 
-    if (result.ok) {
+    if (!result.ok) {
       notifications.show({
-        title: "Experimento eliminado",
-        message: deletedExperimentTitle ?? "El experimento fue eliminado.",
-        color: "teal",
+        title: "No se pudo eliminar el experimento",
+        message: result.message,
+        color: "red",
       });
-      window.location.replace("/");
-      return;
     }
-
-    notifications.show({
-      title: "No se pudo eliminar el experimento",
-      message: result.message,
-      color: "red",
-    });
   };
 
   const exportResponses = () => {
