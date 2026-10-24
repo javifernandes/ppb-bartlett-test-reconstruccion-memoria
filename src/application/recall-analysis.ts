@@ -211,11 +211,17 @@ export const RecallAnalysis = entity({
         }
 
         let result: RecallAnalysisModelResult;
+        const sourceStory =
+          participantSession.contentLanguage ===
+            targetExperiment.alternateLanguage &&
+          targetExperiment.alternateStory
+            ? targetExperiment.alternateStory
+            : targetExperiment.story;
         if (process.env.RECALL_ANALYSIS_PROVIDER === "deepseek") {
           const attempted = yield* Effect.either(
             Effect.tryPromise(() =>
               analyzeRecallWithDeepSeek(
-                targetExperiment.story,
+                sourceStory,
                 participantSession.recallText!,
               ),
             ),
@@ -232,7 +238,7 @@ export const RecallAnalysis = entity({
         } else {
           result = {
             ...analyzeRecallHeuristically(
-              targetExperiment.story,
+              sourceStory,
               participantSession.recallText,
             ),
             provider: "local",

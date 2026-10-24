@@ -17,6 +17,7 @@ import {
   Stack,
   Text,
   Title,
+  Tooltip,
   UnstyledButton,
 } from "@mantine/core";
 import { useGraphQuery } from "@ontahi/react/graph";
@@ -37,11 +38,14 @@ const ResponseExperiment = Experiment.view("ResponseExperiment", {
   id: true,
   title: true,
   story: true,
+  alternateLanguage: true,
+  alternateStory: true,
 });
 
 const ResponseDetail = ParticipantSession.view("ResponseDetail", {
   id: true,
   experiment: true,
+  contentLanguage: true,
   status: true,
   startedAt: true,
   intervalStartedAt: true,
@@ -263,6 +267,11 @@ const ResponseDetailPage = () => {
   const analysis = useGraphQuery(analysisQuery);
   const belongsToExperiment =
     response.data?.experiment.locator.id === experimentId;
+  const sourceStory =
+    response.data?.contentLanguage === experiment.data?.alternateLanguage &&
+    experiment.data?.alternateStory
+      ? experiment.data.alternateStory
+      : (experiment.data?.story ?? "");
   const phenomena = useMemo(
     () => readPhenomena(analysis.data?.phenomena),
     [analysis.data?.phenomena],
@@ -425,35 +434,47 @@ const ResponseDetailPage = () => {
                     </Group>
                   </Group>
                   <Group gap={3} wrap="nowrap" h={10}>
-                    <Box
-                      title={`Lectura: ${readingSeconds} s`}
-                      bg="blue.6"
-                      h="100%"
-                      style={{
-                        width: `${Math.max(2, (readingSeconds / measuredSeconds) * 100)}%`,
-                        borderRadius: 99,
-                      }}
-                    />
-                    {intervalSeconds > 0 && (
+                    <Tooltip
+                      label={`${t("Lectura")}: ${readingSeconds} s`}
+                      withArrow
+                    >
                       <Box
-                        title={`Intervalo: ${intervalSeconds} s`}
-                        bg="yellow.6"
+                        bg="blue.6"
                         h="100%"
                         style={{
-                          width: `${Math.max(2, (intervalSeconds / measuredSeconds) * 100)}%`,
+                          width: `${Math.max(2, (readingSeconds / measuredSeconds) * 100)}%`,
                           borderRadius: 99,
                         }}
                       />
+                    </Tooltip>
+                    {intervalSeconds > 0 && (
+                      <Tooltip
+                        label={`${t("Intervalo")}: ${intervalSeconds} s`}
+                        withArrow
+                      >
+                        <Box
+                          bg="yellow.6"
+                          h="100%"
+                          style={{
+                            width: `${Math.max(2, (intervalSeconds / measuredSeconds) * 100)}%`,
+                            borderRadius: 99,
+                          }}
+                        />
+                      </Tooltip>
                     )}
-                    <Box
-                      title={`Reconstrucción: ${recallingSeconds} s`}
-                      bg="grape.6"
-                      h="100%"
-                      style={{
-                        width: `${Math.max(2, (recallingSeconds / measuredSeconds) * 100)}%`,
-                        borderRadius: 99,
-                      }}
-                    />
+                    <Tooltip
+                      label={`${t("Reconstrucción")}: ${recallingSeconds} s`}
+                      withArrow
+                    >
+                      <Box
+                        bg="grape.6"
+                        h="100%"
+                        style={{
+                          width: `${Math.max(2, (recallingSeconds / measuredSeconds) * 100)}%`,
+                          borderRadius: 99,
+                        }}
+                      />
+                    </Tooltip>
                   </Group>
                 </Card>
 
@@ -518,29 +539,30 @@ const ResponseDetailPage = () => {
                     <SimpleGrid cols={{ base: 1, md: 2 }}>
                       <Paper withBorder p="md">
                         <Text size="sm" c="dimmed" fw={600} mb="sm">
-                          {t("Historia original")} ·{" "}
-                          {countWords(experiment.data.story)} palabras
+                          {t("Historia original")} · {countWords(sourceStory)}{" "}
+                          {t("palabras")}
                         </Text>
                         <Text
                           style={{ whiteSpace: "pre-wrap", lineHeight: 1.75 }}
                         >
                           {analysisVisible ? (
                             <AnnotatedText
-                              text={experiment.data.story}
+                              text={sourceStory}
                               phenomena={phenomena}
                               side="story"
                               selectedIndex={selectedPhenomenon}
                               onSelect={setSelectedPhenomenon}
                             />
                           ) : (
-                            experiment.data.story
+                            sourceStory
                           )}
                         </Text>
                       </Paper>
                       <Paper withBorder p="md">
                         <Text size="sm" c="dimmed" fw={600} mb="sm">
                           {t("Reconstrucción")} ·{" "}
-                          {countWords(response.data.recallText ?? "")} palabras
+                          {countWords(response.data.recallText ?? "")}{" "}
+                          {t("palabras")}
                         </Text>
                         <Text
                           c={response.data.recallText ? undefined : "dimmed"}

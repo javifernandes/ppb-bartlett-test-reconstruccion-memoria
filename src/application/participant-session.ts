@@ -9,6 +9,7 @@ export const ParticipantSession = entity({
   fields: {
     id: field.id(),
     experiment: field.ref(Experiment),
+    contentLanguage: field.enum(["es", "en"] as const),
     status: field.enum([
       "reading",
       "interval",
@@ -32,11 +33,12 @@ export const ParticipantSession = entity({
       input: graphSchema.object({
         id: self.fields.id,
         experiment: field.ref(Experiment),
+        contentLanguage: self.fields.contentLanguage,
         startedAt: self.fields.startedAt,
       }),
       output: self,
       bridge: { invalidate: [["ParticipantSession"]] },
-      *run({ id, experiment, startedAt }) {
+      *run({ id, experiment, contentLanguage, startedAt }) {
         const target = yield* experiment.resolve();
 
         if (!target || target.status !== "published") {
@@ -46,11 +48,22 @@ export const ParticipantSession = entity({
           );
         }
 
+        if (
+          contentLanguage !== target.primaryLanguage &&
+          contentLanguage !== target.alternateLanguage
+        ) {
+          return yield* failOperation(
+            "experiment_language_not_available",
+            "El idioma seleccionado no está disponible.",
+          );
+        }
+
         return yield* commands
           .insertReturning(
             {
               id,
               experiment,
+              contentLanguage,
               status: "reading",
               startedAt,
               intervalStartedAt: null,
@@ -62,6 +75,7 @@ export const ParticipantSession = entity({
             [
               "id",
               "experiment",
+              "contentLanguage",
               "status",
               "startedAt",
               "intervalStartedAt",
@@ -112,6 +126,7 @@ export const ParticipantSession = entity({
             [
               "id",
               "experiment",
+              "contentLanguage",
               "status",
               "startedAt",
               "intervalStartedAt",
@@ -172,6 +187,7 @@ export const ParticipantSession = entity({
             [
               "id",
               "experiment",
+              "contentLanguage",
               "status",
               "startedAt",
               "intervalStartedAt",
@@ -229,6 +245,7 @@ export const ParticipantSession = entity({
             [
               "id",
               "experiment",
+              "contentLanguage",
               "status",
               "startedAt",
               "intervalStartedAt",

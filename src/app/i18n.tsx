@@ -112,6 +112,18 @@ const english: Record<string, string> = {
   "Usar distractor durante el intervalo":
     "Use a distractor during the interval",
   "Textos e instrucciones": "Texts and instructions",
+  "Idiomas y variantes": "Languages and variants",
+  "Idioma principal del contenido": "Primary content language",
+  "No afecta el idioma de la interfaz administrativa.":
+    "This does not affect the admin interface language.",
+  "Agregar variante en otro idioma": "Add another language variant",
+  "Los participantes podrán elegir esta versión antes de comenzar.":
+    "Participants can choose this version before starting.",
+  "Quitar variante": "Remove variant",
+  "Título para participantes": "Participant title",
+  Introducción: "Introduction",
+  Consentimiento: "Consent",
+  "Instrucciones de reconstrucción": "Recall instructions",
   "Guardar cambios": "Save changes",
   Análisis: "Analysis",
   "No se pudo cargar el análisis": "The analysis could not be loaded",
@@ -140,6 +152,8 @@ const english: Record<string, string> = {
     "There are no completed responses to analyze.",
   Respuesta: "Response",
   Palabras: "Words",
+  palabras: "words",
+  Comparar: "Compare",
   "Extensión relativa": "Relative length",
   Lectura: "Reading",
   Reconstrucción: "Recall",

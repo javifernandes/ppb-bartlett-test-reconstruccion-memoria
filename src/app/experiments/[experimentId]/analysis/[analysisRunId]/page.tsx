@@ -33,6 +33,8 @@ const AnalysisExperiment = Experiment.view("AnalysisExperiment", {
   id: true,
   title: true,
   story: true,
+  alternateLanguage: true,
+  alternateStory: true,
   status: true,
 });
 
@@ -46,6 +48,7 @@ const AnalysisRunDetail = AnalysisRun.view("AnalysisRunDetail", {
 
 const AnalyzedResponse = ParticipantSession.view("AnalyzedResponse", {
   id: true,
+  contentLanguage: true,
   status: true,
   startedAt: true,
   intervalStartedAt: true,
@@ -131,15 +134,22 @@ const AnalysisPage = () => {
   );
   const recallAnalyses = useGraphQuery(recallAnalysesQuery);
   const validRun = run.data?.experiment.locator.id === experimentId;
-  const storyWordCount = countWords(experiment.data?.story ?? "");
+  const primaryStoryWordCount = countWords(experiment.data?.story ?? "");
   const responseMetrics = (responses.data ?? []).map((response) => {
     const semanticAnalysis = recallAnalyses.data?.find(
       (analysis) => analysis.session.locator.id === response.id,
     );
     const wordCount = countWords(response.recallText ?? "");
+    const storyWordCount = countWords(
+      response.contentLanguage === experiment.data?.alternateLanguage &&
+        experiment.data?.alternateStory
+        ? experiment.data.alternateStory
+        : (experiment.data?.story ?? ""),
+    );
     return {
       ...response,
       wordCount,
+      storyWordCount,
       relativeLength:
         storyWordCount > 0 ? (wordCount / storyWordCount) * 100 : 0,
       readingSeconds: secondsBetween(
@@ -155,6 +165,9 @@ const AnalysisPage = () => {
     };
   });
   const wordCounts = responseMetrics.map((response) => response.wordCount);
+  const storyWordCounts = [
+    ...new Set(responseMetrics.map((response) => response.storyWordCount)),
+  ];
   const readingTimes = responseMetrics.flatMap((response) =>
     response.readingSeconds === undefined ? [] : [response.readingSeconds],
   );
@@ -254,7 +267,9 @@ const AnalysisPage = () => {
                       {t("Palabras de la historia")}
                     </Text>
                     <Text size="xl" fw={700}>
-                      {storyWordCount}
+                      {responseMetrics.length > 0
+                        ? storyWordCounts.join(" / ")
+                        : primaryStoryWordCount}
                     </Text>
                   </Card>
                   <Card withBorder>
@@ -272,8 +287,8 @@ const AnalysisPage = () => {
                       {t("Extensión relativa promedio")}
                     </Text>
                     <Text size="xl" fw={700}>
-                      {storyWordCount > 0 && wordCounts.length > 0
-                        ? `${((average(wordCounts) / storyWordCount) * 100).toFixed(1)} %`
+                      {responseMetrics.length > 0
+                        ? `${average(responseMetrics.map((response) => response.relativeLength)).toFixed(1)} %`
                         : "—"}
                     </Text>
                   </Card>
@@ -423,7 +438,7 @@ const AnalysisPage = () => {
                                       <IconChevronRight size={16} />
                                     }
                                   >
-                                    Comparar
+                                    {t("Comparar")}
                                   </Button>
                                 </Table.Td>
                               </Table.Tr>

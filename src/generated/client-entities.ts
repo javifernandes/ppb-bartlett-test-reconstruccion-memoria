@@ -12,10 +12,10 @@ import {
 } from '@ontahi/core/data-graph';
 
 export const ExperimentSchema = defineEntitySchema("Experiment", {
-    id: field.id(), title: field.nonEmptyString({ trim: true }), participantTitle: field.nonEmptyString({ trim: true }), introduction: field.nonEmptyString({ trim: true }), consentText: field.nonEmptyString({ trim: true }), story: field.nonEmptyString({ trim: true }), recallInstructions: field.nonEmptyString({ trim: true }), intervalSeconds: field.integer({ min: 0, max: 3600 }), distractorEnabled: field.boolean(), status: field.enum(["draft", "published", "closed"] as const), createdAt: field.nonEmptyString({ trim: true }), publishedAt: field.nullable(field.nonEmptyString({ trim: true })), publicToken: field.nullable(field.nonEmptyString({ trim: true })),
+    id: field.id(), title: field.nonEmptyString({ trim: true }), participantTitle: field.nonEmptyString({ trim: true }), introduction: field.nonEmptyString({ trim: true }), consentText: field.nonEmptyString({ trim: true }), story: field.nonEmptyString({ trim: true }), recallInstructions: field.nonEmptyString({ trim: true }), primaryLanguage: field.enum(["es", "en"] as const), alternateLanguage: field.nullable(field.enum(["es", "en"] as const)), alternateParticipantTitle: field.nullable(field.nonEmptyString({ trim: true })), alternateIntroduction: field.nullable(field.nonEmptyString({ trim: true })), alternateConsentText: field.nullable(field.nonEmptyString({ trim: true })), alternateStory: field.nullable(field.nonEmptyString({ trim: true })), alternateRecallInstructions: field.nullable(field.nonEmptyString({ trim: true })), intervalSeconds: field.integer({ min: 0, max: 3600 }), distractorEnabled: field.boolean(), status: field.enum(["draft", "published", "closed"] as const), createdAt: field.nonEmptyString({ trim: true }), publishedAt: field.nullable(field.nonEmptyString({ trim: true })), publicToken: field.nullable(field.nonEmptyString({ trim: true })),
 }).display({ primary: "title", search: ["title"] });
 export const ParticipantSessionSchema = defineEntitySchema("ParticipantSession", {
-    id: field.id(), experiment: field.ref(ExperimentSchema), status: field.enum([
+    id: field.id(), experiment: field.ref(ExperimentSchema), contentLanguage: field.enum(["es", "en"] as const), status: field.enum([
         "reading", "interval", "recalling", "submitted",
     ] as const), startedAt: field.nonEmptyString({ trim: true }), intervalStartedAt: field.nullable(field.nonEmptyString({ trim: true })), recallingStartedAt: field.nullable(field.nonEmptyString({ trim: true })), lastActivityAt: field.nonEmptyString({ trim: true }), recallText: field.nullable(field.nonEmptyString({ trim: true })), submittedAt: field.nullable(field.nonEmptyString({ trim: true })),
 });
@@ -56,6 +56,13 @@ export const Experiment = defineClientEntity(ExperimentSchema, {
         consentText: ExperimentSchema.fields.consentText,
         story: ExperimentSchema.fields.story,
         recallInstructions: ExperimentSchema.fields.recallInstructions,
+        primaryLanguage: ExperimentSchema.fields.primaryLanguage,
+        alternateLanguage: ExperimentSchema.fields.alternateLanguage,
+        alternateParticipantTitle: ExperimentSchema.fields.alternateParticipantTitle,
+        alternateIntroduction: ExperimentSchema.fields.alternateIntroduction,
+        alternateConsentText: ExperimentSchema.fields.alternateConsentText,
+        alternateStory: ExperimentSchema.fields.alternateStory,
+        alternateRecallInstructions: ExperimentSchema.fields.alternateRecallInstructions,
         intervalSeconds: ExperimentSchema.fields.intervalSeconds,
         distractorEnabled: ExperimentSchema.fields.distractorEnabled,
       }),
@@ -105,6 +112,7 @@ export const ParticipantSession = defineClientEntity(ParticipantSessionSchema, {
       input: graphSchema.object({
         id: ParticipantSessionSchema.fields.id,
         experiment: field.ref(ExperimentSchema),
+        contentLanguage: ParticipantSessionSchema.fields.contentLanguage,
         startedAt: ParticipantSessionSchema.fields.startedAt,
       }),
       output: ParticipantSessionSchema,

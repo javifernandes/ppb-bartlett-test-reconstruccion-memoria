@@ -62,6 +62,13 @@ describe("Bartlett application bootstrap", () => {
         consentText: "Acepto participar voluntariamente.",
         story: "La historia fue editada.",
         recallInstructions: "Escribí todo lo que recuerdes.",
+        primaryLanguage: "es",
+        alternateLanguage: null,
+        alternateParticipantTitle: null,
+        alternateIntroduction: null,
+        alternateConsentText: null,
+        alternateStory: null,
+        alternateRecallInstructions: null,
         intervalSeconds: 30,
         distractorEnabled: true,
       }),
@@ -97,6 +104,13 @@ describe("Bartlett application bootstrap", () => {
         consentText: "No debe cambiar",
         story: "No debe cambiar",
         recallInstructions: "No debe cambiar",
+        primaryLanguage: "es",
+        alternateLanguage: null,
+        alternateParticipantTitle: null,
+        alternateIntroduction: null,
+        alternateConsentText: null,
+        alternateStory: null,
+        alternateRecallInstructions: null,
         intervalSeconds: 0,
         distractorEnabled: false,
       }),
@@ -110,6 +124,7 @@ describe("Bartlett application bootstrap", () => {
     const session = await ParticipantSession.start({
       id: "session-test",
       experiment: Experiment.refById("experiment-test"),
+      contentLanguage: "es",
       startedAt: "2026-10-22T13:05:00.000Z",
     });
     expect(session).toMatchObject({
@@ -162,6 +177,7 @@ describe("Bartlett application bootstrap", () => {
     await ParticipantSession.start({
       id: "session-pending",
       experiment: Experiment.refById("experiment-test"),
+      contentLanguage: "es",
       startedAt: "2026-10-22T13:11:00.000Z",
     });
     await ParticipantSession.finishReading({
@@ -253,6 +269,7 @@ describe("Bartlett application bootstrap", () => {
     const rejectedSession = await ParticipantSession.start({
       id: "session-too-late",
       experiment: Experiment.refById("experiment-test"),
+      contentLanguage: "es",
       startedAt: "2026-10-22T13:13:00.000Z",
     });
     expect(rejectedSession).toMatchObject({

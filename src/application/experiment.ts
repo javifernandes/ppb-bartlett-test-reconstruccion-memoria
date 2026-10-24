@@ -12,6 +12,17 @@ export const Experiment = entity({
     consentText: field.nonEmptyString({ trim: true }),
     story: field.nonEmptyString({ trim: true }),
     recallInstructions: field.nonEmptyString({ trim: true }),
+    primaryLanguage: field.enum(["es", "en"] as const),
+    alternateLanguage: field.nullable(field.enum(["es", "en"] as const)),
+    alternateParticipantTitle: field.nullable(
+      field.nonEmptyString({ trim: true }),
+    ),
+    alternateIntroduction: field.nullable(field.nonEmptyString({ trim: true })),
+    alternateConsentText: field.nullable(field.nonEmptyString({ trim: true })),
+    alternateStory: field.nullable(field.nonEmptyString({ trim: true })),
+    alternateRecallInstructions: field.nullable(
+      field.nonEmptyString({ trim: true }),
+    ),
     intervalSeconds: field.integer({ min: 0, max: 3600 }),
     distractorEnabled: field.boolean(),
     status: field.enum(["draft", "published", "closed"] as const),
@@ -45,6 +56,13 @@ export const Experiment = entity({
                 "Acepto participar voluntariamente y comprendo que puedo abandonar la actividad antes de enviar mi respuesta.",
               recallInstructions:
                 "Escribí todo lo que recuerdes, con el mayor detalle posible.",
+              primaryLanguage: "es",
+              alternateLanguage: null,
+              alternateParticipantTitle: null,
+              alternateIntroduction: null,
+              alternateConsentText: null,
+              alternateStory: null,
+              alternateRecallInstructions: null,
               intervalSeconds: 0,
               distractorEnabled: false,
               status: "draft",
@@ -59,6 +77,13 @@ export const Experiment = entity({
               "consentText",
               "story",
               "recallInstructions",
+              "primaryLanguage",
+              "alternateLanguage",
+              "alternateParticipantTitle",
+              "alternateIntroduction",
+              "alternateConsentText",
+              "alternateStory",
+              "alternateRecallInstructions",
               "intervalSeconds",
               "distractorEnabled",
               "status",
@@ -79,6 +104,13 @@ export const Experiment = entity({
         consentText: self.fields.consentText,
         story: self.fields.story,
         recallInstructions: self.fields.recallInstructions,
+        primaryLanguage: self.fields.primaryLanguage,
+        alternateLanguage: self.fields.alternateLanguage,
+        alternateParticipantTitle: self.fields.alternateParticipantTitle,
+        alternateIntroduction: self.fields.alternateIntroduction,
+        alternateConsentText: self.fields.alternateConsentText,
+        alternateStory: self.fields.alternateStory,
+        alternateRecallInstructions: self.fields.alternateRecallInstructions,
         intervalSeconds: self.fields.intervalSeconds,
         distractorEnabled: self.fields.distractorEnabled,
       }),
@@ -92,6 +124,13 @@ export const Experiment = entity({
         consentText,
         story,
         recallInstructions,
+        primaryLanguage,
+        alternateLanguage,
+        alternateParticipantTitle,
+        alternateIntroduction,
+        alternateConsentText,
+        alternateStory,
+        alternateRecallInstructions,
         intervalSeconds,
         distractorEnabled,
       }) {
@@ -111,6 +150,26 @@ export const Experiment = entity({
           );
         }
 
+        const alternateValues = [
+          alternateParticipantTitle,
+          alternateIntroduction,
+          alternateConsentText,
+          alternateStory,
+          alternateRecallInstructions,
+        ];
+        const hasCompleteAlternate = alternateValues.every(Boolean);
+        const hasAnyAlternate = alternateValues.some(Boolean);
+        if (
+          (alternateLanguage && !hasCompleteAlternate) ||
+          (!alternateLanguage && hasAnyAlternate) ||
+          alternateLanguage === primaryLanguage
+        ) {
+          return yield* failOperation(
+            "invalid_language_variant",
+            "La variante debe usar el otro idioma y tener todos sus textos completos.",
+          );
+        }
+
         const [updated] = yield* commands
           .where((candidate) => candidate.id.eq(current.id))
           .updateReturning(
@@ -121,6 +180,13 @@ export const Experiment = entity({
               consentText,
               story,
               recallInstructions,
+              primaryLanguage,
+              alternateLanguage,
+              alternateParticipantTitle,
+              alternateIntroduction,
+              alternateConsentText,
+              alternateStory,
+              alternateRecallInstructions,
               intervalSeconds,
               distractorEnabled,
             },
@@ -132,6 +198,13 @@ export const Experiment = entity({
               "consentText",
               "story",
               "recallInstructions",
+              "primaryLanguage",
+              "alternateLanguage",
+              "alternateParticipantTitle",
+              "alternateIntroduction",
+              "alternateConsentText",
+              "alternateStory",
+              "alternateRecallInstructions",
               "intervalSeconds",
               "distractorEnabled",
               "status",
@@ -187,6 +260,13 @@ export const Experiment = entity({
             "consentText",
             "story",
             "recallInstructions",
+            "primaryLanguage",
+            "alternateLanguage",
+            "alternateParticipantTitle",
+            "alternateIntroduction",
+            "alternateConsentText",
+            "alternateStory",
+            "alternateRecallInstructions",
             "intervalSeconds",
             "distractorEnabled",
             "status",
@@ -238,6 +318,13 @@ export const Experiment = entity({
             "consentText",
             "story",
             "recallInstructions",
+            "primaryLanguage",
+            "alternateLanguage",
+            "alternateParticipantTitle",
+            "alternateIntroduction",
+            "alternateConsentText",
+            "alternateStory",
+            "alternateRecallInstructions",
             "intervalSeconds",
             "distractorEnabled",
             "status",
@@ -274,6 +361,13 @@ export const Experiment = entity({
             "consentText",
             "story",
             "recallInstructions",
+            "primaryLanguage",
+            "alternateLanguage",
+            "alternateParticipantTitle",
+            "alternateIntroduction",
+            "alternateConsentText",
+            "alternateStory",
+            "alternateRecallInstructions",
             "intervalSeconds",
             "distractorEnabled",
             "status",

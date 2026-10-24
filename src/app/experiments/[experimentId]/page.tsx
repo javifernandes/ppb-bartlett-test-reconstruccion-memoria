@@ -11,6 +11,7 @@ import {
   Loader,
   Modal,
   NumberInput,
+  Select,
   SimpleGrid,
   Stack,
   Switch,
@@ -31,6 +32,7 @@ import {
   IconDownload,
   IconEye,
   IconLock,
+  IconLanguage,
   IconQrcode,
   IconRefresh,
   IconRocket,
@@ -59,6 +61,13 @@ const ExperimentWorkspace = Experiment.view("ExperimentWorkspace", {
   consentText: true,
   story: true,
   recallInstructions: true,
+  primaryLanguage: true,
+  alternateLanguage: true,
+  alternateParticipantTitle: true,
+  alternateIntroduction: true,
+  alternateConsentText: true,
+  alternateStory: true,
+  alternateRecallInstructions: true,
   intervalSeconds: true,
   distractorEnabled: true,
   status: true,
@@ -69,6 +78,7 @@ const ExperimentWorkspace = Experiment.view("ExperimentWorkspace", {
 
 const ParticipantSessionRow = ParticipantSession.view("ParticipantSessionRow", {
   id: true,
+  contentLanguage: true,
   status: true,
   startedAt: true,
   intervalStartedAt: true,
@@ -171,7 +181,23 @@ const ExperimentWorkspacePage = () => {
   const startAnalysis = useOperation(AnalysisRun.domain.start);
   const analyzeRecall = useOperation(RecallAnalysis.domain.analyze);
   const finishAnalysis = useOperation(AnalysisRun.domain.finish);
-  const form = useForm({
+  const form = useForm<{
+    title: string;
+    participantTitle: string;
+    introduction: string;
+    consentText: string;
+    story: string;
+    recallInstructions: string;
+    primaryLanguage: "es" | "en";
+    alternateLanguage: "" | "es" | "en";
+    alternateParticipantTitle: string;
+    alternateIntroduction: string;
+    alternateConsentText: string;
+    alternateStory: string;
+    alternateRecallInstructions: string;
+    intervalSeconds: number;
+    distractorEnabled: boolean;
+  }>({
     initialValues: {
       title: "",
       participantTitle: "",
@@ -179,6 +205,13 @@ const ExperimentWorkspacePage = () => {
       consentText: "",
       story: "",
       recallInstructions: "",
+      primaryLanguage: "es",
+      alternateLanguage: "",
+      alternateParticipantTitle: "",
+      alternateIntroduction: "",
+      alternateConsentText: "",
+      alternateStory: "",
+      alternateRecallInstructions: "",
       intervalSeconds: 0,
       distractorEnabled: false,
     },
@@ -193,6 +226,26 @@ const ExperimentWorkspacePage = () => {
       story: (value) => (value.trim() ? null : "Ingresá la historia."),
       recallInstructions: (value) =>
         value.trim() ? null : "Ingresá las instrucciones.",
+      alternateParticipantTitle: (value, values) =>
+        !values.alternateLanguage || value.trim()
+          ? null
+          : "Ingresá el título de la variante.",
+      alternateIntroduction: (value, values) =>
+        !values.alternateLanguage || value.trim()
+          ? null
+          : "Ingresá la introducción de la variante.",
+      alternateConsentText: (value, values) =>
+        !values.alternateLanguage || value.trim()
+          ? null
+          : "Ingresá el consentimiento de la variante.",
+      alternateStory: (value, values) =>
+        !values.alternateLanguage || value.trim()
+          ? null
+          : "Ingresá la historia de la variante.",
+      alternateRecallInstructions: (value, values) =>
+        !values.alternateLanguage || value.trim()
+          ? null
+          : "Ingresá las instrucciones de la variante.",
     },
   });
 
@@ -205,6 +258,15 @@ const ExperimentWorkspacePage = () => {
         consentText: experiment.data.consentText,
         story: experiment.data.story,
         recallInstructions: experiment.data.recallInstructions,
+        primaryLanguage: experiment.data.primaryLanguage,
+        alternateLanguage: experiment.data.alternateLanguage ?? "",
+        alternateParticipantTitle:
+          experiment.data.alternateParticipantTitle ?? "",
+        alternateIntroduction: experiment.data.alternateIntroduction ?? "",
+        alternateConsentText: experiment.data.alternateConsentText ?? "",
+        alternateStory: experiment.data.alternateStory ?? "",
+        alternateRecallInstructions:
+          experiment.data.alternateRecallInstructions ?? "",
         intervalSeconds: experiment.data.intervalSeconds,
         distractorEnabled: experiment.data.distractorEnabled,
       });
@@ -223,6 +285,21 @@ const ExperimentWorkspacePage = () => {
       consentText: values.consentText,
       story: values.story,
       recallInstructions: values.recallInstructions,
+      primaryLanguage: values.primaryLanguage,
+      alternateLanguage: values.alternateLanguage || null,
+      alternateParticipantTitle: values.alternateLanguage
+        ? values.alternateParticipantTitle
+        : null,
+      alternateIntroduction: values.alternateLanguage
+        ? values.alternateIntroduction
+        : null,
+      alternateConsentText: values.alternateLanguage
+        ? values.alternateConsentText
+        : null,
+      alternateStory: values.alternateLanguage ? values.alternateStory : null,
+      alternateRecallInstructions: values.alternateLanguage
+        ? values.alternateRecallInstructions
+        : null,
       intervalSeconds: values.intervalSeconds,
       distractorEnabled: values.distractorEnabled,
     });
@@ -313,6 +390,7 @@ const ExperimentWorkspacePage = () => {
         [
           session.id,
           session.status,
+          session.contentLanguage,
           session.startedAt,
           session.intervalStartedAt ?? "",
           session.recallingStartedAt ?? "",
@@ -327,7 +405,7 @@ const ExperimentWorkspacePage = () => {
           .join(","),
       );
     const csv = [
-      "id_sesion,estado,inicio,inicio_intervalo,inicio_reconstruccion,envio,ultima_actividad,duracion_total_segundos,duracion_lectura_segundos,duracion_reconstruccion_segundos,reconstruccion",
+      "id_sesion,estado,idioma_contenido,inicio,inicio_intervalo,inicio_reconstruccion,envio,ultima_actividad,duracion_total_segundos,duracion_lectura_segundos,duracion_reconstruccion_segundos,reconstruccion",
       ...rows,
     ].join("\n");
     const url = URL.createObjectURL(
@@ -614,6 +692,144 @@ const ExperimentWorkspacePage = () => {
                                 disabled={experiment.data.status !== "draft"}
                                 {...form.getInputProps("recallInstructions")}
                               />
+                            </Stack>
+                          </Accordion.Panel>
+                        </Accordion.Item>
+                        <Accordion.Item value="languages">
+                          <Accordion.Control icon={<IconLanguage size={18} />}>
+                            {t("Idiomas y variantes")}
+                          </Accordion.Control>
+                          <Accordion.Panel>
+                            <Stack gap="lg">
+                              <Select
+                                label={t("Idioma principal del contenido")}
+                                description={t(
+                                  "No afecta el idioma de la interfaz administrativa.",
+                                )}
+                                data={[
+                                  { value: "es", label: "Español" },
+                                  { value: "en", label: "English" },
+                                ]}
+                                allowDeselect={false}
+                                disabled={
+                                  experiment.data.status !== "draft" ||
+                                  Boolean(form.values.alternateLanguage)
+                                }
+                                {...form.getInputProps("primaryLanguage")}
+                              />
+                              {!form.values.alternateLanguage ? (
+                                <div>
+                                  <Button
+                                    type="button"
+                                    variant="light"
+                                    disabled={
+                                      experiment.data.status !== "draft"
+                                    }
+                                    onClick={() =>
+                                      form.setFieldValue(
+                                        "alternateLanguage",
+                                        form.values.primaryLanguage === "es"
+                                          ? "en"
+                                          : "es",
+                                      )
+                                    }
+                                  >
+                                    {t("Agregar variante en otro idioma")}
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Stack gap="md">
+                                  <Group justify="space-between">
+                                    <div>
+                                      <Text fw={600}>
+                                        {form.values.alternateLanguage === "en"
+                                          ? "English"
+                                          : "Español"}
+                                      </Text>
+                                      <Text size="sm" c="dimmed">
+                                        {t(
+                                          "Los participantes podrán elegir esta versión antes de comenzar.",
+                                        )}
+                                      </Text>
+                                    </div>
+                                    {experiment.data.status === "draft" && (
+                                      <Button
+                                        type="button"
+                                        variant="subtle"
+                                        color="red"
+                                        onClick={() => {
+                                          form.setValues({
+                                            alternateLanguage: "",
+                                            alternateParticipantTitle: "",
+                                            alternateIntroduction: "",
+                                            alternateConsentText: "",
+                                            alternateStory: "",
+                                            alternateRecallInstructions: "",
+                                          });
+                                        }}
+                                      >
+                                        {t("Quitar variante")}
+                                      </Button>
+                                    )}
+                                  </Group>
+                                  <TextInput
+                                    label={t("Título para participantes")}
+                                    required
+                                    disabled={
+                                      experiment.data.status !== "draft"
+                                    }
+                                    {...form.getInputProps(
+                                      "alternateParticipantTitle",
+                                    )}
+                                  />
+                                  <Textarea
+                                    label={t("Introducción")}
+                                    minRows={3}
+                                    autosize
+                                    required
+                                    disabled={
+                                      experiment.data.status !== "draft"
+                                    }
+                                    {...form.getInputProps(
+                                      "alternateIntroduction",
+                                    )}
+                                  />
+                                  <Textarea
+                                    label={t("Consentimiento")}
+                                    minRows={3}
+                                    autosize
+                                    required
+                                    disabled={
+                                      experiment.data.status !== "draft"
+                                    }
+                                    {...form.getInputProps(
+                                      "alternateConsentText",
+                                    )}
+                                  />
+                                  <Textarea
+                                    label={t("Historia")}
+                                    minRows={10}
+                                    autosize
+                                    required
+                                    disabled={
+                                      experiment.data.status !== "draft"
+                                    }
+                                    {...form.getInputProps("alternateStory")}
+                                  />
+                                  <Textarea
+                                    label={t("Instrucciones de reconstrucción")}
+                                    minRows={3}
+                                    autosize
+                                    required
+                                    disabled={
+                                      experiment.data.status !== "draft"
+                                    }
+                                    {...form.getInputProps(
+                                      "alternateRecallInstructions",
+                                    )}
+                                  />
+                                </Stack>
+                              )}
                             </Stack>
                           </Accordion.Panel>
                         </Accordion.Item>

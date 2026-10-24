@@ -11,6 +11,7 @@ import {
   Loader,
   Paper,
   Progress,
+  SegmentedControl,
   Stack,
   Text,
   Textarea,
@@ -32,6 +33,13 @@ const ParticipantPreview = Experiment.view("ParticipantPreview", {
   consentText: true,
   story: true,
   recallInstructions: true,
+  primaryLanguage: true,
+  alternateLanguage: true,
+  alternateParticipantTitle: true,
+  alternateIntroduction: true,
+  alternateConsentText: true,
+  alternateStory: true,
+  alternateRecallInstructions: true,
   intervalSeconds: true,
   distractorEnabled: true,
 });
@@ -52,11 +60,14 @@ const progressByStep: Record<PreviewStep, number> = {
 };
 
 const ParticipantPreviewPage = () => {
-  const { t } = useI18n();
+  const { locale, setLocale, t } = useI18n();
   const { experimentId } = useParams<{ experimentId: string }>();
   const [step, setStep] = useState<PreviewStep>("introduction");
   const [recall, setRecall] = useState("");
   const [consentAccepted, setConsentAccepted] = useState(false);
+  const [selectedContentLanguage, setSelectedContentLanguage] = useState<
+    "es" | "en"
+  >();
   const experimentQuery = useMemo(
     () =>
       Experiment.all()
@@ -85,20 +96,73 @@ const ParticipantPreviewPage = () => {
     );
   }
 
+  const hasAlternate = Boolean(
+    experiment.data.alternateLanguage &&
+    experiment.data.alternateParticipantTitle &&
+    experiment.data.alternateIntroduction &&
+    experiment.data.alternateConsentText &&
+    experiment.data.alternateStory &&
+    experiment.data.alternateRecallInstructions,
+  );
+  const contentLanguage =
+    selectedContentLanguage ??
+    (locale === experiment.data.primaryLanguage ||
+    (hasAlternate && locale === experiment.data.alternateLanguage)
+      ? locale
+      : experiment.data.primaryLanguage);
+  const useAlternate =
+    hasAlternate && contentLanguage === experiment.data.alternateLanguage;
+  const participantContent = useAlternate
+    ? {
+        participantTitle: experiment.data.alternateParticipantTitle as string,
+        introduction: experiment.data.alternateIntroduction as string,
+        consentText: experiment.data.alternateConsentText as string,
+        story: experiment.data.alternateStory as string,
+        recallInstructions: experiment.data
+          .alternateRecallInstructions as string,
+      }
+    : {
+        participantTitle: experiment.data.participantTitle,
+        introduction: experiment.data.introduction,
+        consentText: experiment.data.consentText,
+        story: experiment.data.story,
+        recallInstructions: experiment.data.recallInstructions,
+      };
+
   const content = {
     introduction: (
       <Stack gap="lg">
         <Badge variant="light" w="fit-content">
           {t("Vista previa")}
         </Badge>
-        <Title order={1}>{experiment.data.participantTitle}</Title>
+        {hasAlternate && (
+          <SegmentedControl
+            fullWidth
+            value={contentLanguage}
+            data={[
+              { value: "es", label: "Español" },
+              { value: "en", label: "English" },
+            ].filter(
+              (option) =>
+                option.value === experiment.data.primaryLanguage ||
+                option.value === experiment.data.alternateLanguage,
+            )}
+            onChange={(value) => {
+              const language = value as "es" | "en";
+              setSelectedContentLanguage(language);
+              setLocale(language);
+              setConsentAccepted(false);
+            }}
+          />
+        )}
+        <Title order={1}>{participantContent.participantTitle}</Title>
         <Text size="lg" style={{ whiteSpace: "pre-wrap" }}>
-          {experiment.data.introduction}
+          {participantContent.introduction}
         </Text>
         <Checkbox
           checked={consentAccepted}
           onChange={(event) => setConsentAccepted(event.currentTarget.checked)}
-          label={experiment.data.consentText}
+          label={participantContent.consentText}
           size="md"
         />
         <Button
@@ -117,10 +181,10 @@ const ParticipantPreviewPage = () => {
           <Text c="dimmed" size="sm" fw={600} tt="uppercase" mb="xs">
             {t("Historia")}
           </Text>
-          <Title order={1}>{experiment.data.participantTitle}</Title>
+          <Title order={1}>{participantContent.participantTitle}</Title>
         </div>
         <Text size="lg" lh={1.7} style={{ whiteSpace: "pre-wrap" }}>
-          {experiment.data.story}
+          {participantContent.story}
         </Text>
         <Button
           size="lg"
@@ -160,7 +224,7 @@ const ParticipantPreviewPage = () => {
       <Stack gap="lg">
         <Title order={1}>{t("Reconstruí la historia")}</Title>
         <Text size="lg" style={{ whiteSpace: "pre-wrap" }}>
-          {experiment.data.recallInstructions}
+          {participantContent.recallInstructions}
         </Text>
         <Textarea
           label={t("Tu respuesta")}
