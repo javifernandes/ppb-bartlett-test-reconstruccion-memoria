@@ -1,4 +1,5 @@
 import {
+  selection,
   selectionAll,
   selectionNone,
   type GraphReadPolicy,
@@ -43,28 +44,15 @@ const ExperimentReadPolicy = {
     publishedAt: { select: true },
     publicToken: { select: true, filter: ["eq"] },
   },
-  scope: ({ authority }) =>
-    authority.principal
-      ? selectionAll()
-      : authority.participantPublicToken
-        ? {
-            kind: "and",
-            operands: [
-              {
-                kind: "predicate",
-                operator: "eq",
-                fieldName: "status",
-                value: "published",
-              },
-              {
-                kind: "predicate",
-                operator: "eq",
-                fieldName: "publicToken",
-                value: authority.participantPublicToken,
-              },
-            ],
-          }
-        : selectionNone(),
+  scope: ({ authority, entity }) => {
+    if (authority.principal) return selectionAll();
+    const publicToken = authority.participantPublicToken;
+    if (!publicToken) return selectionNone();
+
+    return selection(entity, (experiment) =>
+      experiment.status.eq("published"),
+    ).and((experiment) => experiment.publicToken.eq(publicToken));
+  },
 } satisfies GraphReadPolicy<typeof Experiment, LocalRuntimeAuthority>;
 
 const ParticipantSessionReadPolicy = {
@@ -83,17 +71,14 @@ const ParticipantSessionReadPolicy = {
     recallText: { select: true },
     submittedAt: { select: true, order: true },
   },
-  scope: ({ authority }) =>
-    authority.principal
-      ? selectionAll()
-      : authority.participantSessionIds.length > 0
-        ? {
-            kind: "predicate",
-            operator: "in",
-            fieldName: "id",
-            values: authority.participantSessionIds,
-          }
-        : selectionNone(),
+  scope: ({ authority, entity }) => {
+    if (authority.principal) return selectionAll();
+    if (authority.participantSessionIds.length === 0) return selectionNone();
+
+    return selection(entity, (session) =>
+      session.id.in(authority.participantSessionIds),
+    );
+  },
 } satisfies GraphReadPolicy<typeof ParticipantSession, LocalRuntimeAuthority>;
 
 const AnalysisRunReadPolicy = {
