@@ -1,6 +1,10 @@
 import { createNextRuntimeProtocolRouteHandler } from "@ontahi/runtime-nextjs/runtime-protocol";
 
 import { localRuntimeProtocolDispatcher } from "@/application/runtime";
+import {
+  participantRequestMetadataFromRequest,
+  participantRequestMetadataResourceKey,
+} from "@/application/participant-request-metadata";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -37,6 +41,12 @@ export const POST = createNextRuntimeProtocolRouteHandler({
         : null,
       participantSessionIds,
       participantPublicToken,
+      resources: new Map([
+        [
+          participantRequestMetadataResourceKey,
+          participantRequestMetadataFromRequest(request),
+        ],
+      ]),
       cacheScope: user
         ? ["admin", user.id]
         : [

@@ -5,6 +5,7 @@ import {
   selectionNone,
 } from "@ontahi/core/data-graph";
 import type { Principal } from "@ontahi/core/runtime/server";
+import type { ServerRuntimeResourceMap } from "@ontahi/core/runtime/server";
 
 import { AnalysisRun } from "./analysis-run";
 import { Experiment } from "./experiment";
@@ -15,6 +16,7 @@ export type LocalRuntimeAuthority = {
   principal: Principal | null;
   participantSessionIds: string[];
   participantPublicToken?: string;
+  resources: ServerRuntimeResourceMap;
   cacheScope: readonly string[];
 };
 
@@ -87,6 +89,14 @@ const ParticipantSessionReadPolicy = defineGraphReadPolicy<
       "id",
       "experiment",
       "contentLanguage",
+      "countryCode",
+      "browserLocale",
+      "timezone",
+      "deviceType",
+      "browser",
+      "operatingSystem",
+      "screenWidth",
+      "screenHeight",
       "status",
       "startedAt",
       "intervalStartedAt",

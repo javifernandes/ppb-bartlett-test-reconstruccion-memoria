@@ -82,6 +82,14 @@ const ExperimentWorkspace = Experiment.view("ExperimentWorkspace", {
 const ParticipantSessionRow = ParticipantSession.view("ParticipantSessionRow", {
   id: true,
   contentLanguage: true,
+  countryCode: true,
+  browserLocale: true,
+  timezone: true,
+  deviceType: true,
+  browser: true,
+  operatingSystem: true,
+  screenWidth: true,
+  screenHeight: true,
   status: true,
   startedAt: true,
   intervalStartedAt: true,
@@ -168,6 +176,7 @@ const ExperimentWorkspacePage = () => {
   const [languageFilter, setLanguageFilter] = useState<"all" | "es" | "en">(
     "all",
   );
+  const [countryFilter, setCountryFilter] = useState("all");
   const [sessionSearch, setSessionSearch] = useState("");
   const [visibleSessionCount, setVisibleSessionCount] = useState(20);
   const updateDraft = useOperation(Experiment.domain.updateDraft);
@@ -414,6 +423,14 @@ const ExperimentWorkspacePage = () => {
           session.id,
           session.status,
           session.contentLanguage,
+          session.countryCode ?? "",
+          session.browserLocale ?? "",
+          session.timezone ?? "",
+          session.deviceType ?? "",
+          session.browser ?? "",
+          session.operatingSystem ?? "",
+          session.screenWidth?.toString() ?? "",
+          session.screenHeight?.toString() ?? "",
           session.startedAt,
           session.intervalStartedAt ?? "",
           session.recallingStartedAt ?? "",
@@ -428,7 +445,7 @@ const ExperimentWorkspacePage = () => {
           .join(","),
       );
     const csv = [
-      "id_sesion,estado,idioma_contenido,inicio,inicio_intervalo,inicio_reconstruccion,envio,ultima_actividad,duracion_total_segundos,duracion_lectura_segundos,duracion_reconstruccion_segundos,reconstruccion",
+      "id_sesion,estado,idioma_contenido,pais,idioma_navegador,zona_horaria,tipo_dispositivo,navegador,sistema_operativo,ancho_pantalla,alto_pantalla,inicio,inicio_intervalo,inicio_reconstruccion,envio,ultima_actividad,duracion_total_segundos,duracion_lectura_segundos,duracion_reconstruccion_segundos,reconstruccion",
       ...rows,
     ].join("\n");
     const url = URL.createObjectURL(
@@ -522,10 +539,19 @@ const ExperimentWorkspacePage = () => {
         : latest,
     undefined,
   );
+  const availableCountries = Array.from(
+    new Set(
+      sessionRows.flatMap((session) =>
+        session.countryCode ? [session.countryCode] : [],
+      ),
+    ),
+  ).sort();
   const filteredSessions = sessionRows.filter((session) => {
     if (sessionFilter !== "all" && session.status !== sessionFilter)
       return false;
     if (languageFilter !== "all" && session.contentLanguage !== languageFilter)
+      return false;
+    if (countryFilter !== "all" && session.countryCode !== countryFilter)
       return false;
     const search = sessionSearch.trim().toLocaleLowerCase();
     return (
@@ -1055,6 +1081,23 @@ const ExperimentWorkspacePage = () => {
                               }}
                             />
                           )}
+                          <Select
+                            label={t("País")}
+                            value={countryFilter}
+                            data={[
+                              { value: "all", label: t("Todos") },
+                              ...availableCountries.map((country) => ({
+                                value: country,
+                                label: country,
+                              })),
+                            ]}
+                            allowDeselect={false}
+                            disabled={availableCountries.length === 0}
+                            onChange={(value) => {
+                              setCountryFilter(value ?? "all");
+                              setVisibleSessionCount(20);
+                            }}
+                          />
                           <TextInput
                             label={t("Buscar")}
                             placeholder={t("ID o texto de la respuesta")}
@@ -1090,6 +1133,7 @@ const ExperimentWorkspacePage = () => {
                                   <Table.Th>{t("Estado")}</Table.Th>
                                   <Table.Th>{t("Inicio")}</Table.Th>
                                   <Table.Th>{t("Idioma")}</Table.Th>
+                                  <Table.Th>{t("País")}</Table.Th>
                                   <Table.Th>{t("Duración")}</Table.Th>
                                   <Table.Th>{t("Palabras")}</Table.Th>
                                   <Table.Th />
@@ -1126,6 +1170,9 @@ const ExperimentWorkspacePage = () => {
                                     </Table.Td>
                                     <Table.Td>
                                       {session.contentLanguage.toUpperCase()}
+                                    </Table.Td>
+                                    <Table.Td>
+                                      {session.countryCode ?? "—"}
                                     </Table.Td>
                                     <Table.Td>
                                       {formatDuration(

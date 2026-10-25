@@ -25,6 +25,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Experiment, ParticipantSession } from "@/generated/client-entities";
 import { LanguageSelector, useI18n } from "@/app/i18n";
 import { createId } from "@/lib/create-id";
+import { collectParticipantClientMetadata } from "@/lib/participant-client-metadata";
 
 const PublicExperiment = Experiment.view("PublicExperiment", {
   id: true,
@@ -332,6 +333,7 @@ const PublicParticipationPage = () => {
       id,
       experiment: Experiment.refById(experiment.data.id),
       contentLanguage,
+      ...collectParticipantClientMetadata(),
       startedAt: new Date().toISOString(),
     });
 

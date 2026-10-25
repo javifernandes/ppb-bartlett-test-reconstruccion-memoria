@@ -12,6 +12,16 @@ import { analyzeRecallHeuristically } from "./recall-analysis";
 import { parseRecallAnalysisOutput } from "./recall-analysis-model";
 import { createBartlettSeed } from "./seed";
 
+const participantClientMetadata = {
+  browserLocale: "es-AR",
+  timezone: "America/Argentina/Buenos_Aires",
+  deviceType: "desktop" as const,
+  browser: "Chrome",
+  operatingSystem: "macOS",
+  screenWidth: 1440,
+  screenHeight: 900,
+};
+
 describe("Bartlett application bootstrap", () => {
   it("genera un volumen realista de participaciones para la demo local", () => {
     const seed = createBartlettSeed(true);
@@ -23,6 +33,9 @@ describe("Bartlett application bootstrap", () => {
     expect(
       bilingualSessions.filter((session) => session.status === "submitted"),
     ).toHaveLength(48);
+    expect(
+      new Set(bilingualSessions.map((session) => session.countryCode)),
+    ).toEqual(new Set(["AR", "US", "BR", "MX"]));
   });
 
   it("rechaza operaciones administrativas sin un principal", async () => {
@@ -138,6 +151,7 @@ describe("Bartlett application bootstrap", () => {
       id: "session-test",
       experiment: Experiment.refById("experiment-test"),
       contentLanguage: "es",
+      ...participantClientMetadata,
       startedAt: "2026-10-22T13:05:00.000Z",
     });
     expect(session).toMatchObject({
@@ -191,6 +205,7 @@ describe("Bartlett application bootstrap", () => {
       id: "session-pending",
       experiment: Experiment.refById("experiment-test"),
       contentLanguage: "es",
+      ...participantClientMetadata,
       startedAt: "2026-10-22T13:11:00.000Z",
     });
     await ParticipantSession.finishReading({
@@ -283,6 +298,7 @@ describe("Bartlett application bootstrap", () => {
       id: "session-too-late",
       experiment: Experiment.refById("experiment-test"),
       contentLanguage: "es",
+      ...participantClientMetadata,
       startedAt: "2026-10-22T13:13:00.000Z",
     });
     expect(rejectedSession).toMatchObject({

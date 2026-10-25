@@ -53,6 +53,14 @@ const ResponseDetail = ParticipantSession.view("ResponseDetail", {
   lastActivityAt: true,
   recallText: true,
   submittedAt: true,
+  countryCode: true,
+  browserLocale: true,
+  timezone: true,
+  deviceType: true,
+  browser: true,
+  operatingSystem: true,
+  screenWidth: true,
+  screenHeight: true,
 });
 
 const ResponseAnalysis = RecallAnalysis.view("ResponseAnalysis", {
@@ -147,6 +155,12 @@ const secondsBetween = (from?: string | null, to?: string | null) =>
 
 const countWords = (value: string) =>
   value.trim().match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
+
+const deviceLabels = {
+  mobile: "Móvil",
+  tablet: "Tablet",
+  desktop: "Escritorio",
+} as const;
 
 const AnnotatedText = ({
   text,
@@ -476,6 +490,64 @@ const ResponseDetailPage = () => {
                       />
                     </Tooltip>
                   </Group>
+                </Card>
+
+                <Card withBorder padding="md">
+                  <Text fw={600} mb="sm">
+                    {t("Contexto de participación")}
+                  </Text>
+                  <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="md">
+                    <div>
+                      <Text size="xs" c="dimmed">
+                        {t("País")}
+                      </Text>
+                      <Text>{response.data.countryCode ?? "—"}</Text>
+                    </div>
+                    <div>
+                      <Text size="xs" c="dimmed">
+                        {t("Idioma del navegador")}
+                      </Text>
+                      <Text>{response.data.browserLocale ?? "—"}</Text>
+                    </div>
+                    <div>
+                      <Text size="xs" c="dimmed">
+                        {t("Zona horaria")}
+                      </Text>
+                      <Text>{response.data.timezone ?? "—"}</Text>
+                    </div>
+                    <div>
+                      <Text size="xs" c="dimmed">
+                        {t("Dispositivo")}
+                      </Text>
+                      <Text>
+                        {response.data.deviceType
+                          ? t(deviceLabels[response.data.deviceType])
+                          : "—"}
+                      </Text>
+                    </div>
+                    <div>
+                      <Text size="xs" c="dimmed">
+                        {t("Navegador")}
+                      </Text>
+                      <Text>{response.data.browser ?? "—"}</Text>
+                    </div>
+                    <div>
+                      <Text size="xs" c="dimmed">
+                        {t("Sistema operativo")}
+                      </Text>
+                      <Text>{response.data.operatingSystem ?? "—"}</Text>
+                    </div>
+                    <div>
+                      <Text size="xs" c="dimmed">
+                        {t("Pantalla")}
+                      </Text>
+                      <Text>
+                        {response.data.screenWidth && response.data.screenHeight
+                          ? `${response.data.screenWidth} × ${response.data.screenHeight}`
+                          : "—"}
+                      </Text>
+                    </div>
+                  </SimpleGrid>
                 </Card>
 
                 <Card withBorder padding="lg">

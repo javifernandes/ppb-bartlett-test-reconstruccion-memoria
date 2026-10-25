@@ -4,6 +4,16 @@ const demoRunId = "analysis-complete-demo";
 const demoStory =
   "Dos jóvenes bajaron al río para cazar focas. Oyeron gritos de guerra y se escondieron detrás de un tronco. Una canoa con cinco hombres se acercó y los invitó a acompañarlos. Uno de los jóvenes aceptó; el otro regresó a su casa. Al amanecer, el joven que había partido volvió herido y murió después de contar lo ocurrido.";
 
+const demoClientMetadata = {
+  browserLocale: "es-AR",
+  timezone: "America/Argentina/Buenos_Aires",
+  deviceType: "mobile" as const,
+  browser: "Chrome",
+  operatingSystem: "Android",
+  screenWidth: 393,
+  screenHeight: 873,
+};
+
 const createBilingualDemoSessions = () =>
   Array.from({ length: 72 }, (_, index) => {
     const startedAt = new Date(Date.UTC(2026, 9, 24, 10, index * 4));
@@ -40,6 +50,17 @@ const createBilingualDemoSessions = () =>
       id: `session-bilingual-${String(index + 1).padStart(3, "0")}`,
       experiment: bilingualDemoExperimentId,
       contentLanguage,
+      countryCode: ["AR", "US", "BR", "MX"][index % 4],
+      ...demoClientMetadata,
+      browserLocale: contentLanguage === "en" ? "en-US" : "es-AR",
+      timezone:
+        index % 4 === 1 ? "America/New_York" : "America/Argentina/Buenos_Aires",
+      deviceType:
+        index % 5 === 0
+          ? ("desktop" as const)
+          : index % 5 === 1
+            ? ("tablet" as const)
+            : ("mobile" as const),
       status,
       startedAt: startedAt.toISOString(),
       intervalStartedAt,
@@ -148,6 +169,8 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
           id: "session-demo-1",
           experiment: demoExperimentId,
           contentLanguage: "es" as const,
+          countryCode: "AR",
+          ...demoClientMetadata,
           status: "submitted" as const,
           startedAt: "2026-10-22T09:05:00.000Z",
           intervalStartedAt: "2026-10-22T09:05:45.000Z",
@@ -161,6 +184,8 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
           id: "session-demo-2",
           experiment: demoExperimentId,
           contentLanguage: "es" as const,
+          countryCode: "UY",
+          ...demoClientMetadata,
           status: "submitted" as const,
           startedAt: "2026-10-22T09:10:00.000Z",
           intervalStartedAt: "2026-10-22T09:10:30.000Z",

@@ -1,8 +1,15 @@
 import { field, graphSchema } from "@ontahi/core/data-graph";
 import { entity } from "@ontahi/core/entity";
-import { failOperation } from "@ontahi/core/runtime/server";
+import {
+  failOperation,
+  getCurrentInvocationContext,
+} from "@ontahi/core/runtime/server";
 
 import { Experiment } from "./experiment";
+import {
+  type ParticipantRequestMetadata,
+  participantRequestMetadataResourceKey,
+} from "./participant-request-metadata";
 
 export const ParticipantSession = entity({
   name: "ParticipantSession",
@@ -10,6 +17,16 @@ export const ParticipantSession = entity({
     id: field.id(),
     experiment: field.ref(Experiment),
     contentLanguage: field.enum(["es", "en"] as const),
+    countryCode: field.nullable(field.nonEmptyString({ trim: true })),
+    browserLocale: field.nullable(field.nonEmptyString({ trim: true })),
+    timezone: field.nullable(field.nonEmptyString({ trim: true })),
+    deviceType: field.nullable(
+      field.enum(["mobile", "tablet", "desktop"] as const),
+    ),
+    browser: field.nullable(field.nonEmptyString({ trim: true })),
+    operatingSystem: field.nullable(field.nonEmptyString({ trim: true })),
+    screenWidth: field.nullable(field.integer({ min: 0, max: 20_000 })),
+    screenHeight: field.nullable(field.integer({ min: 0, max: 20_000 })),
     status: field.enum([
       "reading",
       "interval",
@@ -34,12 +51,34 @@ export const ParticipantSession = entity({
         id: self.fields.id,
         experiment: field.ref(Experiment),
         contentLanguage: self.fields.contentLanguage,
+        browserLocale: field.nonEmptyString({ trim: true }),
+        timezone: field.nonEmptyString({ trim: true }),
+        deviceType: field.enum(["mobile", "tablet", "desktop"] as const),
+        browser: field.nonEmptyString({ trim: true }),
+        operatingSystem: field.nonEmptyString({ trim: true }),
+        screenWidth: field.integer({ min: 0, max: 20_000 }),
+        screenHeight: field.integer({ min: 0, max: 20_000 }),
         startedAt: self.fields.startedAt,
       }),
       output: self,
       bridge: { invalidate: [["ParticipantSession"]] },
-      *run({ id, experiment, contentLanguage, startedAt }) {
+      *run({
+        id,
+        experiment,
+        contentLanguage,
+        browserLocale,
+        timezone,
+        deviceType,
+        browser,
+        operatingSystem,
+        screenWidth,
+        screenHeight,
+        startedAt,
+      }) {
         const target = yield* experiment.resolve();
+        const requestMetadata = getCurrentInvocationContext()?.resources.get(
+          participantRequestMetadataResourceKey,
+        ) as ParticipantRequestMetadata | undefined;
 
         if (!target || target.status !== "published") {
           return yield* failOperation(
@@ -64,6 +103,14 @@ export const ParticipantSession = entity({
               id,
               experiment,
               contentLanguage,
+              countryCode: requestMetadata?.countryCode ?? null,
+              browserLocale,
+              timezone,
+              deviceType,
+              browser,
+              operatingSystem,
+              screenWidth,
+              screenHeight,
               status: "reading",
               startedAt,
               intervalStartedAt: null,
@@ -76,6 +123,14 @@ export const ParticipantSession = entity({
               "id",
               "experiment",
               "contentLanguage",
+              "countryCode",
+              "browserLocale",
+              "timezone",
+              "deviceType",
+              "browser",
+              "operatingSystem",
+              "screenWidth",
+              "screenHeight",
               "status",
               "startedAt",
               "intervalStartedAt",
@@ -127,6 +182,14 @@ export const ParticipantSession = entity({
               "id",
               "experiment",
               "contentLanguage",
+              "countryCode",
+              "browserLocale",
+              "timezone",
+              "deviceType",
+              "browser",
+              "operatingSystem",
+              "screenWidth",
+              "screenHeight",
               "status",
               "startedAt",
               "intervalStartedAt",
@@ -188,6 +251,14 @@ export const ParticipantSession = entity({
               "id",
               "experiment",
               "contentLanguage",
+              "countryCode",
+              "browserLocale",
+              "timezone",
+              "deviceType",
+              "browser",
+              "operatingSystem",
+              "screenWidth",
+              "screenHeight",
               "status",
               "startedAt",
               "intervalStartedAt",
@@ -246,6 +317,14 @@ export const ParticipantSession = entity({
               "id",
               "experiment",
               "contentLanguage",
+              "countryCode",
+              "browserLocale",
+              "timezone",
+              "deviceType",
+              "browser",
+              "operatingSystem",
+              "screenWidth",
+              "screenHeight",
               "status",
               "startedAt",
               "intervalStartedAt",

@@ -15,7 +15,7 @@ export const ExperimentSchema = defineEntitySchema("Experiment", {
     id: field.id(), title: field.nonEmptyString({ trim: true }), participantTitle: field.nonEmptyString({ trim: true }), introduction: field.nonEmptyString({ trim: true }), consentText: field.nonEmptyString({ trim: true }), story: field.nonEmptyString({ trim: true }), recallInstructions: field.nonEmptyString({ trim: true }), primaryLanguage: field.enum(["es", "en"] as const), alternateLanguage: field.nullable(field.enum(["es", "en"] as const)), alternateParticipantTitle: field.nullable(field.nonEmptyString({ trim: true })), alternateIntroduction: field.nullable(field.nonEmptyString({ trim: true })), alternateConsentText: field.nullable(field.nonEmptyString({ trim: true })), alternateStory: field.nullable(field.nonEmptyString({ trim: true })), alternateRecallInstructions: field.nullable(field.nonEmptyString({ trim: true })), intervalSeconds: field.integer({ min: 0, max: 3600 }), distractorEnabled: field.boolean(), status: field.enum(["draft", "published", "closed"] as const), createdAt: field.nonEmptyString({ trim: true }), publishedAt: field.nullable(field.nonEmptyString({ trim: true })), publicToken: field.nullable(field.nonEmptyString({ trim: true })),
 }).display({ primary: "title", search: ["title"] });
 export const ParticipantSessionSchema = defineEntitySchema("ParticipantSession", {
-    id: field.id(), experiment: field.ref(ExperimentSchema), contentLanguage: field.enum(["es", "en"] as const), status: field.enum([
+    id: field.id(), experiment: field.ref(ExperimentSchema), contentLanguage: field.enum(["es", "en"] as const), countryCode: field.nullable(field.nonEmptyString({ trim: true })), browserLocale: field.nullable(field.nonEmptyString({ trim: true })), timezone: field.nullable(field.nonEmptyString({ trim: true })), deviceType: field.nullable(field.enum(["mobile", "tablet", "desktop"] as const)), browser: field.nullable(field.nonEmptyString({ trim: true })), operatingSystem: field.nullable(field.nonEmptyString({ trim: true })), screenWidth: field.nullable(field.integer({ min: 0, max: 20000 })), screenHeight: field.nullable(field.integer({ min: 0, max: 20000 })), status: field.enum([
         "reading", "interval", "recalling", "submitted",
     ] as const), startedAt: field.nonEmptyString({ trim: true }), intervalStartedAt: field.nullable(field.nonEmptyString({ trim: true })), recallingStartedAt: field.nullable(field.nonEmptyString({ trim: true })), lastActivityAt: field.nonEmptyString({ trim: true }), recallText: field.nullable(field.nonEmptyString({ trim: true })), submittedAt: field.nullable(field.nonEmptyString({ trim: true })),
 });
@@ -113,6 +113,13 @@ export const ParticipantSession = defineClientEntity(ParticipantSessionSchema, {
         id: ParticipantSessionSchema.fields.id,
         experiment: field.ref(ExperimentSchema),
         contentLanguage: ParticipantSessionSchema.fields.contentLanguage,
+        browserLocale: field.nonEmptyString({ trim: true }),
+        timezone: field.nonEmptyString({ trim: true }),
+        deviceType: field.enum(["mobile", "tablet", "desktop"] as const),
+        browser: field.nonEmptyString({ trim: true }),
+        operatingSystem: field.nonEmptyString({ trim: true }),
+        screenWidth: field.integer({ min: 0, max: 20_000 }),
+        screenHeight: field.integer({ min: 0, max: 20_000 }),
         startedAt: ParticipantSessionSchema.fields.startedAt,
       }),
       output: ParticipantSessionSchema,
