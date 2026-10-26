@@ -140,7 +140,10 @@ Respondé exclusivamente JSON con esta forma exacta:
 Las citas deben ser fragmentos literales del texto correspondiente. No inventes evidencia. Ante ambigüedad, bajá confidence u omití el fenómeno.`;
 
 type DeepSeekResponse = {
-  choices?: Array<{ message?: { content?: string } }>;
+  choices?: Array<{
+    finish_reason?: string;
+    message?: { content?: string; reasoning_content?: string };
+  }>;
   usage?: { prompt_tokens?: number; completion_tokens?: number };
 };
 
@@ -171,7 +174,6 @@ export const analyzeRecallWithDeepSeek = async (
             model,
             response_format: { type: "json_object" },
             temperature: 0,
-            max_tokens: 4_096,
             messages: [
               { role: "system", content: SYSTEM_PROMPT },
               {
@@ -195,7 +197,13 @@ export const analyzeRecallWithDeepSeek = async (
 
       payload = (await response.json()) as DeepSeekResponse;
       const content = payload.choices?.[0]?.message?.content;
-      if (!content) throw new Error("DeepSeek devolvió una respuesta vacía.");
+      if (!content) {
+        const finishReason = payload.choices?.[0]?.finish_reason ?? "unknown";
+        const completionTokens = payload.usage?.completion_tokens ?? "unknown";
+        throw new Error(
+          `DeepSeek devolvió una respuesta vacía (finish_reason=${finishReason}, completion_tokens=${completionTokens}).`,
+        );
+      }
       output = parseRecallAnalysisOutput(JSON.parse(content));
       break;
     } catch (error) {
