@@ -59,7 +59,7 @@ export const Experiment = entity({
               introduction:
                 "Vas a participar en una prueba de reconstrucción de memoria.",
               consentText:
-                "Acepto participar voluntariamente y comprendo que puedo abandonar la actividad antes de enviar mi respuesta.",
+                "Acepto participar voluntariamente. Mi respuesta y datos técnicos generales se registrarán de forma anónima, sin información que me identifique. Puedo abandonar antes de enviarla.",
               recallInstructions:
                 "Escribí todo lo que recuerdes, con el mayor detalle posible.",
               primaryLanguage: "es",

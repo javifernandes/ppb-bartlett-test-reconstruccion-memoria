@@ -407,13 +407,27 @@ const PublicParticipationPage = () => {
     clearRecallDraft(publicToken, sessionId);
     setStep("complete");
     if (experiment.data.analysisRunId) {
-      void analyzeRecall.executeAsync({
-        id: createId(),
-        run: AnalysisRun.refById(experiment.data.analysisRunId),
-        session: ParticipantSession.refById(sessionId),
-        experiment: Experiment.refById(experiment.data.id),
-        createdAt: new Date().toISOString(),
-      });
+      void (async () => {
+        for (let attempt = 1; attempt <= 2; attempt += 1) {
+          const analysisResult = await analyzeRecall.executeAsync({
+            id: createId(),
+            run: AnalysisRun.refById(experiment.data.analysisRunId!),
+            session: ParticipantSession.refById(sessionId),
+            experiment: Experiment.refById(experiment.data.id),
+            createdAt: new Date().toISOString(),
+          });
+          if (analysisResult.ok) return;
+          if (attempt < 2) {
+            await new Promise((resolve) => setTimeout(resolve, 2_000));
+          } else {
+            console.error("Automatic recall analysis remains pending", {
+              experimentId: experiment.data.id,
+              participantSessionId: sessionId,
+              message: analysisResult.message,
+            });
+          }
+        }
+      })();
     }
   };
 

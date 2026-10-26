@@ -150,37 +150,66 @@ export const analyzeRecallWithDeepSeek = async (
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) throw new Error("Falta configurar DEEPSEEK_API_KEY.");
 
-  const model = process.env.DEEPSEEK_MODEL?.trim() || "deepseek-chat";
-  const response = await fetch("https://api.deepseek.com/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      response_format: { type: "json_object" },
-      temperature: 0,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: `HISTORIA ORIGINAL:\n${story}\n\nUNIDADES PREPARADAS:\n${JSON.stringify(preparedUnits)}\n\nRECONSTRUCCIÓN:\n${recall}`,
-        },
-      ],
-    }),
-    signal: AbortSignal.timeout(45_000),
-  });
+  const model = process.env.DEEPSEEK_MODEL?.trim() || "deepseek-flash";
+  let payload: DeepSeekResponse | undefined;
+  let output: RecallAnalysisOutput | undefined;
+  let lastError: unknown;
 
-  if (!response.ok) {
-    throw new Error(`DeepSeek respondió HTTP ${response.status}.`);
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await fetch(
+        "https://api.deepseek.com/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model,
+            response_format: { type: "json_object" },
+            temperature: 0,
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              {
+                role: "user",
+                content: `HISTORIA ORIGINAL:\n${story}\n\nUNIDADES PREPARADAS:\n${JSON.stringify(preparedUnits)}\n\nRECONSTRUCCIÓN:\n${recall}`,
+              },
+            ],
+          }),
+          signal: AbortSignal.timeout(40_000),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`DeepSeek respondió HTTP ${response.status}.`);
+      }
+
+      payload = (await response.json()) as DeepSeekResponse;
+      const content = payload.choices?.[0]?.message?.content;
+      if (!content) throw new Error("DeepSeek devolvió una respuesta vacía.");
+      output = parseRecallAnalysisOutput(JSON.parse(content));
+      break;
+    } catch (error) {
+      lastError = error;
+      console.warn("Recall analysis attempt failed", {
+        provider: "deepseek",
+        model,
+        attempt,
+        attempts: 3,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      if (attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 750));
+      }
+    }
   }
 
-  const payload = (await response.json()) as DeepSeekResponse;
-  const content = payload.choices?.[0]?.message?.content;
-  if (!content) throw new Error("DeepSeek devolvió una respuesta vacía.");
-
-  const output = parseRecallAnalysisOutput(JSON.parse(content));
+  if (!payload || !output) {
+    throw lastError instanceof Error
+      ? lastError
+      : new Error("No se pudo obtener el análisis de DeepSeek.");
+  }
   const expectedUnitIds = new Set(preparedUnits.map((unit) => unit.id));
   if (
     output.unitAssessments.length !== preparedUnits.length ||

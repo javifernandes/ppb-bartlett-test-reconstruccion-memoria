@@ -274,6 +274,17 @@ export const RecallAnalysis = entity({
             ),
           );
           if (Either.isLeft(attempted)) {
+            console.error("Recall analysis provider failed", {
+              experimentId: targetExperiment.id,
+              analysisRunId: analysisRun.id,
+              participantSessionId: participantSession.id,
+              provider: "deepseek",
+              model: process.env.DEEPSEEK_MODEL?.trim() || "deepseek-flash",
+              error:
+                attempted.left instanceof Error
+                  ? attempted.left.message
+                  : String(attempted.left),
+            });
             return yield* failOperation(
               "recall_analysis_provider_failed",
               attempted.left instanceof Error

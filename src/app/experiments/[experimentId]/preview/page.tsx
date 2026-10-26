@@ -12,16 +12,17 @@ import {
   Paper,
   Progress,
   SegmentedControl,
+  SimpleGrid,
   Stack,
   Text,
   Textarea,
   Title,
 } from "@mantine/core";
 import { useGraphQuery } from "@ontahi/react/graph";
-import { IconArrowLeft, IconCheck } from "@tabler/icons-react";
+import { IconArrowLeft, IconCheck, IconRefresh } from "@tabler/icons-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Experiment } from "@/generated/client-entities";
 import { LanguageSelector, useI18n } from "@/app/i18n";
@@ -59,12 +60,34 @@ const progressByStep: Record<PreviewStep, number> = {
   complete: 100,
 };
 
+const createDistractorValues = (seed: string) => {
+  let state = [...seed].reduce(
+    (value, character) => (value * 31 + character.charCodeAt(0)) >>> 0,
+    2166136261,
+  );
+  const values = new Set<number>();
+  while (values.size < 8) {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    values.add(10 + (state % 90));
+  }
+  const shuffled = [...values];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    state = (state * 1664525 + 1013904223) >>> 0;
+    const target = state % (index + 1);
+    [shuffled[index], shuffled[target]] = [shuffled[target], shuffled[index]];
+  }
+  return shuffled;
+};
+
 const ParticipantPreviewPage = () => {
   const { locale, setLocale, t } = useI18n();
   const { experimentId } = useParams<{ experimentId: string }>();
   const [step, setStep] = useState<PreviewStep>("introduction");
   const [recall, setRecall] = useState("");
   const [consentAccepted, setConsentAccepted] = useState(false);
+  const [intervalStartedAt, setIntervalStartedAt] = useState<number>();
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [selectedContentLanguage, setSelectedContentLanguage] = useState<
     "es" | "en"
   >();
@@ -77,6 +100,31 @@ const ParticipantPreviewPage = () => {
     [experimentId],
   );
   const experiment = useGraphQuery(experimentQuery);
+  const distractorValues = useMemo(
+    () => createDistractorValues(`${experimentId}:preview`),
+    [experimentId],
+  );
+  const expectedNumbers = useMemo(
+    () => [...distractorValues].sort((left, right) => right - left),
+    [distractorValues],
+  );
+  const distractorComplete =
+    selectedNumbers.length === expectedNumbers.length &&
+    selectedNumbers.every((value, index) => value === expectedNumbers[index]);
+
+  useEffect(() => {
+    if (step !== "interval" || intervalStartedAt === undefined) return;
+    const updateRemaining = () => {
+      const intervalSeconds = experiment.data?.intervalSeconds ?? 0;
+      const availableAt = intervalStartedAt + intervalSeconds * 1000;
+      setRemainingSeconds(
+        Math.max(0, Math.ceil((availableAt - Date.now()) / 1000)),
+      );
+    };
+    updateRemaining();
+    const timer = window.setInterval(updateRemaining, 250);
+    return () => window.clearInterval(timer);
+  }, [experiment.data?.intervalSeconds, intervalStartedAt, step]);
 
   if (experiment.isLoading) {
     return (
@@ -189,9 +237,16 @@ const ParticipantPreviewPage = () => {
         <Button
           size="lg"
           fullWidth
-          onClick={() =>
-            setStep(experiment.data.intervalSeconds > 0 ? "interval" : "recall")
-          }
+          onClick={() => {
+            if (experiment.data.intervalSeconds > 0) {
+              setSelectedNumbers([]);
+              setRemainingSeconds(experiment.data.intervalSeconds);
+              setIntervalStartedAt(Date.now());
+              setStep("interval");
+              return;
+            }
+            setStep("recall");
+          }}
         >
           {t("Terminé de leer")}
         </Button>
@@ -199,24 +254,89 @@ const ParticipantPreviewPage = () => {
     ),
     interval: (
       <Stack gap="lg" ta="center" align="center">
-        <Title order={1}>{t("Pausa")}</Title>
+        <Title order={1}>{t("Actividad")}</Title>
         <Text size="lg">
-          {t("Esperá {seconds} segundos antes de reconstruir la historia.", {
-            seconds: experiment.data.intervalSeconds,
-          })}
+          {remainingSeconds > 0
+            ? t("Podés continuar en {seconds} segundos.", {
+                seconds: remainingSeconds,
+              })
+            : t("El intervalo terminó.")}
         </Text>
+        <Progress
+          value={
+            experiment.data.intervalSeconds > 0
+              ? ((experiment.data.intervalSeconds - remainingSeconds) /
+                  experiment.data.intervalSeconds) *
+                100
+              : 100
+          }
+          w="100%"
+          animated={remainingSeconds > 0}
+        />
         {experiment.data.distractorEnabled && (
           <Paper withBorder p="lg" w="100%">
-            <Text fw={600}>{t("Distractor")}</Text>
-            <Text c="dimmed">
-              {t(
-                "La actividad distractora se presentará durante este intervalo.",
+            <Stack gap="md">
+              <div>
+                <Text fw={700}>{t("Ordená los números de mayor a menor")}</Text>
+                <Text c="dimmed" size="sm">
+                  {t("Tocá cada número en el orden correcto.")}
+                </Text>
+              </div>
+              <SimpleGrid cols={4} spacing="xs">
+                {distractorValues.map((value) => (
+                  <Button
+                    key={value}
+                    variant="light"
+                    size="lg"
+                    px={0}
+                    fullWidth
+                    disabled={selectedNumbers.includes(value)}
+                    style={{ minWidth: 0 }}
+                    styles={{ label: { overflow: "visible" } }}
+                    onClick={() =>
+                      setSelectedNumbers((current) => [...current, value])
+                    }
+                  >
+                    {value}
+                  </Button>
+                ))}
+              </SimpleGrid>
+              <Text mih={24} fw={600}>
+                {selectedNumbers.length > 0
+                  ? selectedNumbers.join(" › ")
+                  : t("Tu orden aparecerá acá")}
+              </Text>
+              {selectedNumbers.length === expectedNumbers.length &&
+                !distractorComplete && (
+                  <Text c="red">
+                    {t("Ese orden no es correcto. Probá de nuevo.")}
+                  </Text>
+                )}
+              {distractorComplete && (
+                <Text c="teal" fw={600}>
+                  {t("¡Orden correcto!")}
+                </Text>
               )}
-            </Text>
+              <Group justify="center">
+                <Button
+                  variant="subtle"
+                  leftSection={<IconRefresh size={18} />}
+                  disabled={selectedNumbers.length === 0}
+                  onClick={() => setSelectedNumbers([])}
+                >
+                  {t("Reiniciar")}
+                </Button>
+              </Group>
+            </Stack>
           </Paper>
         )}
-        <Button size="lg" fullWidth onClick={() => setStep("recall")}>
-          {t("Continuar vista previa")}
+        <Button
+          size="lg"
+          fullWidth
+          disabled={remainingSeconds > 0}
+          onClick={() => setStep("recall")}
+        >
+          {t("Continuar")}
         </Button>
       </Stack>
     ),
@@ -259,6 +379,9 @@ const ParticipantPreviewPage = () => {
           onClick={() => {
             setRecall("");
             setConsentAccepted(false);
+            setIntervalStartedAt(undefined);
+            setRemainingSeconds(0);
+            setSelectedNumbers([]);
             setStep("introduction");
           }}
         >

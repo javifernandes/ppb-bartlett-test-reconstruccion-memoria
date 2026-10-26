@@ -172,7 +172,7 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
       introduction:
         "Vas a leer una historia y luego te pediremos que la reconstruyas de memoria.",
       consentText:
-        "Acepto participar voluntariamente y comprendo que puedo abandonar la actividad antes de enviar mi respuesta.",
+        "Acepto participar voluntariamente. Mi respuesta y datos técnicos generales se registrarán de forma anónima, sin información que me identifique. Puedo abandonar antes de enviarla.",
       story:
         "Dos jóvenes de Egulac bajaron al río para cazar focas. Mientras estaban allí, una canoa con cinco hombres se acercó.",
       recallInstructions:
@@ -202,7 +202,8 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
             participantTitle: "Prueba de memoria",
             introduction:
               "Leé la historia y luego reconstruí todo lo que recuerdes.",
-            consentText: "Acepto participar voluntariamente.",
+            consentText:
+              "Acepto participar voluntariamente. Mi respuesta y datos técnicos generales se registrarán de forma anónima, sin información que me identifique. Puedo abandonar antes de enviarla.",
             story: demoStory,
             recallInstructions:
               "Escribí todo lo que recuerdes, con el mayor detalle posible.",
@@ -211,7 +212,8 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
             alternateParticipantTitle: "Memory test",
             alternateIntroduction:
               "Read the story and then reconstruct everything you remember.",
-            alternateConsentText: "I voluntarily agree to participate.",
+            alternateConsentText:
+              "I voluntarily agree to participate. My response and general technical data will be recorded anonymously, without information that identifies me. I may leave before submitting it.",
             alternateStory:
               "Two young men went down to the river to hunt seals. They heard war cries and hid behind a log. A canoe with five men approached and invited them to come along. One accepted; the other returned home. At dawn, the young man who had left returned wounded and died after telling what had happened.",
             alternateRecallInstructions:
@@ -231,7 +233,8 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
             title: "Demo completa — análisis de reconstrucciones",
             participantTitle: "Prueba de memoria",
             introduction: "Leé la historia y reconstruí todo lo que recuerdes.",
-            consentText: "Acepto participar voluntariamente.",
+            consentText:
+              "Acepto participar voluntariamente. Mi respuesta y datos técnicos generales se registrarán de forma anónima, sin información que me identifique. Puedo abandonar antes de enviarla.",
             story: demoStory,
             recallInstructions:
               "Escribí todo lo que recuerdes, con el mayor detalle posible.",
@@ -240,7 +243,8 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
             alternateParticipantTitle: "Memory test",
             alternateIntroduction:
               "Read the story and reconstruct everything you remember.",
-            alternateConsentText: "I voluntarily agree to participate.",
+            alternateConsentText:
+              "I voluntarily agree to participate. My response and general technical data will be recorded anonymously, without information that identifies me. I may leave before submitting it.",
             alternateStory:
               "Two young men went down to the river to hunt seals. They heard war cries and hid behind a log. A canoe with five men approached and invited them to come along. One accepted; the other returned home. At dawn, the young man who had left returned wounded and died after telling what had happened.",
             alternateRecallInstructions:

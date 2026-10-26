@@ -1,8 +1,10 @@
 "use client";
 
 import {
+  Alert,
   AppShell,
   Badge,
+  Button,
   Card,
   Container,
   Group,
@@ -14,7 +16,7 @@ import {
 } from "@mantine/core";
 import { useGraphQuery, useOperation } from "@ontahi/react/graph";
 import { useParams } from "next/navigation";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   AnalysisRun,
@@ -137,6 +139,10 @@ const AnalysisPage = () => {
   const recallAnalyses = useGraphQuery(recallAnalysesQuery);
   const analyzeRecall = useOperation(RecallAnalysis.domain.analyze);
   const scheduledAnalysisIds = useRef(new Set<string>());
+  const [analysisFailures, setAnalysisFailures] = useState<
+    Record<string, string>
+  >({});
+  const [analysisRetryNonce, setAnalysisRetryNonce] = useState(0);
   const validRun = run.data?.experiment.locator.id === experimentId;
   const primaryStoryWordCount = countWords(experiment.data?.story ?? "");
   const responseMetrics = (responses.data ?? []).map((response) => {
@@ -205,17 +211,41 @@ const AnalysisPage = () => {
       }
 
       scheduledAnalysisIds.current.add(response.id);
-      void analyzeRecall
-        .executeAsync({
-          id: createId(),
-          run: AnalysisRun.refById(analysisRunId),
-          session: ParticipantSession.refById(response.id),
-          experiment: Experiment.refById(experimentId),
-          createdAt: new Date().toISOString(),
-        })
-        .then((result) => {
-          if (!result.ok) scheduledAnalysisIds.current.delete(response.id);
+      void (async () => {
+        let lastMessage = "No se pudo completar el análisis automático.";
+        for (let attempt = 1; attempt <= 2; attempt += 1) {
+          const result = await analyzeRecall.executeAsync({
+            id: createId(),
+            run: AnalysisRun.refById(analysisRunId),
+            session: ParticipantSession.refById(response.id),
+            experiment: Experiment.refById(experimentId),
+            createdAt: new Date().toISOString(),
+          });
+          if (result.ok) {
+            setAnalysisFailures((current) => {
+              const next = { ...current };
+              delete next[response.id];
+              return next;
+            });
+            return;
+          }
+          lastMessage = result.message;
+          if (attempt < 2) {
+            await new Promise((resolve) => setTimeout(resolve, 2_000));
+          }
+        }
+        console.error("Automatic recall analysis failed", {
+          experimentId,
+          analysisRunId,
+          participantSessionId: response.id,
+          message: lastMessage,
         });
+        setAnalysisFailures((current) => ({
+          ...current,
+          [response.id]: lastMessage,
+        }));
+        scheduledAnalysisIds.current.delete(response.id);
+      })();
     }
   }, [
     analysisRunId,
@@ -228,6 +258,7 @@ const AnalysisPage = () => {
     responses.isLoading,
     run.data?.status,
     semanticAnalyses,
+    analysisRetryNonce,
   ]);
   const primaryResponseIds = new Set(
     (responses.data ?? [])
@@ -347,6 +378,36 @@ const AnalysisPage = () => {
                   isDraft={false}
                   analysisHref={`/experiments/${experimentId}/analysis/${analysisRunId}`}
                 />
+
+                {Object.keys(analysisFailures).length > 0 && (
+                  <Alert color="orange" title={t("Análisis pendientes")}>
+                    <Group justify="space-between" align="center">
+                      <Text size="sm">
+                        {Object.keys(analysisFailures).length}{" "}
+                        {t("respuesta(s)")}{" "}
+                        {t(
+                          "no pudieron analizarse automáticamente. Podés reintentar sin perder las respuestas.",
+                        )}
+                      </Text>
+                      <Button
+                        variant="light"
+                        color="orange"
+                        size="xs"
+                        onClick={() => {
+                          for (const sessionId of Object.keys(
+                            analysisFailures,
+                          )) {
+                            scheduledAnalysisIds.current.delete(sessionId);
+                          }
+                          setAnalysisFailures({});
+                          setAnalysisRetryNonce((value) => value + 1);
+                        }}
+                      >
+                        {t("Reintentar")}
+                      </Button>
+                    </Group>
+                  </Alert>
+                )}
 
                 <SimpleGrid cols={{ base: 1, xs: 2, md: 3 }}>
                   <Card withBorder>

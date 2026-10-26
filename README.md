@@ -54,8 +54,8 @@ local. Para probar el análisis semántico con DeepSeek, editar `.env.local`:
 ```dotenv
 RECALL_ANALYSIS_PROVIDER=deepseek
 DEEPSEEK_API_KEY=...
-# Opcional; por defecto usa deepseek-chat
-DEEPSEEK_MODEL=deepseek-chat
+# Opcional; por defecto usa deepseek-flash
+DEEPSEEK_MODEL=deepseek-flash
 ```
 
 Las credenciales se leen únicamente en el servidor. No uses prefijos `NEXT_PUBLIC_` para estas

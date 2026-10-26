@@ -29,7 +29,7 @@ const env = Object.fromEntries(
 const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL;
 const secretKey = env.SUPABASE_SECRET_KEY;
 const deepSeekKey = env.DEEPSEEK_API_KEY;
-const model = env.DEEPSEEK_MODEL || "deepseek-chat";
+const model = env.DEEPSEEK_MODEL || "deepseek-flash";
 const urlProjectRef = new URL(supabaseUrl).hostname.split(".")[0];
 
 if (!supabaseUrl || !secretKey)

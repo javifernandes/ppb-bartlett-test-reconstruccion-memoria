@@ -53,7 +53,7 @@ Forma:
 await loadLocalEnvironment();
 const apiKey = process.env.DEEPSEEK_API_KEY;
 if (!apiKey) throw new Error("Falta DEEPSEEK_API_KEY en .env.local.");
-const model = process.env.DEEPSEEK_MODEL?.trim() || "deepseek-chat";
+const model = process.env.DEEPSEEK_MODEL?.trim() || "deepseek-flash";
 const response = await fetch("https://api.deepseek.com/chat/completions", {
   method: "POST",
   headers: {
