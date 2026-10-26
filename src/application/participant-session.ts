@@ -37,7 +37,9 @@ export const ParticipantSession = entity({
     intervalStartedAt: field.nullable(field.nonEmptyString({ trim: true })),
     recallingStartedAt: field.nullable(field.nonEmptyString({ trim: true })),
     lastActivityAt: field.nonEmptyString({ trim: true }),
-    recallText: field.nullable(field.nonEmptyString({ trim: true })),
+    recallText: field.nullable(
+      field.nonEmptyString({ trim: true, maxLength: 5_000 }),
+    ),
     submittedAt: field.nullable(field.nonEmptyString({ trim: true })),
   },
   domainOperationDefaults: {
@@ -277,7 +279,13 @@ export const ParticipantSession = entity({
       input: graphSchema.object({
         session: field.ref(self),
         experiment: field.ref(Experiment),
-        recallText: field.nonEmptyString({ trim: true }),
+        recallText: field.nonEmptyString({
+          trim: true,
+          maxLength: 5_000,
+          messages: {
+            maxLength: "La respuesta no puede superar los 5000 caracteres.",
+          },
+        }),
         submittedAt: field.nonEmptyString({ trim: true }),
       }),
       output: self,

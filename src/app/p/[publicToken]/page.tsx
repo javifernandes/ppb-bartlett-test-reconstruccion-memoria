@@ -31,6 +31,7 @@ import {
 import { LanguageSelector, useI18n } from "@/app/i18n";
 import { createId } from "@/lib/create-id";
 import { collectParticipantClientMetadata } from "@/lib/participant-client-metadata";
+import { MAX_RECALL_LENGTH } from "@/lib/recall-limits";
 
 const PublicExperiment = Experiment.view("PublicExperiment", {
   id: true,
@@ -228,7 +229,12 @@ const PublicParticipationPage = () => {
       setLocale(restoredSession.contentLanguage);
       setIntervalStartedAt(restoredSession.intervalStartedAt ?? undefined);
       if (restoredSession.status === "recalling") {
-        setRecall(readRecallDraft(publicToken, restoredSession.id));
+        setRecall(
+          readRecallDraft(publicToken, restoredSession.id).slice(
+            0,
+            MAX_RECALL_LENGTH,
+          ),
+        );
       }
       if (restoredSession.status === "interval" && experiment.data) {
         const availableAt =
@@ -253,7 +259,9 @@ const PublicParticipationPage = () => {
     if (!sessionId || step !== "recall") return;
     const key = recallDraftKey(publicToken, sessionId);
     const syncDraft = (event: StorageEvent) => {
-      if (event.key === key) setRecall(event.newValue ?? "");
+      if (event.key === key) {
+        setRecall((event.newValue ?? "").slice(0, MAX_RECALL_LENGTH));
+      }
     };
     window.addEventListener("storage", syncDraft);
     return () => window.removeEventListener("storage", syncDraft);
@@ -593,6 +601,10 @@ const PublicParticipationPage = () => {
         </Text>
         <Textarea
           label={t("Tu respuesta")}
+          description={t("{current} de {maximum} caracteres", {
+            current: recall.length,
+            maximum: MAX_RECALL_LENGTH,
+          })}
           value={recall}
           onChange={(event) => {
             const value = event.currentTarget.value;
@@ -601,6 +613,7 @@ const PublicParticipationPage = () => {
           }}
           minRows={10}
           autosize
+          maxLength={MAX_RECALL_LENGTH}
           size="md"
           autoFocus
         />

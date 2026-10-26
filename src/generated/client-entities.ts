@@ -17,7 +17,7 @@ export const ExperimentSchema = defineEntitySchema("Experiment", {
 export const ParticipantSessionSchema = defineEntitySchema("ParticipantSession", {
     id: field.id(), experiment: field.ref(ExperimentSchema), contentLanguage: field.enum(["es", "en"] as const), countryCode: field.nullable(field.nonEmptyString({ trim: true })), browserLocale: field.nullable(field.nonEmptyString({ trim: true })), timezone: field.nullable(field.nonEmptyString({ trim: true })), deviceType: field.nullable(field.enum(["mobile", "tablet", "desktop"] as const)), browser: field.nullable(field.nonEmptyString({ trim: true })), operatingSystem: field.nullable(field.nonEmptyString({ trim: true })), screenWidth: field.nullable(field.integer({ min: 0, max: 20000 })), screenHeight: field.nullable(field.integer({ min: 0, max: 20000 })), status: field.enum([
         "reading", "interval", "recalling", "submitted",
-    ] as const), startedAt: field.nonEmptyString({ trim: true }), intervalStartedAt: field.nullable(field.nonEmptyString({ trim: true })), recallingStartedAt: field.nullable(field.nonEmptyString({ trim: true })), lastActivityAt: field.nonEmptyString({ trim: true }), recallText: field.nullable(field.nonEmptyString({ trim: true })), submittedAt: field.nullable(field.nonEmptyString({ trim: true })),
+    ] as const), startedAt: field.nonEmptyString({ trim: true }), intervalStartedAt: field.nullable(field.nonEmptyString({ trim: true })), recallingStartedAt: field.nullable(field.nonEmptyString({ trim: true })), lastActivityAt: field.nonEmptyString({ trim: true }), recallText: field.nullable(field.nonEmptyString({ trim: true, maxLength: 5000 })), submittedAt: field.nullable(field.nonEmptyString({ trim: true })),
 });
 export const AnalysisRunSchema = defineEntitySchema("AnalysisRun", {
     id: field.id(), experiment: field.ref(ExperimentSchema), status: field.enum([
@@ -170,7 +170,13 @@ export const ParticipantSession = defineClientEntity(ParticipantSessionSchema, {
       input: graphSchema.object({
         session: field.ref(ParticipantSessionSchema),
         experiment: field.ref(ExperimentSchema),
-        recallText: field.nonEmptyString({ trim: true }),
+        recallText: field.nonEmptyString({
+          trim: true,
+          maxLength: 5_000,
+          messages: {
+            maxLength: "La respuesta no puede superar los 5000 caracteres.",
+          },
+        }),
         submittedAt: field.nonEmptyString({ trim: true }),
       }),
       output: ParticipantSessionSchema,

@@ -40,6 +40,7 @@ const english: Record<string, string> = {
   Continuar: "Continue",
   "Reconstruí la historia": "Reconstruct the story",
   "Tu respuesta": "Your response",
+  "{current} de {maximum} caracteres": "{current} of {maximum} characters",
   "Enviar respuesta": "Submit response",
   "¡Gracias por participar!": "Thank you for participating!",
   "Tu respuesta fue enviada.": "Your response was submitted.",
