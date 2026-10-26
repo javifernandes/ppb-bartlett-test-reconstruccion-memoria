@@ -232,9 +232,6 @@ export const RecallAnalysis = defineClientEntity(RecallAnalysisSchema, {
         createdAt: RecallAnalysisSchema.fields.createdAt,
       }),
       output: RecallAnalysisSchema,
-      durable: {
-        runtime: 'in-process',
-      },
     }),
   },
 });

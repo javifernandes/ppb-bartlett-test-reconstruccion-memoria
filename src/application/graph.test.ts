@@ -276,10 +276,9 @@ describe("Bartlett application bootstrap", () => {
     expect(recallAnalysis).toMatchObject({
       ok: true,
       value: {
-        status: "queued",
+        status: "completed",
       },
     });
-    await vi.advanceTimersByTimeAsync(1);
     const storedRecallAnalyses = await BartlettApplication.graph.read(
       query(RecallAnalysis),
       { scope: "bootstrap.recall-analyses" },

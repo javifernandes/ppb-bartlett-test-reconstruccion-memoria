@@ -201,17 +201,6 @@ export const RecallAnalysis = entity({
   },
   operations: ({ self, commands, operation }) => ({
     analyze: operation({
-      durable: {
-        runtime: "in-process",
-        subject: ({ session }) => ({
-          type: "participant-session",
-          id: String(session.locator.id),
-        }),
-        idempotency: {
-          policy: "reuse-running",
-          key: ({ session }) => String(session.locator.id),
-        },
-      },
       input: graphSchema.object({
         id: self.fields.id,
         run: field.ref(AnalysisRun),
