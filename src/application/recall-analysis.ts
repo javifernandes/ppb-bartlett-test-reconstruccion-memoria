@@ -254,13 +254,16 @@ export const RecallAnalysis = entity({
         }
         if (process.env.RECALL_ANALYSIS_PROVIDER === "deepseek") {
           const attempted = yield* Effect.either(
-            Effect.tryPromise(() =>
-              analyzeRecallWithDeepSeek(
-                sourceStory,
-                participantSession.recallText!,
-                rubric.units,
-              ),
-            ),
+            Effect.tryPromise({
+              try: () =>
+                analyzeRecallWithDeepSeek(
+                  sourceStory,
+                  participantSession.recallText!,
+                  rubric.units,
+                ),
+              catch: (error) =>
+                error instanceof Error ? error : new Error(String(error)),
+            }),
           );
           if (Either.isLeft(attempted)) {
             console.error("Recall analysis provider failed", {

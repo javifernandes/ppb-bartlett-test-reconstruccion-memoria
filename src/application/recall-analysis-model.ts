@@ -187,7 +187,7 @@ export const analyzeRecallWithDeepSeek = async (
               },
             ],
           }),
-          signal: AbortSignal.timeout(40_000),
+          signal: AbortSignal.timeout(90_000),
         },
       );
 
