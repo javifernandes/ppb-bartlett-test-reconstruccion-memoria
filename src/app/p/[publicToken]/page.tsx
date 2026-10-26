@@ -22,7 +22,12 @@ import { IconCheck, IconRefresh } from "@tabler/icons-react";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { Experiment, ParticipantSession } from "@/generated/client-entities";
+import {
+  AnalysisRun,
+  Experiment,
+  ParticipantSession,
+  RecallAnalysis,
+} from "@/generated/client-entities";
 import { LanguageSelector, useI18n } from "@/app/i18n";
 import { createId } from "@/lib/create-id";
 import { collectParticipantClientMetadata } from "@/lib/participant-client-metadata";
@@ -44,6 +49,7 @@ const PublicExperiment = Experiment.view("PublicExperiment", {
   intervalSeconds: true,
   distractorEnabled: true,
   status: true,
+  analysisRunId: true,
 });
 
 const ResumableSession = ParticipantSession.view("ResumableSession", {
@@ -187,6 +193,7 @@ const PublicParticipationPage = () => {
   );
   const startRecall = useOperation(ParticipantSession.domain.startRecall);
   const submitRecall = useOperation(ParticipantSession.domain.submitRecall);
+  const analyzeRecall = useOperation(RecallAnalysis.domain.analyze);
   const distractorValues = useMemo(
     () => createDistractorValues(sessionId ?? publicToken),
     [publicToken, sessionId],
@@ -399,6 +406,15 @@ const PublicParticipationPage = () => {
 
     clearRecallDraft(publicToken, sessionId);
     setStep("complete");
+    if (experiment.data.analysisRunId) {
+      void analyzeRecall.executeAsync({
+        id: createId(),
+        run: AnalysisRun.refById(experiment.data.analysisRunId),
+        session: ParticipantSession.refById(sessionId),
+        experiment: Experiment.refById(experiment.data.id),
+        createdAt: new Date().toISOString(),
+      });
+    }
   };
 
   const content = {

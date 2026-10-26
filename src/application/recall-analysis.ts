@@ -10,6 +10,7 @@ import {
   analyzeRecallWithDeepSeek,
   type RecallAnalysisModelResult,
 } from "./recall-analysis-model";
+import type { StoryAnalysisUnit } from "./story-analysis-model";
 
 export type RecallPhenomenonKind =
   | "retained"
@@ -24,6 +25,13 @@ export type RecallPhenomenon = {
   storyExcerpt: string | null;
   recallExcerpt: string | null;
   explanation: string;
+  confidence: number;
+};
+
+export type RecallUnitAssessment = {
+  unitId: string;
+  presence: "full" | "trace" | "absent";
+  recallExcerpt: string | null;
   confidence: number;
 };
 
@@ -88,28 +96,40 @@ const closestUnit = (source: string, candidates: string[]) =>
 export const analyzeRecallHeuristically = (
   story: string,
   recall: string,
+  preparedUnits?: StoryAnalysisUnit[],
 ): {
   retainedUnitsCount: number;
   omittedUnitsCount: number;
   intrusionCount: number;
   phenomena: RecallPhenomenon[];
+  unitAssessments: RecallUnitAssessment[];
 } => {
-  const storyUnits = units(story);
+  const storyUnits =
+    preparedUnits ??
+    units(story).map((text, index) => ({ id: `unit-${index + 1}`, text }));
   const recallUnits = units(recall);
   const recallTokens = new Set(tokens(recall));
   const storyTokens = new Set(tokens(story));
   const phenomena: RecallPhenomenon[] = [];
   let retainedUnitsCount = 0;
   let omittedUnitsCount = 0;
+  const unitAssessments: RecallUnitAssessment[] = [];
 
   for (const storyUnit of storyUnits) {
-    const score = overlap(storyUnit, recallTokens);
+    const score = overlap(storyUnit.text, recallTokens);
+    const recallExcerpt = closestUnit(storyUnit.text, recallUnits);
+    unitAssessments.push({
+      unitId: storyUnit.id,
+      presence: score >= 0.5 ? "full" : score > 0 ? "trace" : "absent",
+      recallExcerpt: score > 0 ? recallExcerpt : null,
+      confidence: Math.round(Math.max(score, 1 - score) * 100) / 100,
+    });
     if (score >= 0.5) {
       retainedUnitsCount += 1;
       phenomena.push({
         kind: "retained",
-        storyExcerpt: storyUnit,
-        recallExcerpt: closestUnit(storyUnit, recallUnits),
+        storyExcerpt: storyUnit.text,
+        recallExcerpt,
         explanation: "Esta unidad narrativa se conserva en la reconstrucción.",
         confidence: Math.round(score * 100) / 100,
       });
@@ -118,7 +138,7 @@ export const analyzeRecallHeuristically = (
       omittedUnitsCount += 1;
       phenomena.push({
         kind: "omission",
-        storyExcerpt: storyUnit,
+        storyExcerpt: storyUnit.text,
         recallExcerpt: null,
         explanation:
           "La reconstrucción no conserva suficientes términos de esta unidad narrativa.",
@@ -149,6 +169,7 @@ export const analyzeRecallHeuristically = (
     omittedUnitsCount,
     intrusionCount,
     phenomena,
+    unitAssessments,
   };
 };
 
@@ -170,6 +191,7 @@ export const RecallAnalysis = entity({
     omittedUnitsCount: field.integer({ min: 0 }),
     intrusionCount: field.integer({ min: 0 }),
     phenomena: field.json(),
+    unitAssessments: field.json(),
     createdAt: field.nonEmptyString({ trim: true }),
   },
   domainOperationDefaults: {
@@ -177,9 +199,19 @@ export const RecallAnalysis = entity({
     exposure: "bridge",
     layer: "analysis",
   },
-  operations: ({ self, commands, operation, app }) => ({
+  operations: ({ self, commands, operation }) => ({
     analyze: operation({
-      requires: [app.require.authenticated()],
+      durable: {
+        runtime: "in-process",
+        subject: ({ session }) => ({
+          type: "participant-session",
+          id: String(session.locator.id),
+        }),
+        idempotency: {
+          policy: "reuse-running",
+          key: ({ session }) => String(session.locator.id),
+        },
+      },
       input: graphSchema.object({
         id: self.fields.id,
         run: field.ref(AnalysisRun),
@@ -217,12 +249,27 @@ export const RecallAnalysis = entity({
           targetExperiment.alternateStory
             ? targetExperiment.alternateStory
             : targetExperiment.story;
+        const rubrics = targetExperiment.analysisRubrics as Array<{
+          language: "es" | "en";
+          units: StoryAnalysisUnit[];
+        }> | null;
+        const rubric = rubrics?.find(
+          (candidate) =>
+            candidate.language === participantSession.contentLanguage,
+        );
+        if (!rubric) {
+          return yield* failOperation(
+            "story_analysis_not_prepared",
+            "La historia no tiene unidades preparadas para este idioma.",
+          );
+        }
         if (process.env.RECALL_ANALYSIS_PROVIDER === "deepseek") {
           const attempted = yield* Effect.either(
             Effect.tryPromise(() =>
               analyzeRecallWithDeepSeek(
                 sourceStory,
                 participantSession.recallText!,
+                rubric.units,
               ),
             ),
           );
@@ -240,6 +287,7 @@ export const RecallAnalysis = entity({
             ...analyzeRecallHeuristically(
               sourceStory,
               participantSession.recallText,
+              rubric.units,
             ),
             provider: "local",
             model: "heuristic-v1",
@@ -268,6 +316,7 @@ export const RecallAnalysis = entity({
               omittedUnitsCount: result.omittedUnitsCount,
               intrusionCount: result.intrusionCount,
               phenomena: result.phenomena,
+              unitAssessments: result.unitAssessments,
               createdAt,
             },
             [
@@ -286,6 +335,7 @@ export const RecallAnalysis = entity({
               "omittedUnitsCount",
               "intrusionCount",
               "phenomena",
+              "unitAssessments",
               "createdAt",
             ],
           )

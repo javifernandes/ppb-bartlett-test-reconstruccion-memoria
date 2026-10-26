@@ -9,6 +9,7 @@ out/
 dist/
 build/
 coverage/
+evals/recall-analysis/results/
 *.tsbuildinfo
 
 # Local environment

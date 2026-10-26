@@ -22,10 +22,15 @@ const participantTokenFromReferer = (referer: string | null) => {
 export const POST = createNextRuntimeProtocolRouteHandler({
   dispatcher: localRuntimeProtocolDispatcher,
   context: async (request) => {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const demoMode = process.env.SEED_DEMO_DATA === "true";
+    const authConfigured = Boolean(
+      process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    );
+    const user =
+      demoMode || !authConfigured
+        ? { id: "local-demo-admin" }
+        : (await (await createSupabaseServerClient()).auth.getUser()).data.user;
     const participantSessionIds = (request.headers.get("cookie") ?? "")
       .split(";")
       .map((cookie) => cookie.trim().split("=").map(decodeURIComponent))

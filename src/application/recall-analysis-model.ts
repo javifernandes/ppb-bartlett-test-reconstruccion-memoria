@@ -1,10 +1,16 @@
-import type { RecallPhenomenon, RecallPhenomenonKind } from "./recall-analysis";
+import type {
+  RecallPhenomenon,
+  RecallPhenomenonKind,
+  RecallUnitAssessment,
+} from "./recall-analysis";
+import type { StoryAnalysisUnit } from "./story-analysis-model";
 
 export type RecallAnalysisOutput = {
   retainedUnitsCount: number;
   omittedUnitsCount: number;
   intrusionCount: number;
   phenomena: RecallPhenomenon[];
+  unitAssessments: RecallUnitAssessment[];
 };
 
 export type RecallAnalysisModelResult = RecallAnalysisOutput & {
@@ -31,6 +37,8 @@ const isNonNegativeInteger = (value: unknown): value is number =>
 const isExcerpt = (value: unknown): value is string | null =>
   value === null || typeof value === "string";
 
+const presenceValues = new Set(["full", "trace", "absent"]);
+
 export const parseRecallAnalysisOutput = (
   value: unknown,
 ): RecallAnalysisOutput => {
@@ -43,7 +51,8 @@ export const parseRecallAnalysisOutput = (
     !isNonNegativeInteger(candidate.retainedUnitsCount) ||
     !isNonNegativeInteger(candidate.omittedUnitsCount) ||
     !isNonNegativeInteger(candidate.intrusionCount) ||
-    !Array.isArray(candidate.phenomena)
+    !Array.isArray(candidate.phenomena) ||
+    !Array.isArray(candidate.unitAssessments)
   ) {
     throw new Error("La salida del modelo no respeta el schema esperado.");
   }
@@ -76,11 +85,31 @@ export const parseRecallAnalysisOutput = (
     };
   });
 
+  const unitAssessments = candidate.unitAssessments.map((item) => {
+    if (!item || typeof item !== "object") {
+      throw new Error("El modelo devolvió una evaluación de unidad inválida.");
+    }
+    const assessment = item as Record<string, unknown>;
+    if (
+      typeof assessment.unitId !== "string" ||
+      typeof assessment.presence !== "string" ||
+      !presenceValues.has(assessment.presence) ||
+      !isExcerpt(assessment.recallExcerpt) ||
+      typeof assessment.confidence !== "number" ||
+      assessment.confidence < 0 ||
+      assessment.confidence > 1
+    ) {
+      throw new Error("El modelo devolvió una evaluación de unidad inválida.");
+    }
+    return assessment as RecallUnitAssessment;
+  });
+
   return {
     retainedUnitsCount: candidate.retainedUnitsCount,
     omittedUnitsCount: candidate.omittedUnitsCount,
     intrusionCount: candidate.intrusionCount,
     phenomena,
+    unitAssessments,
   };
 };
 
@@ -97,11 +126,14 @@ Clasificá solamente fenómenos respaldados por evidencia textual:
 - rationalization: la reconstrucción agrega o modifica información para volverla más familiar, causal o coherente.
 - accentuation: un detalle se vuelve desproporcionadamente central o enfático.
 
-Dividí la historia en unidades narrativas con sentido, no necesariamente oraciones. retainedUnitsCount + omittedUnitsCount debe ser el total de esas unidades. intrusionCount debe coincidir con la cantidad de fenómenos intrusion.
-Incluí un fenómeno retained por cada unidad contabilizada como retenida y un fenómeno omission por cada unidad contabilizada como omitida.
+Las unidades narrativas ya fueron definidas. Evaluá todas exactamente una vez en unitAssessments:
+- full: conserva la idea central y sus relaciones principales.
+- trace: conserva algún concepto o elemento, pero no la idea completa.
+- absent: no hay evidencia suficiente de la unidad.
+retainedUnitsCount cuenta full; omittedUnitsCount cuenta trace + absent. intrusionCount debe coincidir con la cantidad de fenómenos intrusion.
 
 Respondé exclusivamente JSON con esta forma exacta:
-{"retainedUnitsCount":0,"omittedUnitsCount":0,"intrusionCount":0,"phenomena":[{"kind":"omission","storyExcerpt":"cita exacta o null","recallExcerpt":"cita exacta o null","explanation":"explicación breve en castellano","confidence":0.0}]}
+{"retainedUnitsCount":0,"omittedUnitsCount":0,"intrusionCount":0,"unitAssessments":[{"unitId":"es-u01","presence":"full","recallExcerpt":"cita exacta o null","confidence":0.0}],"phenomena":[{"kind":"omission","storyExcerpt":"cita exacta o null","recallExcerpt":"cita exacta o null","explanation":"explicación breve en castellano","confidence":0.0}]}
 
 Las citas deben ser fragmentos literales del texto correspondiente. No inventes evidencia. Ante ambigüedad, bajá confidence u omití el fenómeno.`;
 
@@ -113,6 +145,7 @@ type DeepSeekResponse = {
 export const analyzeRecallWithDeepSeek = async (
   story: string,
   recall: string,
+  preparedUnits: StoryAnalysisUnit[],
 ): Promise<RecallAnalysisModelResult> => {
   const apiKey = process.env.DEEPSEEK_API_KEY;
   if (!apiKey) throw new Error("Falta configurar DEEPSEEK_API_KEY.");
@@ -132,7 +165,7 @@ export const analyzeRecallWithDeepSeek = async (
         { role: "system", content: SYSTEM_PROMPT },
         {
           role: "user",
-          content: `HISTORIA ORIGINAL:\n${story}\n\nRECONSTRUCCIÓN:\n${recall}`,
+          content: `HISTORIA ORIGINAL:\n${story}\n\nUNIDADES PREPARADAS:\n${JSON.stringify(preparedUnits)}\n\nRECONSTRUCCIÓN:\n${recall}`,
         },
       ],
     }),
@@ -148,6 +181,16 @@ export const analyzeRecallWithDeepSeek = async (
   if (!content) throw new Error("DeepSeek devolvió una respuesta vacía.");
 
   const output = parseRecallAnalysisOutput(JSON.parse(content));
+  const expectedUnitIds = new Set(preparedUnits.map((unit) => unit.id));
+  if (
+    output.unitAssessments.length !== preparedUnits.length ||
+    output.unitAssessments.some(
+      (assessment) => !expectedUnitIds.delete(assessment.unitId),
+    ) ||
+    expectedUnitIds.size > 0
+  ) {
+    throw new Error("DeepSeek no evaluó exactamente las unidades preparadas.");
+  }
   for (const phenomenon of output.phenomena) {
     if (
       (phenomenon.storyExcerpt !== null &&

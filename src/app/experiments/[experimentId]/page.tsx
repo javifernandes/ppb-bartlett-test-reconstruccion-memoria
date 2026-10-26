@@ -28,21 +28,23 @@ import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useGraphQuery, useOperation } from "@ontahi/react/graph";
 import {
-  IconChartBar,
+  IconBook,
   IconChevronRight,
+  IconClock,
   IconCopy,
   IconDeviceFloppy,
   IconDownload,
   IconEye,
   IconLock,
   IconLanguage,
+  IconPencil,
   IconQrcode,
-  IconRefresh,
   IconRocket,
   IconTrash,
+  IconUsersGroup,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 
@@ -55,6 +57,10 @@ import {
   RecallAnalysis,
 } from "@/generated/client-entities";
 import { createId } from "@/lib/create-id";
+import {
+  ExperimentWorkspaceTabs,
+  type ExperimentWorkspaceSection,
+} from "./workspace-tabs";
 
 const ExperimentWorkspace = Experiment.view("ExperimentWorkspace", {
   id: true,
@@ -77,6 +83,9 @@ const ExperimentWorkspace = Experiment.view("ExperimentWorkspace", {
   createdAt: true,
   publishedAt: true,
   publicToken: true,
+  analysisRunId: true,
+  analysisRubrics: true,
+  analysisPreparedAt: true,
 });
 
 const ParticipantSessionRow = ParticipantSession.view("ParticipantSessionRow", {
@@ -106,6 +115,13 @@ const AnalysisRunRow = AnalysisRun.view("AnalysisRunRow", {
   createdAt: true,
 });
 
+const SessionAnalysisRow = RecallAnalysis.view("SessionAnalysisRow", {
+  id: true,
+  run: true,
+  session: true,
+  status: true,
+});
+
 const sessionStatus = {
   reading: { label: "Leyendo", color: "blue" },
   interval: { label: "En intervalo", color: "yellow" },
@@ -132,12 +148,30 @@ const formatDuration = (seconds?: number) => {
   return minutes > 0 ? `${minutes} min ${remainder} s` : `${remainder} s`;
 };
 
+const countryFlag = (countryCode: string) =>
+  /^[A-Z]{2}$/.test(countryCode)
+    ? String.fromCodePoint(
+        ...[...countryCode].map((letter) => 127397 + letter.charCodeAt(0)),
+      )
+    : "🌐";
+
+const countryLabel = (countryCode: string) =>
+  `${countryFlag(countryCode)} ${countryCode}`;
+
+const languageFlag = (language: "es" | "en") =>
+  language === "es" ? "🇪🇸" : "🇬🇧";
+
+const languageLabel = (language: "es" | "en", full = false) =>
+  language === "es"
+    ? `${languageFlag(language)} ${full ? "Español" : "ES"}`
+    : `${languageFlag(language)} ${full ? "English" : "EN"}`;
+
 type SessionFilter = "all" | "submitted" | "reading" | "interval" | "recalling";
 
 const ExperimentWorkspacePage = () => {
   const { locale, t } = useI18n();
   const { experimentId } = useParams<{ experimentId: string }>();
-  const router = useRouter();
+  const searchParams = useSearchParams();
   const experimentQuery = useMemo(
     () =>
       Experiment.all()
@@ -167,6 +201,19 @@ const ExperimentWorkspacePage = () => {
     [experimentId],
   );
   const analysisRuns = useGraphQuery(analysisRunsQuery);
+  const currentAnalysisRunId = experiment.data?.analysisRunId;
+  const sessionAnalysesQuery = useMemo(
+    () =>
+      RecallAnalysis.all()
+        .where((analysis) =>
+          analysis.run.eq(
+            AnalysisRun.refById(currentAnalysisRunId ?? "missing-run"),
+          ),
+        )
+        .as(SessionAnalysisRow),
+    [currentAnalysisRunId],
+  );
+  const sessionAnalyses = useGraphQuery(sessionAnalysesQuery);
   const [publishOpened, publishModal] = useDisclosure(false);
   const [closeOpened, closeModal] = useDisclosure(false);
   const [deleteOpened, deleteModal] = useDisclosure(false);
@@ -180,16 +227,8 @@ const ExperimentWorkspacePage = () => {
   const [sessionSearch, setSessionSearch] = useState("");
   const [visibleSessionCount, setVisibleSessionCount] = useState(20);
   const updateDraft = useOperation(Experiment.domain.updateDraft);
-  const publish = useOperation(Experiment.domain.publish, {
-    onSuccess: () => {
-      notifications.show({
-        title: "Experimento publicado",
-        message: "El experimento quedó bloqueado para edición.",
-        color: "teal",
-      });
-      window.location.reload();
-    },
-  });
+  const prepareAnalysis = useOperation(Experiment.domain.prepareAnalysis);
+  const publish = useOperation(Experiment.domain.publish);
   const close = useOperation(Experiment.domain.close, {
     onSuccess: () => {
       closeModal.close();
@@ -211,7 +250,6 @@ const ExperimentWorkspacePage = () => {
     },
   });
   const startAnalysis = useOperation(AnalysisRun.domain.start);
-  const analyzeRecall = useOperation(RecallAnalysis.domain.analyze);
   const finishAnalysis = useOperation(AnalysisRun.domain.finish);
   const form = useForm<{
     title: string;
@@ -355,10 +393,29 @@ const ExperimentWorkspacePage = () => {
 
   const handlePublish = async () => {
     publishModal.close();
+    if (!experiment.data) return;
+    if (!experiment.data.analysisRubrics) {
+      const prepared = await prepareAnalysis.executeAsync({
+        experiment: Experiment.refById(experimentId),
+        preparedAt: new Date().toISOString(),
+      });
+      if (!prepared.ok) {
+        publishModal.open();
+        notifications.show({
+          title: "No se pudo preparar la historia",
+          message: prepared.message,
+          color: "red",
+        });
+        return;
+      }
+    }
+
+    const analysisRunId = createId();
     const result = await publish.executeAsync({
       experiment: Experiment.refById(experimentId),
       publishedAt: new Date().toISOString(),
       publicToken: createId(),
+      analysisRunId,
     });
 
     if (!result.ok) {
@@ -368,7 +425,49 @@ const ExperimentWorkspacePage = () => {
         message: result.message,
         color: "red",
       });
+      return;
     }
+
+    const run = await startAnalysis.executeAsync({
+      id: analysisRunId,
+      experiment: Experiment.refById(experimentId),
+      createdAt: new Date().toISOString(),
+    });
+    if (!run.ok) {
+      notifications.show({
+        title: "El experimento se publicó, pero el análisis no pudo iniciarse",
+        message: run.message,
+        color: "red",
+      });
+      return;
+    }
+    notifications.show({
+      title: "Experimento publicado",
+      message: "La historia quedó preparada para analizar cada respuesta.",
+      color: "teal",
+    });
+    window.location.reload();
+  };
+
+  const handlePrepareAnalysis = async () => {
+    const result = await prepareAnalysis.executeAsync({
+      experiment: Experiment.refById(experimentId),
+      preparedAt: new Date().toISOString(),
+    });
+    if (!result.ok) {
+      notifications.show({
+        title: "No se pudo preparar la historia",
+        message: result.message,
+        color: "red",
+      });
+      return;
+    }
+    notifications.show({
+      title: "Historia preparada",
+      message: "Las unidades narrativas ya están listas.",
+      color: "teal",
+    });
+    window.location.reload();
   };
 
   const copyPublicLink = async (publicToken: string) => {
@@ -396,6 +495,14 @@ const ExperimentWorkspacePage = () => {
         title: "No se pudo cerrar el experimento",
         message: result.message,
         color: "red",
+      });
+      return;
+    }
+
+    if (experiment.data?.analysisRunId) {
+      await finishAnalysis.executeAsync({
+        run: AnalysisRun.refById(experiment.data.analysisRunId),
+        hasErrors: false,
       });
     }
   };
@@ -458,58 +565,6 @@ const ExperimentWorkspacePage = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleAnalysis = async (createNew = false) => {
-    const existingRun = analysisRuns.data?.[0];
-    if (existingRun && !createNew) {
-      router.push(`/experiments/${experimentId}/analysis/${existingRun.id}`);
-      return;
-    }
-
-    const id = createId();
-    const result = await startAnalysis.executeAsync({
-      id,
-      experiment: Experiment.refById(experimentId),
-      createdAt: new Date().toISOString(),
-    });
-
-    if (result.ok) {
-      let hasErrors = false;
-      const completedSessions = (sessions.data ?? []).filter(
-        (session) => session.status === "submitted",
-      );
-      for (const session of completedSessions) {
-        const recallResult = await analyzeRecall.executeAsync({
-          id: createId(),
-          run: AnalysisRun.refById(id),
-          session: ParticipantSession.refById(session.id),
-          experiment: Experiment.refById(experimentId),
-          createdAt: new Date().toISOString(),
-        });
-        if (!recallResult.ok) hasErrors = true;
-      }
-      const finished = await finishAnalysis.executeAsync({
-        run: AnalysisRun.refById(id),
-        hasErrors,
-      });
-      if (!finished.ok) {
-        notifications.show({
-          title: "El análisis quedó incompleto",
-          message: finished.message,
-          color: "red",
-        });
-        return;
-      }
-      router.push(`/experiments/${experimentId}/analysis/${id}`);
-      return;
-    }
-
-    notifications.show({
-      title: "No se pudo iniciar el análisis",
-      message: result.message,
-      color: "red",
-    });
-  };
-
   const sessionRows = sessions.data ?? [];
   const completedSessions = sessionRows.filter(
     (session) => session.status === "submitted",
@@ -532,6 +587,36 @@ const ExperimentWorkspacePage = () => {
             completedDurations.length,
         )
       : undefined;
+  const averageReadingDuration = (() => {
+    const durations = completedSessions.flatMap((session) => {
+      const duration = elapsedNumber(
+        session.startedAt,
+        session.intervalStartedAt ?? session.recallingStartedAt,
+      );
+      return duration === undefined ? [] : [duration];
+    });
+    return durations.length > 0
+      ? Math.round(
+          durations.reduce((total, value) => total + value, 0) /
+            durations.length,
+        )
+      : undefined;
+  })();
+  const averageRecallDuration = (() => {
+    const durations = completedSessions.flatMap((session) => {
+      const duration = elapsedNumber(
+        session.recallingStartedAt,
+        session.submittedAt,
+      );
+      return duration === undefined ? [] : [duration];
+    });
+    return durations.length > 0
+      ? Math.round(
+          durations.reduce((total, value) => total + value, 0) /
+            durations.length,
+        )
+      : undefined;
+  })();
   const latestActivity = sessionRows.reduce<string | undefined>(
     (latest, session) =>
       !latest || Date.parse(session.lastActivityAt) > Date.parse(latest)
@@ -561,12 +646,27 @@ const ExperimentWorkspacePage = () => {
     );
   });
   const visibleSessions = filteredSessions.slice(0, visibleSessionCount);
+  const analyzedSessionIds = new Set(
+    (sessionAnalyses.data ?? []).map((analysis) =>
+      String(analysis.session.locator.id),
+    ),
+  );
   const latestActivityLabel = latestActivity
     ? new Date(latestActivity).toLocaleString(
         locale === "es" ? "es-AR" : "en-US",
         { dateStyle: "short", timeStyle: "short" },
       )
     : "—";
+  const requestedView = searchParams.get("view");
+  const workspaceSection: ExperimentWorkspaceSection =
+    experiment.data?.status === "draft"
+      ? "configuration"
+      : requestedView === "responses" || requestedView === "configuration"
+        ? requestedView
+        : "summary";
+  const latestAnalysisHref = analysisRuns.data?.[0]
+    ? `/experiments/${experimentId}/analysis/${analysisRuns.data[0].id}`
+    : undefined;
 
   return (
     <AppShell header={{ height: 64 }} padding="md">
@@ -643,48 +743,18 @@ const ExperimentWorkspacePage = () => {
                         {t("Cerrar recepción")}
                       </Button>
                     )}
-                    {experiment.data.status === "closed" && (
-                      <>
-                        {analysisRuns.data?.length ? (
-                          <Button
-                            leftSection={<IconChartBar size={18} />}
-                            onClick={() => void handleAnalysis()}
-                          >
-                            {t("Ver último análisis")}
-                          </Button>
-                        ) : null}
-                        <Button
-                          variant={
-                            analysisRuns.data?.length ? "light" : "filled"
-                          }
-                          leftSection={
-                            analysisRuns.data?.length ? (
-                              <IconRefresh size={18} />
-                            ) : (
-                              <IconChartBar size={18} />
-                            )
-                          }
-                          loading={
-                            startAnalysis.isExecuting ||
-                            analyzeRecall.isExecuting ||
-                            finishAnalysis.isExecuting
-                          }
-                          onClick={() =>
-                            void handleAnalysis(
-                              Boolean(analysisRuns.data?.length),
-                            )
-                          }
-                        >
-                          {analysisRuns.data?.length
-                            ? t("Analizar nuevamente")
-                            : t("Analizar resultados")}
-                        </Button>
-                      </>
-                    )}
                   </Group>
                 </Group>
 
-                {experiment.data.status === "published" &&
+                <ExperimentWorkspaceTabs
+                  experimentId={experimentId}
+                  current={workspaceSection}
+                  isDraft={experiment.data.status === "draft"}
+                  analysisHref={latestAnalysisHref}
+                />
+
+                {workspaceSection === "summary" &&
+                  experiment.data.status === "published" &&
                   experiment.data.publicToken && (
                     <Card
                       withBorder
@@ -959,6 +1029,125 @@ const ExperimentWorkspacePage = () => {
                             </Accordion.Panel>
                           </Accordion.Item>
                         </Accordion>
+                        <Card withBorder padding="md">
+                          <Stack gap="md">
+                            <Group justify="space-between" align="flex-start">
+                              <div>
+                                <Text fw={650}>
+                                  {t("Preparación del análisis")}
+                                </Text>
+                                <Text size="sm" c="dimmed">
+                                  {experiment.data.analysisRubrics
+                                    ? t(
+                                        "La historia está lista para analizar respuestas.",
+                                      )
+                                    : t(
+                                        "Detectá las unidades narrativas antes de publicar.",
+                                      )}
+                                </Text>
+                              </div>
+                              <Badge
+                                variant="light"
+                                color={
+                                  experiment.data.analysisRubrics
+                                    ? "teal"
+                                    : "yellow"
+                                }
+                              >
+                                {experiment.data.analysisRubrics
+                                  ? t("Lista")
+                                  : t("Pendiente")}
+                              </Badge>
+                            </Group>
+                            {Boolean(experiment.data.analysisRubrics) && (
+                              <Accordion variant="separated">
+                                <Accordion.Item value="prepared-units">
+                                  <Accordion.Control>
+                                    {t("Ver unidades detectadas")}
+                                  </Accordion.Control>
+                                  <Accordion.Panel>
+                                    <Stack gap="md">
+                                      {(
+                                        experiment.data
+                                          .analysisRubrics as Array<{
+                                          language: "es" | "en";
+                                          units: Array<{
+                                            id: string;
+                                            text: string;
+                                          }>;
+                                        }>
+                                      ).map((rubric) => (
+                                        <div key={rubric.language}>
+                                          <Group
+                                            justify="space-between"
+                                            mb="sm"
+                                          >
+                                            <Text fw={650}>
+                                              {languageLabel(
+                                                rubric.language,
+                                                true,
+                                              )}
+                                            </Text>
+                                            <Text size="sm" c="dimmed">
+                                              {rubric.units.length}{" "}
+                                              {t(
+                                                rubric.units.length === 1
+                                                  ? "unidad detectada"
+                                                  : "unidades detectadas",
+                                              )}
+                                            </Text>
+                                          </Group>
+                                          <Stack gap="xs">
+                                            {rubric.units.map((unit, index) => (
+                                              <Paper
+                                                key={unit.id}
+                                                withBorder
+                                                p="sm"
+                                                radius="sm"
+                                              >
+                                                <Group
+                                                  align="flex-start"
+                                                  gap="sm"
+                                                  wrap="nowrap"
+                                                >
+                                                  <Badge
+                                                    variant="light"
+                                                    color="gray"
+                                                    circle
+                                                    mt={2}
+                                                    style={{ flexShrink: 0 }}
+                                                  >
+                                                    {index + 1}
+                                                  </Badge>
+                                                  <Text size="sm">
+                                                    {unit.text}
+                                                  </Text>
+                                                </Group>
+                                              </Paper>
+                                            ))}
+                                          </Stack>
+                                        </div>
+                                      ))}
+                                    </Stack>
+                                  </Accordion.Panel>
+                                </Accordion.Item>
+                              </Accordion>
+                            )}
+                            <Group justify="flex-end">
+                              <Button
+                                type="button"
+                                variant="light"
+                                loading={prepareAnalysis.isExecuting}
+                                disabled={form.isDirty()}
+                                onClick={() => void handlePrepareAnalysis()}
+                              >
+                                {experiment.data.analysisRubrics
+                                  ? t("Preparar nuevamente")
+                                  : t("Preparar historia")}
+                              </Button>
+                            </Group>
+                          </Stack>
+                        </Card>
                         <Group justify="flex-end">
                           {experiment.data.status === "draft" && (
                             <Button
@@ -978,259 +1167,358 @@ const ExperimentWorkspacePage = () => {
 
                 {experiment.data.status !== "draft" && (
                   <Stack gap="xl">
-                    <SimpleGrid cols={{ base: 2, sm: 3, md: 5 }}>
-                      <Card withBorder padding="md">
-                        <Text size="sm" c="dimmed">
-                          {t("Iniciadas")}
-                        </Text>
-                        <Text size="xl" fw={700}>
-                          {sessionRows.length}
-                        </Text>
-                      </Card>
-                      <Card withBorder padding="md">
-                        <Text size="sm" c="dimmed">
-                          {t("Completadas")}
-                        </Text>
-                        <Text size="xl" fw={700}>
-                          {completedSessions.length}
-                        </Text>
-                      </Card>
-                      <Card withBorder padding="md">
-                        <Text size="sm" c="dimmed">
-                          {t("En curso")}
-                        </Text>
-                        <Text size="xl" fw={700}>
-                          {activeSessions.length}
-                        </Text>
-                      </Card>
-                      <Card withBorder padding="md">
-                        <Text size="sm" c="dimmed">
-                          {t("Finalización")}
-                        </Text>
-                        <Text size="xl" fw={700}>
-                          {completionRate} %
-                        </Text>
-                        <Progress value={completionRate} mt={6} size="xs" />
-                      </Card>
-                      <Card withBorder padding="md">
-                        <Text size="sm" c="dimmed">
-                          {t("Duración promedio")}
-                        </Text>
-                        <Text size="xl" fw={700}>
-                          {formatDuration(averageDuration)}
-                        </Text>
-                      </Card>
-                    </SimpleGrid>
-
-                    <Card withBorder padding="lg">
-                      <Stack gap="md">
-                        <Group justify="space-between" align="flex-start">
-                          <div>
-                            <Title order={2}>{t("Respuestas")}</Title>
-                            <Text c="dimmed" size="sm">
-                              {t("Última actividad")}: {latestActivityLabel}
+                    {workspaceSection === "summary" && (
+                      <SimpleGrid cols={{ base: 1, sm: 2, md: 4 }}>
+                        <Card withBorder padding="md">
+                          <Group justify="space-between" wrap="nowrap">
+                            <Text size="sm" c="dimmed">
+                              {t("Participación")}
                             </Text>
-                          </div>
-                          <Button
-                            variant="default"
-                            leftSection={<IconDownload size={18} />}
-                            disabled={completedSessions.length === 0}
-                            onClick={exportResponses}
-                          >
-                            {t("Descargar CSV")}
-                          </Button>
-                        </Group>
-
-                        <Group align="flex-end" grow wrap="wrap">
-                          <Select
-                            label={t("Estado")}
-                            value={sessionFilter}
-                            data={[
-                              { value: "all", label: t("Todas") },
-                              { value: "submitted", label: t("Completadas") },
-                              { value: "reading", label: t("Leyendo") },
-                              { value: "interval", label: t("En intervalo") },
+                            <IconUsersGroup
+                              size={19}
+                              color="var(--mantine-color-dimmed)"
+                              stroke={1.6}
+                            />
+                          </Group>
+                          <Text size="xl" fw={700} mt={4}>
+                            {completedSessions.length} {t("completadas")}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {t(
+                              "De {started} iniciadas · {pending} sin completar",
                               {
-                                value: "recalling",
-                                label: t("Reconstruyendo"),
+                                started: sessionRows.length,
+                                pending: activeSessions.length,
                               },
-                            ]}
-                            allowDeselect={false}
-                            onChange={(value) => {
-                              setSessionFilter(
-                                (value ?? "all") as SessionFilter,
-                              );
-                              setVisibleSessionCount(20);
-                            }}
-                          />
-                          {experiment.data.alternateLanguage && (
+                            )}
+                          </Text>
+                          <Progress value={completionRate} mt={6} size="xs" />
+                        </Card>
+                        <Card withBorder padding="md">
+                          <Group justify="space-between" wrap="nowrap">
+                            <Text size="sm" c="dimmed">
+                              {t("Duración total promedio")}
+                            </Text>
+                            <IconClock
+                              size={19}
+                              color="var(--mantine-color-dimmed)"
+                              stroke={1.6}
+                            />
+                          </Group>
+                          <Text size="xl" fw={700}>
+                            {formatDuration(averageDuration)}
+                          </Text>
+                        </Card>
+                        <Card withBorder padding="md">
+                          <Group justify="space-between" wrap="nowrap">
+                            <Text size="sm" c="dimmed">
+                              {t("Lectura promedio")}
+                            </Text>
+                            <IconBook
+                              size={19}
+                              color="var(--mantine-color-dimmed)"
+                              stroke={1.6}
+                            />
+                          </Group>
+                          <Text size="xl" fw={700}>
+                            {formatDuration(averageReadingDuration)}
+                          </Text>
+                        </Card>
+                        <Card withBorder padding="md">
+                          <Group justify="space-between" wrap="nowrap">
+                            <Text size="sm" c="dimmed">
+                              {t("Reconstrucción promedio")}
+                            </Text>
+                            <IconPencil
+                              size={19}
+                              color="var(--mantine-color-dimmed)"
+                              stroke={1.6}
+                            />
+                          </Group>
+                          <Text size="xl" fw={700}>
+                            {formatDuration(averageRecallDuration)}
+                          </Text>
+                        </Card>
+                      </SimpleGrid>
+                    )}
+
+                    {workspaceSection === "responses" && (
+                      <Card withBorder padding="lg">
+                        <Stack gap="md">
+                          <Group justify="space-between" align="flex-start">
+                            <div>
+                              <Title order={2}>{t("Respuestas")}</Title>
+                              <Text c="dimmed" size="sm">
+                                {t("Última actividad")}: {latestActivityLabel}
+                              </Text>
+                            </div>
+                            <Button
+                              variant="default"
+                              leftSection={<IconDownload size={18} />}
+                              disabled={completedSessions.length === 0}
+                              onClick={exportResponses}
+                            >
+                              {t("Descargar planilla")}
+                            </Button>
+                          </Group>
+
+                          <Group align="flex-end" grow wrap="wrap">
                             <Select
-                              label={t("Idioma")}
-                              value={languageFilter}
+                              label={t("Estado")}
+                              value={sessionFilter}
                               data={[
-                                { value: "all", label: t("Todos") },
-                                { value: "es", label: "Español" },
-                                { value: "en", label: "English" },
+                                { value: "all", label: t("Todas") },
+                                { value: "submitted", label: t("Completadas") },
+                                { value: "reading", label: t("Leyendo") },
+                                { value: "interval", label: t("En intervalo") },
+                                {
+                                  value: "recalling",
+                                  label: t("Reconstruyendo"),
+                                },
                               ]}
                               allowDeselect={false}
                               onChange={(value) => {
-                                setLanguageFilter(
-                                  (value ?? "all") as "all" | "es" | "en",
+                                setSessionFilter(
+                                  (value ?? "all") as SessionFilter,
                                 );
                                 setVisibleSessionCount(20);
                               }}
                             />
-                          )}
-                          <Select
-                            label={t("País")}
-                            value={countryFilter}
-                            data={[
-                              { value: "all", label: t("Todos") },
-                              ...availableCountries.map((country) => ({
-                                value: country,
-                                label: country,
-                              })),
-                            ]}
-                            allowDeselect={false}
-                            disabled={availableCountries.length === 0}
-                            onChange={(value) => {
-                              setCountryFilter(value ?? "all");
-                              setVisibleSessionCount(20);
-                            }}
-                          />
-                          <TextInput
-                            label={t("Buscar")}
-                            placeholder={t("ID o texto de la respuesta")}
-                            value={sessionSearch}
-                            onChange={(event) => {
-                              setSessionSearch(event.currentTarget.value);
-                              setVisibleSessionCount(20);
-                            }}
-                          />
-                        </Group>
-
-                        {sessions.isLoading && <Loader size="sm" />}
-                        {sessions.isError && (
-                          <Text c="red">
-                            {t("No se pudieron cargar las respuestas.")}
-                          </Text>
-                        )}
-                        {!sessions.isLoading &&
-                          filteredSessions.length === 0 && (
-                            <Paper withBorder p="lg">
-                              <Text c="dimmed">
-                                {sessionRows.length === 0
-                                  ? t("Todavía no hay participaciones.")
-                                  : t("No hay respuestas para estos filtros.")}
-                              </Text>
-                            </Paper>
-                          )}
-                        {visibleSessions.length > 0 && (
-                          <Table.ScrollContainer minWidth={720}>
-                            <Table verticalSpacing="sm" highlightOnHover>
-                              <Table.Thead>
-                                <Table.Tr>
-                                  <Table.Th>{t("Estado")}</Table.Th>
-                                  <Table.Th>{t("Inicio")}</Table.Th>
-                                  <Table.Th>{t("Idioma")}</Table.Th>
-                                  <Table.Th>{t("País")}</Table.Th>
-                                  <Table.Th>{t("Duración")}</Table.Th>
-                                  <Table.Th>{t("Palabras")}</Table.Th>
-                                  <Table.Th />
-                                </Table.Tr>
-                              </Table.Thead>
-                              <Table.Tbody>
-                                {visibleSessions.map((session) => (
-                                  <Table.Tr key={session.id}>
-                                    <Table.Td>
-                                      <Badge
-                                        variant="light"
-                                        color={
-                                          sessionStatus[session.status].color
-                                        }
-                                      >
-                                        {t(sessionStatus[session.status].label)}
-                                      </Badge>
-                                    </Table.Td>
-                                    <Table.Td>
-                                      <Text size="sm">
-                                        {new Date(
-                                          session.startedAt,
-                                        ).toLocaleString(
-                                          locale === "es" ? "es-AR" : "en-US",
-                                          {
-                                            dateStyle: "short",
-                                            timeStyle: "short",
-                                          },
-                                        )}
-                                      </Text>
-                                      <Text size="xs" c="dimmed" ff="monospace">
-                                        {session.id.slice(0, 8)}
-                                      </Text>
-                                    </Table.Td>
-                                    <Table.Td>
-                                      {session.contentLanguage.toUpperCase()}
-                                    </Table.Td>
-                                    <Table.Td>
-                                      {session.countryCode ?? "—"}
-                                    </Table.Td>
-                                    <Table.Td>
-                                      {formatDuration(
-                                        elapsedNumber(
-                                          session.startedAt,
-                                          session.submittedAt ??
-                                            session.lastActivityAt,
-                                        ),
-                                      )}
-                                    </Table.Td>
-                                    <Table.Td>
-                                      {session.recallText
-                                        ? (session.recallText.match(
-                                            /[\p{L}\p{N}]+/gu,
-                                          )?.length ?? 0)
-                                        : "—"}
-                                    </Table.Td>
-                                    <Table.Td ta="right">
-                                      <Button
-                                        component={Link}
-                                        href={`/experiments/${experimentId}/responses/${session.id}`}
-                                        variant="subtle"
-                                        size="compact-sm"
-                                        rightSection={
-                                          <IconChevronRight size={16} />
-                                        }
-                                      >
-                                        {t("Ver")}
-                                      </Button>
-                                    </Table.Td>
-                                  </Table.Tr>
-                                ))}
-                              </Table.Tbody>
-                            </Table>
-                          </Table.ScrollContainer>
-                        )}
-                        {visibleSessionCount < filteredSessions.length && (
-                          <Group justify="center">
-                            <Button
-                              variant="default"
-                              onClick={() =>
-                                setVisibleSessionCount((count) => count + 20)
-                              }
-                            >
-                              {t("Cargar más")} ·{" "}
-                              {filteredSessions.length - visibleSessionCount}
-                            </Button>
+                            {experiment.data.alternateLanguage && (
+                              <Select
+                                label={t("Idioma")}
+                                value={languageFilter}
+                                data={[
+                                  { value: "all", label: t("Todos") },
+                                  {
+                                    value: "es",
+                                    label: languageLabel("es", true),
+                                  },
+                                  {
+                                    value: "en",
+                                    label: languageLabel("en", true),
+                                  },
+                                ]}
+                                allowDeselect={false}
+                                onChange={(value) => {
+                                  setLanguageFilter(
+                                    (value ?? "all") as "all" | "es" | "en",
+                                  );
+                                  setVisibleSessionCount(20);
+                                }}
+                              />
+                            )}
+                            <Select
+                              label={t("País")}
+                              value={countryFilter}
+                              data={[
+                                { value: "all", label: t("Todos") },
+                                ...availableCountries.map((country) => ({
+                                  value: country,
+                                  label: countryLabel(country),
+                                })),
+                              ]}
+                              allowDeselect={false}
+                              disabled={availableCountries.length === 0}
+                              onChange={(value) => {
+                                setCountryFilter(value ?? "all");
+                                setVisibleSessionCount(20);
+                              }}
+                            />
+                            <TextInput
+                              label={t("Buscar")}
+                              placeholder={t("ID o texto de la respuesta")}
+                              value={sessionSearch}
+                              onChange={(event) => {
+                                setSessionSearch(event.currentTarget.value);
+                                setVisibleSessionCount(20);
+                              }}
+                            />
                           </Group>
-                        )}
-                      </Stack>
-                    </Card>
 
-                    <Accordion variant="contained">
-                      <Accordion.Item value="configuration">
-                        <Accordion.Control>
-                          {t("Ver configuración del experimento")}
-                        </Accordion.Control>
-                        <Accordion.Panel>
+                          {sessions.isLoading && <Loader size="sm" />}
+                          {sessions.isError && (
+                            <Text c="red">
+                              {t("No se pudieron cargar las respuestas.")}
+                            </Text>
+                          )}
+                          {!sessions.isLoading &&
+                            filteredSessions.length === 0 && (
+                              <Paper withBorder p="lg">
+                                <Text c="dimmed">
+                                  {sessionRows.length === 0
+                                    ? t("Todavía no hay participaciones.")
+                                    : t(
+                                        "No hay respuestas para estos filtros.",
+                                      )}
+                                </Text>
+                              </Paper>
+                            )}
+                          {visibleSessions.length > 0 && (
+                            <Table.ScrollContainer minWidth={720}>
+                              <Table verticalSpacing="sm" highlightOnHover>
+                                <Table.Thead>
+                                  <Table.Tr>
+                                    <Table.Th>{t("Estado")}</Table.Th>
+                                    <Table.Th>{t("Análisis")}</Table.Th>
+                                    <Table.Th>{t("Inicio")}</Table.Th>
+                                    <Table.Th>{t("Idioma")}</Table.Th>
+                                    <Table.Th>{t("País")}</Table.Th>
+                                    <Table.Th>{t("Duración")}</Table.Th>
+                                    <Table.Th>{t("Palabras")}</Table.Th>
+                                    <Table.Th />
+                                  </Table.Tr>
+                                </Table.Thead>
+                                <Table.Tbody>
+                                  {visibleSessions.map((session) => (
+                                    <Table.Tr key={session.id}>
+                                      <Table.Td>
+                                        <Badge
+                                          variant="light"
+                                          color={
+                                            sessionStatus[session.status].color
+                                          }
+                                        >
+                                          {t(
+                                            sessionStatus[session.status].label,
+                                          )}
+                                        </Badge>
+                                      </Table.Td>
+                                      <Table.Td>
+                                        <Badge
+                                          variant="light"
+                                          color={
+                                            session.status !== "submitted"
+                                              ? "gray"
+                                              : analyzedSessionIds.has(
+                                                    session.id,
+                                                  )
+                                                ? "teal"
+                                                : "yellow"
+                                          }
+                                        >
+                                          {t(
+                                            session.status !== "submitted"
+                                              ? "No aplica"
+                                              : analyzedSessionIds.has(
+                                                    session.id,
+                                                  )
+                                                ? "Analizada"
+                                                : "Pendiente",
+                                          )}
+                                        </Badge>
+                                      </Table.Td>
+                                      <Table.Td>
+                                        <Text size="sm">
+                                          {new Date(
+                                            session.startedAt,
+                                          ).toLocaleString(
+                                            locale === "es" ? "es-AR" : "en-US",
+                                            {
+                                              dateStyle: "short",
+                                              timeStyle: "short",
+                                            },
+                                          )}
+                                        </Text>
+                                        <Text
+                                          size="xs"
+                                          c="dimmed"
+                                          ff="monospace"
+                                        >
+                                          {session.id.slice(0, 8)}
+                                        </Text>
+                                      </Table.Td>
+                                      <Table.Td>
+                                        <Text
+                                          component="span"
+                                          fz={24}
+                                          lh={1}
+                                          title={session.contentLanguage.toUpperCase()}
+                                          aria-label={session.contentLanguage.toUpperCase()}
+                                        >
+                                          {languageFlag(
+                                            session.contentLanguage,
+                                          )}
+                                        </Text>
+                                      </Table.Td>
+                                      <Table.Td>
+                                        {session.countryCode ? (
+                                          <Text
+                                            component="span"
+                                            fz={24}
+                                            lh={1}
+                                            title={session.countryCode}
+                                            aria-label={session.countryCode}
+                                          >
+                                            {countryFlag(session.countryCode)}
+                                          </Text>
+                                        ) : (
+                                          "—"
+                                        )}
+                                      </Table.Td>
+                                      <Table.Td>
+                                        {formatDuration(
+                                          elapsedNumber(
+                                            session.startedAt,
+                                            session.submittedAt ??
+                                              session.lastActivityAt,
+                                          ),
+                                        )}
+                                      </Table.Td>
+                                      <Table.Td>
+                                        {session.recallText
+                                          ? (session.recallText.match(
+                                              /[\p{L}\p{N}]+/gu,
+                                            )?.length ?? 0)
+                                          : "—"}
+                                      </Table.Td>
+                                      <Table.Td ta="right">
+                                        <Button
+                                          component={Link}
+                                          href={`/experiments/${experimentId}/responses/${session.id}`}
+                                          variant="subtle"
+                                          size="compact-sm"
+                                          rightSection={
+                                            <IconChevronRight size={16} />
+                                          }
+                                        >
+                                          {t("Ver")}
+                                        </Button>
+                                      </Table.Td>
+                                    </Table.Tr>
+                                  ))}
+                                </Table.Tbody>
+                              </Table>
+                            </Table.ScrollContainer>
+                          )}
+                          {visibleSessionCount < filteredSessions.length && (
+                            <Group justify="center">
+                              <Button
+                                variant="default"
+                                onClick={() =>
+                                  setVisibleSessionCount((count) => count + 20)
+                                }
+                              >
+                                {t("Cargar más")} ·{" "}
+                                {filteredSessions.length - visibleSessionCount}
+                              </Button>
+                            </Group>
+                          )}
+                        </Stack>
+                      </Card>
+                    )}
+
+                    {workspaceSection === "configuration" && (
+                      <Card withBorder padding="lg">
+                        <Stack gap="lg">
+                          <div>
+                            <Title order={2}>{t("Configuración")}</Title>
+                            <Text c="dimmed" size="sm">
+                              {t(
+                                "La configuración queda en modo de solo lectura después de publicar.",
+                              )}
+                            </Text>
+                          </div>
                           <Stack gap="lg">
                             <SimpleGrid cols={{ base: 1, sm: 3 }}>
                               <div>
@@ -1283,32 +1571,34 @@ const ExperimentWorkspacePage = () => {
                               </div>
                             )}
                           </Stack>
-                        </Accordion.Panel>
-                      </Accordion.Item>
-                    </Accordion>
+                        </Stack>
+                      </Card>
+                    )}
                   </Stack>
                 )}
 
-                <Card withBorder padding="lg">
-                  <Group justify="space-between" align="center" wrap="wrap">
-                    <div>
-                      <Text fw={600}>{t("Eliminar experimento")}</Text>
-                      <Text c="dimmed" size="sm">
-                        {t(
-                          "Borra también todas sus participaciones y análisis.",
-                        )}
-                      </Text>
-                    </div>
-                    <Button
-                      color="red"
-                      variant="light"
-                      leftSection={<IconTrash size={18} />}
-                      onClick={deleteModal.open}
-                    >
-                      {t("Eliminar")}
-                    </Button>
-                  </Group>
-                </Card>
+                {workspaceSection === "configuration" && (
+                  <Card withBorder padding="lg">
+                    <Group justify="space-between" align="center" wrap="wrap">
+                      <div>
+                        <Text fw={600}>{t("Eliminar experimento")}</Text>
+                        <Text c="dimmed" size="sm">
+                          {t(
+                            "Borra también todas sus participaciones y análisis.",
+                          )}
+                        </Text>
+                      </div>
+                      <Button
+                        color="red"
+                        variant="light"
+                        leftSection={<IconTrash size={18} />}
+                        onClick={deleteModal.open}
+                      >
+                        {t("Eliminar")}
+                      </Button>
+                    </Group>
+                  </Card>
+                )}
               </>
             )}
           </Stack>

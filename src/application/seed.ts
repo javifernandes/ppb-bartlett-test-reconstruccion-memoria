@@ -1,3 +1,5 @@
+import { demoMemoryUnits, getDemoMemoryLevel } from "./demo-memory-map";
+
 const demoExperimentId = "experiment-complete-demo";
 const bilingualDemoExperimentId = "experiment-bilingual-demo";
 const demoRunId = "analysis-complete-demo";
@@ -76,6 +78,91 @@ const createBilingualDemoSessions = () =>
     };
   });
 
+const demoRecallTemplates = [
+  "Dos jóvenes bajaron al río para cazar focas. Escucharon gritos y se escondieron. Llegó una canoa con cinco hombres; uno se fue con ellos y el otro volvió a su casa. Al amanecer regresó herido, contó lo ocurrido y murió.",
+  "Dos amigos fueron al río a pescar. Oyeron ruidos de guerra detrás de un árbol. Un bote con varias personas los invitó y uno aceptó. Volvió herido al día siguiente y falleció.",
+  "Dos jóvenes estaban cerca del río. Un barco con guerreros se acercó y les pidió que fueran con ellos. Uno fue, el otro regresó con su familia. El primero volvió herido y murió.",
+  "Unos muchachos cazaban animales en el río. Escucharon gritos y se escondieron detrás de un tronco. Llegó una canoa; uno acompañó al grupo y después volvió lastimado.",
+  "Dos jóvenes fueron al río. Había una canoa con cinco hombres que iban a una guerra. Uno los acompañó mientras el otro se fue a su casa. A la mañana siguiente el joven regresó herido y murió.",
+  "Dos chicos pescaban. Escucharon algo y se ocultaron. Llegó un bote, uno de ellos se fue y luego volvió herido.",
+  "Dos jóvenes, un río y una canoa. Uno se unió a los hombres y el otro regresó a casa. Más tarde el primero murió.",
+  "Unos jóvenes estaban junto al río cuando se acercó un grupo en barco. Invitaron a uno a ir con ellos. Volvió herido al amanecer, contó lo sucedido y murió.",
+];
+
+const createAnalysisDemoSessions = () =>
+  Array.from({ length: 60 }, (_, index) => {
+    const startedAt = new Date(Date.UTC(2026, 9, 22, 9, 5 + index * 3));
+    const intervalStartedAt = new Date(startedAt.getTime() + 35_000);
+    const recallingStartedAt = new Date(intervalStartedAt.getTime() + 10_000);
+    const submittedAt = new Date(
+      recallingStartedAt.getTime() + (42 + (index % 9) * 8) * 1_000,
+    );
+
+    return {
+      id: `session-demo-${String(index + 1).padStart(2, "0")}`,
+      experiment: demoExperimentId,
+      contentLanguage: "es" as const,
+      countryCode: ["AR", "UY", "MX", "US", "CL", "CO"][index % 6],
+      ...demoClientMetadata,
+      deviceType: index % 5 === 0 ? ("desktop" as const) : ("mobile" as const),
+      status: "submitted" as const,
+      startedAt: startedAt.toISOString(),
+      intervalStartedAt: intervalStartedAt.toISOString(),
+      recallingStartedAt: recallingStartedAt.toISOString(),
+      lastActivityAt: submittedAt.toISOString(),
+      recallText: demoRecallTemplates[index % demoRecallTemplates.length],
+      submittedAt: submittedAt.toISOString(),
+    };
+  });
+
+const createAnalysisDemoResults = () =>
+  Array.from({ length: 60 }, (_, responseIndex) => {
+    const levels = demoMemoryUnits.map((unit, unitIndex) => ({
+      unit,
+      level: getDemoMemoryLevel(unit, responseIndex, unitIndex),
+    }));
+    const retainedUnitsCount = levels.filter(
+      ({ level }) => level !== "absent",
+    ).length;
+    const omittedUnitsCount = levels.length - retainedUnitsCount;
+
+    return {
+      id: `recall-analysis-demo-${String(responseIndex + 1).padStart(2, "0")}`,
+      run: demoRunId,
+      session: `session-demo-${String(responseIndex + 1).padStart(2, "0")}`,
+      experiment: demoExperimentId,
+      status: "completed" as const,
+      rubricVersion: "bartlett-memory-map-demo-v1",
+      analyzerProvider: "fixture",
+      analyzerModel: "synthetic-cohort",
+      promptVersion: "recall-units-v2",
+      inputTokens: null,
+      outputTokens: null,
+      retainedUnitsCount,
+      omittedUnitsCount,
+      intrusionCount: responseIndex % 11 === 0 ? 1 : 0,
+      phenomena: levels
+        .filter(({ level }) => level === "absent")
+        .slice(0, 3)
+        .map(({ unit }) => ({
+          kind: "omission",
+          storyExcerpt: unit.text,
+          recallExcerpt: null,
+          explanation: "Unidad narrativa no recuperada.",
+          confidence: 0.9,
+        })),
+      unitAssessments: levels.map(({ unit, level }) => ({
+        unitId: unit.id,
+        presence: level,
+        recallExcerpt: level === "absent" ? null : unit.text,
+        confidence: 0.9,
+      })),
+      createdAt: new Date(
+        Date.UTC(2026, 9, 22, 12, responseIndex),
+      ).toISOString(),
+    };
+  });
+
 export const createBartlettSeed = (demoEnabled: boolean) => ({
   Experiment: [
     {
@@ -103,6 +190,9 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
       createdAt: "2026-10-22T00:00:00.000Z",
       publishedAt: null,
       publicToken: null,
+      analysisRunId: null,
+      analysisRubrics: null,
+      analysisPreparedAt: null,
     },
     ...(demoEnabled
       ? [
@@ -132,6 +222,9 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
             createdAt: "2026-10-22T08:00:00.000Z",
             publishedAt: "2026-10-22T08:01:00.000Z",
             publicToken: "demo-bilingue",
+            analysisRunId: null,
+            analysisRubrics: null,
+            analysisPreparedAt: null,
           },
           {
             id: demoExperimentId,
@@ -158,44 +251,21 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
             createdAt: "2026-10-22T09:00:00.000Z",
             publishedAt: "2026-10-22T09:01:00.000Z",
             publicToken: "demo-completa",
+            analysisRunId: demoRunId,
+            analysisRubrics: [
+              {
+                language: "es",
+                version: "story-units-v1",
+                units: demoMemoryUnits.map(({ id, text }) => ({ id, text })),
+              },
+            ],
+            analysisPreparedAt: "2026-10-22T09:00:30.000Z",
           },
         ]
       : []),
   ],
   ParticipantSession: demoEnabled
-    ? [
-        ...createBilingualDemoSessions(),
-        {
-          id: "session-demo-1",
-          experiment: demoExperimentId,
-          contentLanguage: "es" as const,
-          countryCode: "AR",
-          ...demoClientMetadata,
-          status: "submitted" as const,
-          startedAt: "2026-10-22T09:05:00.000Z",
-          intervalStartedAt: "2026-10-22T09:05:45.000Z",
-          recallingStartedAt: "2026-10-22T09:05:55.000Z",
-          lastActivityAt: "2026-10-22T09:07:10.000Z",
-          recallText:
-            "Dos jóvenes cazaban focas junto al río. Llegó una canoa con cinco guerreros y uno de ellos se fue con el grupo. Volvió herido al día siguiente y murió.",
-          submittedAt: "2026-10-22T09:07:10.000Z",
-        },
-        {
-          id: "session-demo-2",
-          experiment: demoExperimentId,
-          contentLanguage: "es" as const,
-          countryCode: "UY",
-          ...demoClientMetadata,
-          status: "submitted" as const,
-          startedAt: "2026-10-22T09:10:00.000Z",
-          intervalStartedAt: "2026-10-22T09:10:30.000Z",
-          recallingStartedAt: "2026-10-22T09:10:40.000Z",
-          lastActivityAt: "2026-10-22T09:11:20.000Z",
-          recallText:
-            "Dos amigos estaban pescando. Un barco los invitó a una batalla. Uno regresó enfermo y luego falleció.",
-          submittedAt: "2026-10-22T09:11:20.000Z",
-        },
-      ]
+    ? [...createBilingualDemoSessions(), ...createAnalysisDemoSessions()]
     : [],
   AnalysisRun: demoEnabled
     ? [
@@ -208,70 +278,5 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
         },
       ]
     : [],
-  RecallAnalysis: demoEnabled
-    ? [
-        {
-          id: "recall-analysis-demo-1",
-          run: demoRunId,
-          session: "session-demo-1",
-          experiment: demoExperimentId,
-          status: "completed" as const,
-          rubricVersion: "bartlett-demo-v1",
-          analyzerProvider: "fixture",
-          analyzerModel: "manual-example",
-          promptVersion: "none",
-          inputTokens: null,
-          outputTokens: null,
-          retainedUnitsCount: 4,
-          omittedUnitsCount: 2,
-          intrusionCount: 0,
-          phenomena: [
-            {
-              kind: "omission",
-              storyExcerpt: "el otro regresó a su casa",
-              recallExcerpt: null,
-              explanation:
-                "La reconstrucción no menciona al joven que decidió regresar.",
-              confidence: 0.96,
-            },
-          ],
-          createdAt: "2026-10-22T09:15:01.000Z",
-        },
-        {
-          id: "recall-analysis-demo-2",
-          run: demoRunId,
-          session: "session-demo-2",
-          experiment: demoExperimentId,
-          status: "completed" as const,
-          rubricVersion: "bartlett-demo-v1",
-          analyzerProvider: "fixture",
-          analyzerModel: "manual-example",
-          promptVersion: "none",
-          inputTokens: null,
-          outputTokens: null,
-          retainedUnitsCount: 2,
-          omittedUnitsCount: 4,
-          intrusionCount: 0,
-          phenomena: [
-            {
-              kind: "substitution",
-              storyExcerpt: "cazar focas",
-              recallExcerpt: "pescando",
-              explanation:
-                "La actividad poco familiar fue reemplazada por otra más convencional.",
-              confidence: 0.92,
-            },
-            {
-              kind: "substitution",
-              storyExcerpt: "Una canoa",
-              recallExcerpt: "Un barco",
-              explanation:
-                "La canoa de la historia fue reconstruida como un barco.",
-              confidence: 0.94,
-            },
-          ],
-          createdAt: "2026-10-22T09:15:02.000Z",
-        },
-      ]
-    : [],
+  RecallAnalysis: demoEnabled ? createAnalysisDemoResults() : [],
 });

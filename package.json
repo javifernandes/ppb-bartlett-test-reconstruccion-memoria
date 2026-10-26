@@ -9,10 +9,13 @@
   },
   "scripts": {
     "build": "pnpm codegen:check && next build --webpack",
+    "backfill:analysis": "node scripts/backfill-recall-analysis.mjs",
     "codegen": "ontahi-codegen",
     "codegen:check": "ontahi-codegen --check",
     "dev": "pnpm codegen && next dev --webpack",
     "dev:demo": "SEED_DEMO_DATA=true pnpm dev",
+    "eval:recall": "node evals/recall-analysis/run.mjs",
+    "eval:transformations": "node evals/recall-analysis/run-transformations.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --no-warn-ignored",

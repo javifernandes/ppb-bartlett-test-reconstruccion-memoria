@@ -35,10 +35,13 @@ export const AnalysisRun = entity({
       *run({ id, experiment, createdAt }) {
         const target = yield* experiment.resolve();
 
-        if (!target || target.status !== "closed") {
+        if (
+          !target ||
+          (target.status !== "published" && target.status !== "closed")
+        ) {
           return yield* failOperation(
             "experiment_not_ready_for_analysis",
-            "El experimento debe estar cerrado antes de analizarlo.",
+            "El experimento debe estar publicado o cerrado antes de analizarlo.",
           );
         }
 

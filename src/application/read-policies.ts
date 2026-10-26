@@ -56,6 +56,9 @@ const ExperimentReadPolicy = defineGraphReadPolicy<
       "createdAt",
       "publishedAt",
       "publicToken",
+      "analysisRunId",
+      "analysisRubrics",
+      "analysisPreparedAt",
     ],
     filter: {
       id: ["eq", "in"],
@@ -162,6 +165,7 @@ const RecallAnalysisReadPolicy = defineGraphReadPolicy<
       "omittedUnitsCount",
       "intrusionCount",
       "phenomena",
+      "unitAssessments",
       "createdAt",
     ],
     filter: {

@@ -186,15 +186,6 @@ const HomePage = () => {
                   const runs = analysisRuns.data.filter(
                     (run) => run.experiment.locator.id === experiment.id,
                   );
-                  const latestRun = runs[0];
-                  const analyzerLabel = latestRun?.analyzerVersion.startsWith(
-                    "deepseek:",
-                  )
-                    ? `DeepSeek · ${latestRun.analyzerVersion.replace("deepseek:", "")}`
-                    : latestRun
-                      ? "Heurístico local"
-                      : null;
-
                   return (
                     <Card
                       key={experiment.id}
@@ -284,8 +275,8 @@ const HomePage = () => {
                               {t(runs.length === 1 ? "corrida" : "corridas")}
                             </Text>
                             <Text c="dimmed" size="sm">
-                              {analyzerLabel
-                                ? `${t("Último")}: ${analyzerLabel}`
+                              {runs.length > 0
+                                ? t("Último análisis disponible")
                                 : t("Todavía no fue analizado")}
                             </Text>
                           </Stack>

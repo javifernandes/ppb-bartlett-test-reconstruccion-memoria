@@ -3,22 +3,18 @@
 import {
   AppShell,
   Badge,
-  Button,
   Card,
   Container,
   Group,
   Loader,
   SimpleGrid,
   Stack,
-  Table,
   Text,
   Title,
 } from "@mantine/core";
-import { useGraphQuery } from "@ontahi/react/graph";
-import { IconChevronRight } from "@tabler/icons-react";
-import Link from "next/link";
+import { useGraphQuery, useOperation } from "@ontahi/react/graph";
 import { useParams } from "next/navigation";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import {
   AnalysisRun,
@@ -28,13 +24,18 @@ import {
 } from "@/generated/client-entities";
 import { AdminHeader } from "@/app/admin-header";
 import { useI18n } from "@/app/i18n";
+import { createId } from "@/lib/create-id";
+import { MemoryMap } from "./memory-map";
+import { ExperimentWorkspaceTabs } from "../../workspace-tabs";
 
 const AnalysisExperiment = Experiment.view("AnalysisExperiment", {
   id: true,
   title: true,
   story: true,
+  primaryLanguage: true,
   alternateLanguage: true,
   alternateStory: true,
+  analysisRubrics: true,
   status: true,
 });
 
@@ -65,6 +66,7 @@ const RecallAnalysisRow = RecallAnalysis.view("RecallAnalysisRow", {
   omittedUnitsCount: true,
   intrusionCount: true,
   phenomena: true,
+  unitAssessments: true,
 });
 
 const countWords = (value: string) =>
@@ -133,6 +135,8 @@ const AnalysisPage = () => {
     [analysisRunId],
   );
   const recallAnalyses = useGraphQuery(recallAnalysesQuery);
+  const analyzeRecall = useOperation(RecallAnalysis.domain.analyze);
+  const scheduledAnalysisIds = useRef(new Set<string>());
   const validRun = run.data?.experiment.locator.id === experimentId;
   const primaryStoryWordCount = countWords(experiment.data?.story ?? "");
   const responseMetrics = (responses.data ?? []).map((response) => {
@@ -174,7 +178,98 @@ const AnalysisPage = () => {
   const recallTimes = responseMetrics.flatMap((response) =>
     response.recallSeconds === undefined ? [] : [response.recallSeconds],
   );
-  const semanticAnalyses = recallAnalyses.data ?? [];
+  const semanticAnalyses = useMemo(
+    () => recallAnalyses.data ?? [],
+    [recallAnalyses.data],
+  );
+  useEffect(() => {
+    if (
+      run.data?.status !== "running" ||
+      responses.isLoading ||
+      recallAnalyses.isLoading ||
+      responses.isError ||
+      recallAnalyses.isError
+    ) {
+      return;
+    }
+
+    const analyzedSessionIds = new Set(
+      semanticAnalyses.map((analysis) => String(analysis.session.locator.id)),
+    );
+    for (const response of responses.data ?? []) {
+      if (
+        analyzedSessionIds.has(response.id) ||
+        scheduledAnalysisIds.current.has(response.id)
+      ) {
+        continue;
+      }
+
+      scheduledAnalysisIds.current.add(response.id);
+      void analyzeRecall
+        .executeAsync({
+          id: createId(),
+          run: AnalysisRun.refById(analysisRunId),
+          session: ParticipantSession.refById(response.id),
+          experiment: Experiment.refById(experimentId),
+          createdAt: new Date().toISOString(),
+        })
+        .then((result) => {
+          if (!result.ok) scheduledAnalysisIds.current.delete(response.id);
+        });
+    }
+  }, [
+    analysisRunId,
+    analyzeRecall,
+    experimentId,
+    recallAnalyses.isError,
+    recallAnalyses.isLoading,
+    responses.data,
+    responses.isError,
+    responses.isLoading,
+    run.data?.status,
+    semanticAnalyses,
+  ]);
+  const primaryResponseIds = new Set(
+    (responses.data ?? [])
+      .filter(
+        (response) =>
+          response.contentLanguage === experiment.data?.primaryLanguage,
+      )
+      .map((response) => response.id),
+  );
+  const primaryAnalyses = semanticAnalyses.filter((analysis) =>
+    primaryResponseIds.has(String(analysis.session.locator.id)),
+  );
+  const primaryRubric = (
+    experiment.data?.analysisRubrics as
+      | Array<{
+          language: "es" | "en";
+          units: Array<{ id: string; text: string; concepts?: string[] }>;
+        }>
+      | null
+      | undefined
+  )?.find((rubric) => rubric.language === experiment.data?.primaryLanguage);
+  const memoryUnits = (primaryRubric?.units ?? []).map((unit) => {
+    const assessments = primaryAnalyses.flatMap((analysis) => {
+      const values = analysis.unitAssessments as
+        | Array<{
+            unitId: string;
+            presence: "full" | "trace" | "absent";
+          }>
+        | undefined;
+      return values?.filter((value) => value.unitId === unit.id) ?? [];
+    });
+    return {
+      ...unit,
+      fullCount: assessments.filter((value) => value.presence === "full")
+        .length,
+      traceCount: assessments.filter((value) => value.presence === "trace")
+        .length,
+      absentCount: assessments.filter((value) => value.presence === "absent")
+        .length,
+      transformations: [],
+    };
+  });
   const loading =
     experiment.isLoading ||
     run.isLoading ||
@@ -230,28 +325,28 @@ const AnalysisPage = () => {
                         locale === "es" ? "es-AR" : "en-US",
                       )}
                     </Text>
-                    <Badge
-                      mt="sm"
-                      variant="outline"
-                      color={
-                        run.data.analyzerVersion.startsWith("deepseek:")
-                          ? "violet"
-                          : "gray"
-                      }
-                    >
-                      {run.data.analyzerVersion.startsWith("deepseek:")
-                        ? `DeepSeek · ${run.data.analyzerVersion.replace("deepseek:", "")}`
-                        : t("Heurístico local")}
-                    </Badge>
+                    <Text c="dimmed" size="sm" mt={4}>
+                      {semanticAnalyses.length} {t("de")}{" "}
+                      {responseMetrics.length} {t("respuestas analizadas")}
+                    </Text>
                   </div>
-                  <Badge variant="light" color="teal" size="lg">
-                    {run.data.status === "completed_with_errors"
-                      ? t("Completado con errores")
-                      : run.data.status === "running"
-                        ? t("En curso")
-                        : t("Completado")}
-                  </Badge>
+                  <Stack align="flex-end" gap="sm">
+                    <Badge variant="light" color="teal" size="lg">
+                      {run.data.status === "completed_with_errors"
+                        ? t("Completado con errores")
+                        : run.data.status === "running"
+                          ? t("En curso")
+                          : t("Completado")}
+                    </Badge>
+                  </Stack>
                 </Group>
+
+                <ExperimentWorkspaceTabs
+                  experimentId={experimentId}
+                  current="analysis"
+                  isDraft={false}
+                  analysisHref={`/experiments/${experimentId}/analysis/${analysisRunId}`}
+                />
 
                 <SimpleGrid cols={{ base: 1, xs: 2, md: 3 }}>
                   <Card withBorder>
@@ -314,141 +409,92 @@ const AnalysisPage = () => {
                   </Card>
                 </SimpleGrid>
 
-                <Card withBorder padding="lg">
-                  <Stack gap="md">
-                    <div>
-                      <Title order={2}>{t("Fenómenos detectados")}</Title>
-                      <Text c="dimmed">
+                {responseMetrics.length === 0 ? (
+                  <Card withBorder padding="xl">
+                    <Stack align="center" gap="xs" py="xl" ta="center">
+                      <Title order={2}>{t("Aún no hay respuestas")}</Title>
+                      <Text c="dimmed" maw={560}>
                         {t(
-                          "Detección automática con evidencia textual. Las interpretaciones requieren revisión humana.",
+                          "El mapa de recuerdo y los fenómenos aparecerán cuando una persona complete el experimento.",
                         )}
                       </Text>
-                    </div>
-                    <SimpleGrid cols={{ base: 1, sm: 3 }}>
-                      <div>
-                        <Text size="sm" c="dimmed">
-                          {t("Unidades retenidas")}
-                        </Text>
-                        <Text size="xl" fw={700}>
-                          {semanticAnalyses.reduce(
-                            (total, analysis) =>
-                              total + analysis.retainedUnitsCount,
-                            0,
-                          )}
-                        </Text>
-                      </div>
-                      <div>
-                        <Text size="sm" c="dimmed">
-                          {t("Omisiones candidatas")}
-                        </Text>
-                        <Text size="xl" fw={700}>
-                          {semanticAnalyses.reduce(
-                            (total, analysis) =>
-                              total + analysis.omittedUnitsCount,
-                            0,
-                          )}
-                        </Text>
-                      </div>
-                      <div>
-                        <Text size="sm" c="dimmed">
-                          {t("Intrusiones candidatas")}
-                        </Text>
-                        <Text size="xl" fw={700}>
-                          {semanticAnalyses.reduce(
-                            (total, analysis) =>
-                              total + analysis.intrusionCount,
-                            0,
-                          )}
-                        </Text>
-                      </div>
-                    </SimpleGrid>
-                  </Stack>
-                </Card>
-
-                <Card withBorder padding="lg">
-                  <Stack gap="md">
-                    <div>
-                      <Title order={2}>{t("Respuestas analizadas")}</Title>
+                    </Stack>
+                  </Card>
+                ) : semanticAnalyses.length === 0 ? (
+                  <Card withBorder padding="xl">
+                    <Stack align="center" gap="xs" py="xl" ta="center">
+                      <Title order={2}>
+                        {t("Las respuestas todavía se están analizando")}
+                      </Title>
                       <Text c="dimmed">
                         {t(
-                          "Seleccioná una respuesta para compararla con la historia original.",
+                          "Los resultados aparecerán cuando termine el análisis automático.",
                         )}
                       </Text>
-                    </div>
-                    {responseMetrics.length === 0 ? (
-                      <Text c="dimmed">
-                        {t("No hay respuestas completas para analizar.")}
-                      </Text>
-                    ) : (
-                      <Table.ScrollContainer minWidth={760}>
-                        <Table verticalSpacing="sm" highlightOnHover>
-                          <Table.Thead>
-                            <Table.Tr>
-                              <Table.Th>{t("Respuesta")}</Table.Th>
-                              <Table.Th>{t("Palabras")}</Table.Th>
-                              <Table.Th>{t("Extensión relativa")}</Table.Th>
-                              <Table.Th>{t("Lectura")}</Table.Th>
-                              <Table.Th>{t("Reconstrucción")}</Table.Th>
-                              <Table.Th>{t("Tiempo total")}</Table.Th>
-                              <Table.Th>{t("Omisiones")}</Table.Th>
-                              <Table.Th>{t("Intrusiones")}</Table.Th>
-                              <Table.Th />
-                            </Table.Tr>
-                          </Table.Thead>
-                          <Table.Tbody>
-                            {responseMetrics.map((response, index) => (
-                              <Table.Tr key={response.id}>
-                                <Table.Td>
-                                  {t("Respuesta")} {index + 1}
-                                </Table.Td>
-                                <Table.Td>{response.wordCount}</Table.Td>
-                                <Table.Td>
-                                  {response.relativeLength.toFixed(1)} %
-                                </Table.Td>
-                                <Table.Td>
-                                  {response.readingSeconds === undefined
-                                    ? "—"
-                                    : formatSeconds(response.readingSeconds)}
-                                </Table.Td>
-                                <Table.Td>
-                                  {response.recallSeconds === undefined
-                                    ? "—"
-                                    : formatSeconds(response.recallSeconds)}
-                                </Table.Td>
-                                <Table.Td>
-                                  {response.totalSeconds === undefined
-                                    ? "—"
-                                    : formatSeconds(response.totalSeconds)}
-                                </Table.Td>
-                                <Table.Td>
-                                  {response.semanticAnalysis
-                                    ?.omittedUnitsCount ?? "—"}
-                                </Table.Td>
-                                <Table.Td>
-                                  {response.semanticAnalysis?.intrusionCount ??
-                                    "—"}
-                                </Table.Td>
-                                <Table.Td>
-                                  <Button
-                                    component={Link}
-                                    href={`/experiments/${experimentId}/responses/${response.id}?analysisRunId=${analysisRunId}`}
-                                    variant="subtle"
-                                    size="compact-sm"
-                                    rightSection={
-                                      <IconChevronRight size={16} />
-                                    }
-                                  >
-                                    {t("Comparar")}
-                                  </Button>
-                                </Table.Td>
-                              </Table.Tr>
-                            ))}
-                          </Table.Tbody>
-                        </Table>
-                      </Table.ScrollContainer>
+                    </Stack>
+                  </Card>
+                ) : (
+                  <>
+                    {primaryRubric && (
+                      <MemoryMap
+                        story={experiment.data.story}
+                        units={memoryUnits}
+                        responseCount={primaryAnalyses.length}
+                      />
                     )}
-                  </Stack>
-                </Card>
+
+                    <Card withBorder padding="lg">
+                      <Stack gap="md">
+                        <div>
+                          <Title order={2}>{t("Fenómenos detectados")}</Title>
+                          <Text c="dimmed">
+                            {t(
+                              "Detección automática con evidencia textual. Las interpretaciones requieren revisión humana.",
+                            )}
+                          </Text>
+                        </div>
+                        <SimpleGrid cols={{ base: 1, sm: 3 }}>
+                          <div>
+                            <Text size="sm" c="dimmed">
+                              {t("Unidades retenidas")}
+                            </Text>
+                            <Text size="xl" fw={700}>
+                              {semanticAnalyses.reduce(
+                                (total, analysis) =>
+                                  total + analysis.retainedUnitsCount,
+                                0,
+                              )}
+                            </Text>
+                          </div>
+                          <div>
+                            <Text size="sm" c="dimmed">
+                              {t("Omisiones candidatas")}
+                            </Text>
+                            <Text size="xl" fw={700}>
+                              {semanticAnalyses.reduce(
+                                (total, analysis) =>
+                                  total + analysis.omittedUnitsCount,
+                                0,
+                              )}
+                            </Text>
+                          </div>
+                          <div>
+                            <Text size="sm" c="dimmed">
+                              {t("Intrusiones candidatas")}
+                            </Text>
+                            <Text size="xl" fw={700}>
+                              {semanticAnalyses.reduce(
+                                (total, analysis) =>
+                                  total + analysis.intrusionCount,
+                                0,
+                              )}
+                            </Text>
+                          </div>
+                        </SimpleGrid>
+                      </Stack>
+                    </Card>
+                  </>
+                )}
               </>
             )}
           </Stack>

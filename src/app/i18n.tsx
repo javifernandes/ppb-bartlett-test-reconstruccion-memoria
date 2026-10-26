@@ -80,6 +80,10 @@ const english: Record<string, string> = {
   "Configuración del experimento": "Experiment settings",
   "Recolección en curso": "Collection in progress",
   "Resultados del experimento": "Experiment results",
+  Resumen: "Overview",
+  Configuración: "Configuration",
+  "La configuración queda en modo de solo lectura después de publicar.":
+    "The configuration becomes read-only after publishing.",
   "Compartir experimento": "Share experiment",
   "Compartí el enlace o mostrá el código QR para sumar participantes.":
     "Share the link or show the QR code to add participants.",
@@ -99,6 +103,8 @@ const english: Record<string, string> = {
   "Ver último análisis": "View latest analysis",
   "Analizar nuevamente": "Analyze again",
   "Analizar resultados": "Analyze results",
+  "No se pudo iniciar el análisis": "The analysis could not be started",
+  "El análisis quedó incompleto": "The analysis was left incomplete",
   "Enlace para participantes": "Participant link",
   Copiar: "Copy",
   "Enlace copiado": "Link copied",
@@ -135,15 +141,21 @@ const english: Record<string, string> = {
   "Revisá que corresponda a este experimento.":
     "Check that it belongs to this experiment.",
   "Análisis descriptivo": "Descriptive analysis",
-  "Heurístico local": "Local heuristic",
+  "Último análisis disponible": "Latest analysis available",
   "Completado con errores": "Completed with errors",
   "En curso": "In progress",
   Completadas: "Completed",
   Iniciadas: "Started",
   Finalización: "Completion",
   "Duración promedio": "Average duration",
+  Participación: "Participation",
+  completadas: "completed",
+  "De {started} iniciadas · {pending} sin completar":
+    "Of {started} started · {pending} incomplete",
+  "Duración total promedio": "Average total duration",
   "Última actividad": "Latest activity",
   "Descargar CSV": "Download CSV",
+  "Descargar planilla": "Download spreadsheet",
   Estado: "Status",
   Todas: "All",
   Todos: "All",
@@ -167,6 +179,13 @@ const english: Record<string, string> = {
   "Cargar más": "Load more",
   "No se pudieron cargar las respuestas.": "Responses could not be loaded.",
   "Todavía no hay participaciones.": "There are no participations yet.",
+  "Aún no hay respuestas": "There are no responses yet",
+  "El mapa de recuerdo y los fenómenos aparecerán cuando una persona complete el experimento.":
+    "The memory map and phenomena will appear after someone completes the experiment.",
+  "Las respuestas todavía se están analizando":
+    "The responses are still being analyzed",
+  "Los resultados aparecerán cuando termine el análisis automático.":
+    "Results will appear when the automatic analysis is complete.",
   "No hay respuestas para estos filtros.": "No responses match these filters.",
   "Ver configuración del experimento": "View experiment configuration",
   Activado: "Enabled",
@@ -186,6 +205,51 @@ const english: Record<string, string> = {
   "Extensión relativa promedio": "Average relative length",
   "Lectura promedio": "Average reading time",
   "Reconstrucción promedio": "Average recall time",
+  "Mapa de recuerdo": "Memory map",
+  "Explorá qué partes de la historia sobrevivieron y cómo fueron transformadas.":
+    "Explore which parts of the story survived and how they were transformed.",
+  Retención: "Retention",
+  Transformaciones: "Transformations",
+  "Unidad seleccionada": "Selected unit",
+  "Retención ponderada": "Weighted retention",
+  "Presente total o parcialmente": "Present in full or in part",
+  "Preparación del análisis": "Analysis preparation",
+  "La historia está lista para analizar respuestas.":
+    "The story is ready to analyze responses.",
+  "Detectá las unidades narrativas antes de publicar.":
+    "Detect narrative units before publishing.",
+  Lista: "Ready",
+  Pendiente: "Pending",
+  Analizada: "Analyzed",
+  "No aplica": "Not applicable",
+  "Ver unidades detectadas": "View detected units",
+  "unidad detectada": "detected unit",
+  "unidades detectadas": "detected units",
+  "Preparar nuevamente": "Prepare again",
+  "Preparar historia": "Prepare story",
+  de: "of",
+  "respuestas analizadas": "responses analyzed",
+  Completa: "Full",
+  Huella: "Trace",
+  Omitida: "Omitted",
+  "La respuesta conserva la idea central y sus relaciones principales.":
+    "The response preserves the central idea and its main relationships.",
+  "La respuesta conserva algún concepto o palabra, pero no la idea completa.":
+    "The response preserves a concept or word, but not the complete idea.",
+  "No hay evidencia suficiente de esta unidad en la reconstrucción.":
+    "There is not enough evidence of this unit in the reconstruction.",
+  "Transformaciones frecuentes": "Frequent transformations",
+  "El subrayado señala las anclas conceptuales de la unidad.":
+    "The underline marks the unit's conceptual anchors.",
+  "No aparecen transformaciones recurrentes en esta unidad.":
+    "No recurring transformations appear in this unit.",
+  Sustitución: "Substitution",
+  Racionalización: "Rationalization",
+  Generalización: "Generalization",
+  "Alta retención": "High retention",
+  "Retención media": "Medium retention",
+  "Baja retención": "Low retention",
+  "Presenta transformaciones recurrentes": "Contains recurring transformations",
   "Fenómenos detectados": "Detected phenomena",
   "Detección automática con evidencia textual. Las interpretaciones requieren revisión humana.":
     "Automatic detection with textual evidence. Interpretations require human review.",
@@ -207,6 +271,10 @@ const english: Record<string, string> = {
   "Tiempo total": "Total time",
   Omisiones: "Omissions",
   Intrusiones: "Intrusions",
+  Retenidas: "Retained",
+  "Detalle del fragmento": "Fragment details",
+  "Este fragmento tiene las siguientes interpretaciones.":
+    "This fragment has the following interpretations.",
   "Respuesta individual": "Individual response",
   "No se encontró la participación": "Participation not found",
   "Revisá que el enlace corresponda a este experimento.":

@@ -1,15 +1,12 @@
 "use client";
 
 import {
-  Accordion,
   AppShell,
   Badge,
   Box,
   Button,
   Card,
-  Collapse,
   Container,
-  Divider,
   Group,
   Loader,
   Paper,
@@ -18,7 +15,6 @@ import {
   Text,
   Title,
   Tooltip,
-  UnstyledButton,
 } from "@mantine/core";
 import { useGraphQuery } from "@ontahi/react/graph";
 import { IconChevronDown, IconSparkles } from "@tabler/icons-react";
@@ -166,14 +162,14 @@ const AnnotatedText = ({
   text,
   phenomena,
   side,
-  selectedIndex,
+  selectedIndices,
   onSelect,
 }: {
   text: string;
   phenomena: DisplayPhenomenon[];
   side: "story" | "recall";
-  selectedIndex: number | null;
-  onSelect: (index: number) => void;
+  selectedIndices: number[];
+  onSelect: (indices: number[]) => void;
 }) => {
   const candidates = phenomena
     .map((phenomenon, index) => {
@@ -185,27 +181,53 @@ const AnnotatedText = ({
         : null;
     })
     .filter((candidate) => candidate !== null)
-    .sort((left, right) => left.start - right.start || right.end - left.end)
-    .filter(
-      (candidate, index, all) =>
-        !all.slice(0, index).some((previous) => previous.end > candidate.start),
-    );
+    .sort((left, right) => left.start - right.start || right.end - left.end);
 
   if (candidates.length === 0) return text;
 
-  const content = [];
-  let cursor = 0;
-  for (const candidate of candidates) {
-    if (candidate.start > cursor) {
-      content.push(text.slice(cursor, candidate.start));
+  const boundaries = [
+    ...new Set([
+      0,
+      text.length,
+      ...candidates.flatMap((candidate) => [candidate.start, candidate.end]),
+    ]),
+  ].sort((left, right) => left - right);
+
+  return boundaries.slice(0, -1).map((start, boundaryIndex) => {
+    const end = boundaries[boundaryIndex + 1];
+    const fragment = text.slice(start, end);
+    const active = candidates.filter(
+      (candidate) => candidate.start <= start && candidate.end >= end,
+    );
+    if (active.length === 0) {
+      return <span key={`${side}-plain-${start}`}>{fragment}</span>;
     }
-    content.push(
+    const indices = active.map((candidate) => candidate.index);
+    const isSelected =
+      indices.length === selectedIndices.length &&
+      indices.every((index) => selectedIndices.includes(index));
+    const colors = active.map(
+      (candidate) => phenomenonBackgrounds[candidate.phenomenon.kind],
+    );
+    const background =
+      colors.length === 1
+        ? colors[0]
+        : `linear-gradient(135deg, ${colors
+            .map(
+              (color, index) =>
+                `${color} ${(index / colors.length) * 100}% ${((index + 1) / colors.length) * 100}%`,
+            )
+            .join(", ")})`;
+
+    return (
       <Box
         component="button"
         type="button"
-        key={`${side}-${candidate.index}-${candidate.start}`}
-        onClick={() => onSelect(candidate.index)}
-        title={phenomenonLabels[candidate.phenomenon.kind]}
+        key={`${side}-${start}-${end}`}
+        onClick={() => onSelect(indices)}
+        aria-label={active
+          .map((candidate) => phenomenonLabels[candidate.phenomenon.kind])
+          .join(", ")}
         style={{
           display: "inline",
           padding: "1px 2px",
@@ -216,31 +238,25 @@ const AnnotatedText = ({
           textAlign: "inherit",
           cursor: "pointer",
           border: 0,
-          borderBottom: `2px solid var(--mantine-color-${phenomenonColors[candidate.phenomenon.kind]}-6)`,
+          borderBottom: `2px solid var(--mantine-color-${phenomenonColors[active[0].phenomenon.kind]}-6)`,
           borderRadius: 3,
-          background: phenomenonBackgrounds[candidate.phenomenon.kind],
-          outline:
-            selectedIndex === candidate.index
-              ? `2px solid var(--mantine-color-${phenomenonColors[candidate.phenomenon.kind]}-5)`
-              : "none",
+          background,
+          outline: isSelected
+            ? "2px solid var(--mantine-color-gray-3)"
+            : "none",
           outlineOffset: 2,
         }}
       >
-        {candidate.excerpt}
-      </Box>,
+        {fragment}
+      </Box>
     );
-    cursor = candidate.end;
-  }
-  if (cursor < text.length) content.push(text.slice(cursor));
-  return content;
+  });
 };
 
 const ResponseDetailPage = () => {
   const { t } = useI18n();
   const [analysisVisible, setAnalysisVisible] = useState(false);
-  const [selectedPhenomenon, setSelectedPhenomenon] = useState<number | null>(
-    null,
-  );
+  const [selectedPhenomena, setSelectedPhenomena] = useState<number[]>([]);
   const { experimentId, sessionId } = useParams<{
     experimentId: string;
     sessionId: string;
@@ -290,8 +306,9 @@ const ResponseDetailPage = () => {
     () => readPhenomena(analysis.data?.phenomena),
     [analysis.data?.phenomena],
   );
-  const selected =
-    selectedPhenomenon === null ? null : phenomena[selectedPhenomenon];
+  const selected = selectedPhenomena.flatMap((index) =>
+    phenomena[index] ? [phenomena[index]] : [],
+  );
   const readingSeconds = secondsBetween(
     response.data?.startedAt,
     response.data?.intervalStartedAt ?? response.data?.recallingStartedAt,
@@ -325,7 +342,7 @@ const ResponseDetailPage = () => {
       />
 
       <AppShell.Main>
-        <Container size="md" py="xl">
+        <Container size="xl" py="xl">
           <Stack gap="xl">
             {(experiment.isLoading ||
               response.isLoading ||
@@ -608,7 +625,7 @@ const ResponseDetailPage = () => {
                       </Group>
                     )}
 
-                    <SimpleGrid cols={{ base: 1, md: 2 }}>
+                    <SimpleGrid cols={{ base: 1, lg: 3 }}>
                       <Paper withBorder p="md">
                         <Text size="sm" c="dimmed" fw={600} mb="sm">
                           {t("Historia original")} · {countWords(sourceStory)}{" "}
@@ -622,8 +639,8 @@ const ResponseDetailPage = () => {
                               text={sourceStory}
                               phenomena={phenomena}
                               side="story"
-                              selectedIndex={selectedPhenomenon}
-                              onSelect={setSelectedPhenomenon}
+                              selectedIndices={selectedPhenomena}
+                              onSelect={setSelectedPhenomena}
                             />
                           ) : (
                             sourceStory
@@ -646,8 +663,8 @@ const ResponseDetailPage = () => {
                                 text={response.data.recallText}
                                 phenomena={phenomena}
                                 side="recall"
-                                selectedIndex={selectedPhenomenon}
-                                onSelect={setSelectedPhenomenon}
+                                selectedIndices={selectedPhenomena}
+                                onSelect={setSelectedPhenomena}
                               />
                             ) : (
                               response.data.recallText
@@ -657,179 +674,97 @@ const ResponseDetailPage = () => {
                           )}
                         </Text>
                       </Paper>
-                    </SimpleGrid>
-
-                    <Collapse
-                      expanded={Boolean(analysis.data && analysisVisible)}
-                    >
-                      <Divider my="md" />
-                      <Stack gap="md">
-                        <Group justify="space-between">
-                          <div>
-                            <Text fw={600}>{t("Análisis asistido")}</Text>
-                            <Text size="sm" c="dimmed">
-                              {t(
-                                "Seleccioná una marca en los textos para inspeccionarla.",
-                              )}
-                            </Text>
-                          </div>
-                          <Text size="xs" c="dimmed">
-                            {analysis.data?.rubricVersion}
-                          </Text>
-                        </Group>
-
-                        {selected && (
-                          <Paper
-                            withBorder
-                            p="md"
-                            style={{
-                              background: phenomenonBackgrounds[selected.kind],
-                            }}
-                          >
-                            <Group justify="space-between" mb="xs">
-                              <Badge color={phenomenonColors[selected.kind]}>
-                                {phenomenonLabels[selected.kind]}
-                              </Badge>
+                      {analysis.data && analysisVisible && (
+                        <Paper
+                          withBorder
+                          p="md"
+                          style={{
+                            alignSelf: "start",
+                            position: "sticky",
+                            top: 80,
+                          }}
+                        >
+                          <Stack gap="md">
+                            <div>
+                              <Text fw={650}>{t("Detalle del fragmento")}</Text>
                               <Text size="sm" c="dimmed">
-                                {t("Confianza")}{" "}
-                                {Math.round(selected.confidence * 100)} %
+                                {selected.length > 0
+                                  ? t(
+                                      "Este fragmento tiene las siguientes interpretaciones.",
+                                    )
+                                  : t(
+                                      "Seleccioná una marca en los textos para inspeccionarla.",
+                                    )}
                               </Text>
-                            </Group>
-                            <Text>{selected.explanation}</Text>
-                            {(selected.storyExcerpt ||
-                              selected.recallExcerpt) && (
-                              <Text size="sm" c="dimmed" mt="xs">
-                                {[selected.storyExcerpt, selected.recallExcerpt]
-                                  .filter(Boolean)
-                                  .map((excerpt) => `“${excerpt}”`)
-                                  .join(" → ")}
-                              </Text>
-                            )}
-                          </Paper>
-                        )}
+                            </div>
 
-                        <SimpleGrid cols={{ base: 3 }}>
-                          <div>
-                            <Text size="xs" c="dimmed">
-                              Retenidas
-                            </Text>
-                            <Text fw={700}>
-                              {analysis.data?.retainedUnitsCount}
-                            </Text>
-                          </div>
-                          <div>
-                            <Text size="xs" c="dimmed">
-                              Omisiones
-                            </Text>
-                            <Text fw={700}>
-                              {analysis.data?.omittedUnitsCount}
-                            </Text>
-                          </div>
-                          <div>
-                            <Text size="xs" c="dimmed">
-                              Intrusiones
-                            </Text>
-                            <Text fw={700}>
-                              {analysis.data?.intrusionCount}
-                            </Text>
-                          </div>
-                        </SimpleGrid>
+                            {selected.map((phenomenon, index) => (
+                              <Paper
+                                key={`${phenomenon.kind}-${index}`}
+                                withBorder
+                                p="sm"
+                                style={{
+                                  background:
+                                    phenomenonBackgrounds[phenomenon.kind],
+                                }}
+                              >
+                                <Group justify="space-between" mb="xs">
+                                  <Badge
+                                    color={phenomenonColors[phenomenon.kind]}
+                                  >
+                                    {phenomenonLabels[phenomenon.kind]}
+                                  </Badge>
+                                  <Text size="xs" c="dimmed">
+                                    {t("Confianza")}{" "}
+                                    {Math.round(phenomenon.confidence * 100)} %
+                                  </Text>
+                                </Group>
+                                <Text size="sm">{phenomenon.explanation}</Text>
+                                {(phenomenon.storyExcerpt ||
+                                  phenomenon.recallExcerpt) && (
+                                  <Text size="xs" c="dimmed" mt="xs">
+                                    {[
+                                      phenomenon.storyExcerpt,
+                                      phenomenon.recallExcerpt,
+                                    ]
+                                      .filter(Boolean)
+                                      .map((excerpt) => `“${excerpt}”`)
+                                      .join(" → ")}
+                                  </Text>
+                                )}
+                              </Paper>
+                            ))}
 
-                        {phenomena.length > 0 && (
-                          <Accordion variant="contained" multiple>
-                            {(
-                              Object.keys(
-                                phenomenonLabels,
-                              ) as DisplayPhenomenon["kind"][]
-                            ).map((kind) => {
-                              const grouped = phenomena
-                                .map((phenomenon, index) => ({
-                                  phenomenon,
-                                  index,
-                                }))
-                                .filter(
-                                  ({ phenomenon }) => phenomenon.kind === kind,
-                                );
-                              if (grouped.length === 0) return null;
-
-                              return (
-                                <Accordion.Item key={kind} value={kind}>
-                                  <Accordion.Control>
-                                    <Group gap="xs">
-                                      <Badge
-                                        color={phenomenonColors[kind]}
-                                        variant="light"
-                                      >
-                                        {grouped.length}
-                                      </Badge>
-                                      <Text fw={600} size="sm">
-                                        {phenomenonLabels[kind]}
-                                      </Text>
-                                    </Group>
-                                  </Accordion.Control>
-                                  <Accordion.Panel>
-                                    <Box
-                                      mah={320}
-                                      style={{ overflowY: "auto" }}
-                                    >
-                                      {grouped.map(({ phenomenon, index }) => {
-                                        const excerpt =
-                                          phenomenon.storyExcerpt ??
-                                          phenomenon.recallExcerpt ??
-                                          "Sin fragmento asociado";
-                                        return (
-                                          <UnstyledButton
-                                            key={`${kind}-${index}`}
-                                            onClick={() =>
-                                              setSelectedPhenomenon(index)
-                                            }
-                                            w="100%"
-                                            px="sm"
-                                            py="xs"
-                                            style={{
-                                              borderBottom:
-                                                "1px solid var(--mantine-color-dark-4)",
-                                              background:
-                                                selectedPhenomenon === index
-                                                  ? phenomenonBackgrounds[kind]
-                                                  : undefined,
-                                            }}
-                                          >
-                                            <Group
-                                              justify="space-between"
-                                              wrap="nowrap"
-                                              gap="md"
-                                            >
-                                              <Text
-                                                size="sm"
-                                                lineClamp={1}
-                                                style={{ flex: 1 }}
-                                              >
-                                                “{excerpt}”
-                                              </Text>
-                                              <Text
-                                                size="xs"
-                                                c="dimmed"
-                                                style={{ flexShrink: 0 }}
-                                              >
-                                                {Math.round(
-                                                  phenomenon.confidence * 100,
-                                                )}
-                                                %
-                                              </Text>
-                                            </Group>
-                                          </UnstyledButton>
-                                        );
-                                      })}
-                                    </Box>
-                                  </Accordion.Panel>
-                                </Accordion.Item>
-                              );
-                            })}
-                          </Accordion>
-                        )}
-                      </Stack>
-                    </Collapse>
+                            <SimpleGrid cols={3} spacing="xs">
+                              <div>
+                                <Text size="xs" c="dimmed">
+                                  {t("Retenidas")}
+                                </Text>
+                                <Text fw={700}>
+                                  {analysis.data.retainedUnitsCount}
+                                </Text>
+                              </div>
+                              <div>
+                                <Text size="xs" c="dimmed">
+                                  {t("Omisiones")}
+                                </Text>
+                                <Text fw={700}>
+                                  {analysis.data.omittedUnitsCount}
+                                </Text>
+                              </div>
+                              <div>
+                                <Text size="xs" c="dimmed">
+                                  {t("Intrusiones")}
+                                </Text>
+                                <Text fw={700}>
+                                  {analysis.data.intrusionCount}
+                                </Text>
+                              </div>
+                            </SimpleGrid>
+                          </Stack>
+                        </Paper>
+                      )}
+                    </SimpleGrid>
 
                     {!analysis.isLoading && !analysis.data && (
                       <Text size="sm" c="dimmed">

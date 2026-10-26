@@ -12,7 +12,7 @@ import {
 } from '@ontahi/core/data-graph';
 
 export const ExperimentSchema = defineEntitySchema("Experiment", {
-    id: field.id(), title: field.nonEmptyString({ trim: true }), participantTitle: field.nonEmptyString({ trim: true }), introduction: field.nonEmptyString({ trim: true }), consentText: field.nonEmptyString({ trim: true }), story: field.nonEmptyString({ trim: true }), recallInstructions: field.nonEmptyString({ trim: true }), primaryLanguage: field.enum(["es", "en"] as const), alternateLanguage: field.nullable(field.enum(["es", "en"] as const)), alternateParticipantTitle: field.nullable(field.nonEmptyString({ trim: true })), alternateIntroduction: field.nullable(field.nonEmptyString({ trim: true })), alternateConsentText: field.nullable(field.nonEmptyString({ trim: true })), alternateStory: field.nullable(field.nonEmptyString({ trim: true })), alternateRecallInstructions: field.nullable(field.nonEmptyString({ trim: true })), intervalSeconds: field.integer({ min: 0, max: 3600 }), distractorEnabled: field.boolean(), status: field.enum(["draft", "published", "closed"] as const), createdAt: field.nonEmptyString({ trim: true }), publishedAt: field.nullable(field.nonEmptyString({ trim: true })), publicToken: field.nullable(field.nonEmptyString({ trim: true })),
+    id: field.id(), title: field.nonEmptyString({ trim: true }), participantTitle: field.nonEmptyString({ trim: true }), introduction: field.nonEmptyString({ trim: true }), consentText: field.nonEmptyString({ trim: true }), story: field.nonEmptyString({ trim: true }), recallInstructions: field.nonEmptyString({ trim: true }), primaryLanguage: field.enum(["es", "en"] as const), alternateLanguage: field.nullable(field.enum(["es", "en"] as const)), alternateParticipantTitle: field.nullable(field.nonEmptyString({ trim: true })), alternateIntroduction: field.nullable(field.nonEmptyString({ trim: true })), alternateConsentText: field.nullable(field.nonEmptyString({ trim: true })), alternateStory: field.nullable(field.nonEmptyString({ trim: true })), alternateRecallInstructions: field.nullable(field.nonEmptyString({ trim: true })), intervalSeconds: field.integer({ min: 0, max: 3600 }), distractorEnabled: field.boolean(), status: field.enum(["draft", "published", "closed"] as const), createdAt: field.nonEmptyString({ trim: true }), publishedAt: field.nullable(field.nonEmptyString({ trim: true })), publicToken: field.nullable(field.nonEmptyString({ trim: true })), analysisRunId: field.nullable(field.nonEmptyString({ trim: true })), analysisRubrics: field.nullable(field.json()), analysisPreparedAt: field.nullable(field.nonEmptyString({ trim: true })),
 }).display({ primary: "title", search: ["title"] });
 export const ParticipantSessionSchema = defineEntitySchema("ParticipantSession", {
     id: field.id(), experiment: field.ref(ExperimentSchema), contentLanguage: field.enum(["es", "en"] as const), countryCode: field.nullable(field.nonEmptyString({ trim: true })), browserLocale: field.nullable(field.nonEmptyString({ trim: true })), timezone: field.nullable(field.nonEmptyString({ trim: true })), deviceType: field.nullable(field.enum(["mobile", "tablet", "desktop"] as const)), browser: field.nullable(field.nonEmptyString({ trim: true })), operatingSystem: field.nullable(field.nonEmptyString({ trim: true })), screenWidth: field.nullable(field.integer({ min: 0, max: 20000 })), screenHeight: field.nullable(field.integer({ min: 0, max: 20000 })), status: field.enum([
@@ -25,7 +25,7 @@ export const AnalysisRunSchema = defineEntitySchema("AnalysisRun", {
     ] as const), analyzerVersion: field.nonEmptyString({ trim: true }), createdAt: field.nonEmptyString({ trim: true }),
 });
 export const RecallAnalysisSchema = defineEntitySchema("RecallAnalysis", {
-    id: field.id(), run: field.ref(AnalysisRunSchema), session: field.ref(ParticipantSessionSchema), experiment: field.ref(ExperimentSchema), status: field.enum(["completed"] as const), rubricVersion: field.nonEmptyString({ trim: true }), analyzerProvider: field.nonEmptyString({ trim: true }), analyzerModel: field.nonEmptyString({ trim: true }), promptVersion: field.nonEmptyString({ trim: true }), inputTokens: field.nullable(field.integer({ min: 0 })), outputTokens: field.nullable(field.integer({ min: 0 })), retainedUnitsCount: field.integer({ min: 0 }), omittedUnitsCount: field.integer({ min: 0 }), intrusionCount: field.integer({ min: 0 }), phenomena: field.json(), createdAt: field.nonEmptyString({ trim: true }),
+    id: field.id(), run: field.ref(AnalysisRunSchema), session: field.ref(ParticipantSessionSchema), experiment: field.ref(ExperimentSchema), status: field.enum(["completed"] as const), rubricVersion: field.nonEmptyString({ trim: true }), analyzerProvider: field.nonEmptyString({ trim: true }), analyzerModel: field.nonEmptyString({ trim: true }), promptVersion: field.nonEmptyString({ trim: true }), inputTokens: field.nullable(field.integer({ min: 0 })), outputTokens: field.nullable(field.integer({ min: 0 })), retainedUnitsCount: field.integer({ min: 0 }), omittedUnitsCount: field.integer({ min: 0 }), intrusionCount: field.integer({ min: 0 }), phenomena: field.json(), unitAssessments: field.json(), createdAt: field.nonEmptyString({ trim: true }),
 });
 
 export const Experiment = defineClientEntity(ExperimentSchema, {
@@ -68,6 +68,18 @@ export const Experiment = defineClientEntity(ExperimentSchema, {
       }),
       output: ExperimentSchema,
     }),
+    prepareAnalysis: defineClientDomainOperation({
+      authority: 'server',
+      exposure: 'bridge',
+      bridge: {
+        invalidate: [["Experiment"]],
+      },
+      input: graphSchema.object({
+        experiment: field.ref(ExperimentSchema),
+        preparedAt: ExperimentSchema.fields.createdAt,
+      }),
+      output: ExperimentSchema,
+    }),
     publish: defineClientDomainOperation({
       authority: 'server',
       exposure: 'bridge',
@@ -77,6 +89,7 @@ export const Experiment = defineClientEntity(ExperimentSchema, {
         experiment: field.ref(ExperimentSchema),
         publishedAt: ExperimentSchema.fields.createdAt,
         publicToken: field.nonEmptyString({ trim: true }),
+        analysisRunId: field.nonEmptyString({ trim: true }),
       }),
       output: ExperimentSchema,
     }),
@@ -213,6 +226,9 @@ export const RecallAnalysis = defineClientEntity(RecallAnalysisSchema, {
         createdAt: RecallAnalysisSchema.fields.createdAt,
       }),
       output: RecallAnalysisSchema,
+      durable: {
+        runtime: 'in-process',
+      },
     }),
   },
 });

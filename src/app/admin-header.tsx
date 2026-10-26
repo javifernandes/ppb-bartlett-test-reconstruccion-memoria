@@ -27,8 +27,13 @@ export const AdminHeader = ({
 }) => {
   const { t } = useI18n();
   const [email, setEmail] = useState<string>();
+  const authConfigured = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+  );
 
   useEffect(() => {
+    if (!authConfigured) return;
     let active = true;
     void createSupabaseBrowserClient()
       .auth.getUser()
@@ -38,7 +43,7 @@ export const AdminHeader = ({
     return () => {
       active = false;
     };
-  }, []);
+  }, [authConfigured]);
 
   return (
     <AppShell.Header px={{ base: "sm", sm: "md" }}>
@@ -88,18 +93,20 @@ export const AdminHeader = ({
               {email}
             </Text>
           )}
-          <Box component="form" action={signOut}>
-            <Tooltip label={t("Cerrar sesión")}>
-              <ActionIcon
-                type="submit"
-                variant="subtle"
-                color="gray"
-                aria-label={t("Cerrar sesión")}
-              >
-                <IconLogout size={19} />
-              </ActionIcon>
-            </Tooltip>
-          </Box>
+          {authConfigured && (
+            <Box component="form" action={signOut}>
+              <Tooltip label={t("Cerrar sesión")}>
+                <ActionIcon
+                  type="submit"
+                  variant="subtle"
+                  color="gray"
+                  aria-label={t("Cerrar sesión")}
+                >
+                  <IconLogout size={19} />
+                </ActionIcon>
+              </Tooltip>
+            </Box>
+          )}
         </Group>
       </Box>
     </AppShell.Header>

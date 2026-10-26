@@ -1,6 +1,9 @@
 import { field, graphSchema } from "@ontahi/core/data-graph";
 import { entity } from "@ontahi/core/entity";
 import { failOperation } from "@ontahi/core/runtime/server";
+import { Effect, Either } from "effect";
+
+import { prepareStory, type StoryAnalysisRubric } from "./story-analysis-model";
 
 export const Experiment = entity({
   name: "Experiment",
@@ -29,6 +32,9 @@ export const Experiment = entity({
     createdAt: field.nonEmptyString({ trim: true }),
     publishedAt: field.nullable(field.nonEmptyString({ trim: true })),
     publicToken: field.nullable(field.nonEmptyString({ trim: true })),
+    analysisRunId: field.nullable(field.nonEmptyString({ trim: true })),
+    analysisRubrics: field.nullable(field.json()),
+    analysisPreparedAt: field.nullable(field.nonEmptyString({ trim: true })),
   },
   display: { primary: "title", search: ["title"] },
   domainOperationDefaults: {
@@ -68,6 +74,9 @@ export const Experiment = entity({
               status: "draft",
               publishedAt: null,
               publicToken: null,
+              analysisRunId: null,
+              analysisRubrics: null,
+              analysisPreparedAt: null,
             },
             [
               "id",
@@ -90,6 +99,9 @@ export const Experiment = entity({
               "createdAt",
               "publishedAt",
               "publicToken",
+              "analysisRunId",
+              "analysisRubrics",
+              "analysisPreparedAt",
             ],
           )
           .run(),
@@ -189,6 +201,9 @@ export const Experiment = entity({
               alternateRecallInstructions,
               intervalSeconds,
               distractorEnabled,
+              analysisRunId: null,
+              analysisRubrics: null,
+              analysisPreparedAt: null,
             },
             [
               "id",
@@ -211,6 +226,9 @@ export const Experiment = entity({
               "createdAt",
               "publishedAt",
               "publicToken",
+              "analysisRunId",
+              "analysisRubrics",
+              "analysisPreparedAt",
             ],
           )
           .run();
@@ -225,15 +243,75 @@ export const Experiment = entity({
         return updated;
       },
     }),
+    prepareAnalysis: operation({
+      requires: [app.require.authenticated()],
+      input: graphSchema.object({
+        experiment: field.ref(self),
+        preparedAt: self.fields.createdAt,
+      }),
+      output: self,
+      bridge: { invalidate: [["Experiment"]] },
+      *run({ experiment, preparedAt }) {
+        const current = yield* experiment.resolve();
+        if (!current || current.status !== "draft") {
+          return yield* failOperation(
+            "experiment_not_preparable",
+            "Sólo se puede preparar un experimento en borrador.",
+          );
+        }
+
+        const primary = yield* Effect.either(
+          Effect.tryPromise(() =>
+            prepareStory(current.story, current.primaryLanguage),
+          ),
+        );
+        if (Either.isLeft(primary)) {
+          return yield* failOperation(
+            "story_analysis_failed",
+            primary.left instanceof Error
+              ? primary.left.message
+              : "No se pudo preparar la historia.",
+          );
+        }
+
+        const rubrics = [primary.right];
+        if (current.alternateLanguage && current.alternateStory) {
+          const alternate = yield* Effect.either(
+            Effect.tryPromise(() =>
+              prepareStory(current.alternateStory!, current.alternateLanguage!),
+            ),
+          );
+          if (Either.isLeft(alternate)) {
+            return yield* failOperation(
+              "story_analysis_failed",
+              alternate.left instanceof Error
+                ? alternate.left.message
+                : "No se pudo preparar la variante de la historia.",
+            );
+          }
+          rubrics.push(alternate.right);
+        }
+
+        const [updated] = yield* commands
+          .where((candidate) => candidate.id.eq(current.id))
+          .updateReturning(
+            { analysisRubrics: rubrics, analysisPreparedAt: preparedAt },
+            ["id", "analysisRubrics", "analysisPreparedAt"],
+          )
+          .run();
+        return updated;
+      },
+    }),
     publish: operation({
       requires: [app.require.authenticated()],
       input: graphSchema.object({
         experiment: field.ref(self),
         publishedAt: self.fields.createdAt,
         publicToken: field.nonEmptyString({ trim: true }),
+        analysisRunId: field.nonEmptyString({ trim: true }),
       }),
       output: self,
-      *run({ experiment, publishedAt, publicToken }) {
+      *run({ experiment, publishedAt, publicToken, analysisRunId }) {
         const current = yield* experiment.resolve();
 
         if (!current) {
@@ -250,30 +328,46 @@ export const Experiment = entity({
           );
         }
 
+        const analysisRubrics = current.analysisRubrics as
+          | StoryAnalysisRubric[]
+          | null;
+        if (!analysisRubrics?.length) {
+          return yield* failOperation(
+            "experiment_analysis_not_prepared",
+            "Prepará la historia para el análisis antes de publicarla.",
+          );
+        }
+
         const [published] = yield* commands
           .where((candidate) => candidate.id.eq(current.id))
-          .updateReturning({ status: "published", publishedAt, publicToken }, [
-            "id",
-            "title",
-            "participantTitle",
-            "introduction",
-            "consentText",
-            "story",
-            "recallInstructions",
-            "primaryLanguage",
-            "alternateLanguage",
-            "alternateParticipantTitle",
-            "alternateIntroduction",
-            "alternateConsentText",
-            "alternateStory",
-            "alternateRecallInstructions",
-            "intervalSeconds",
-            "distractorEnabled",
-            "status",
-            "createdAt",
-            "publishedAt",
-            "publicToken",
-          ])
+          .updateReturning(
+            { status: "published", publishedAt, publicToken, analysisRunId },
+            [
+              "id",
+              "title",
+              "participantTitle",
+              "introduction",
+              "consentText",
+              "story",
+              "recallInstructions",
+              "primaryLanguage",
+              "alternateLanguage",
+              "alternateParticipantTitle",
+              "alternateIntroduction",
+              "alternateConsentText",
+              "alternateStory",
+              "alternateRecallInstructions",
+              "intervalSeconds",
+              "distractorEnabled",
+              "status",
+              "createdAt",
+              "publishedAt",
+              "publicToken",
+              "analysisRunId",
+              "analysisRubrics",
+              "analysisPreparedAt",
+            ],
+          )
           .run();
 
         if (!published) {
@@ -331,6 +425,9 @@ export const Experiment = entity({
             "createdAt",
             "publishedAt",
             "publicToken",
+            "analysisRunId",
+            "analysisRubrics",
+            "analysisPreparedAt",
           ])
           .run();
 
@@ -374,6 +471,9 @@ export const Experiment = entity({
             "createdAt",
             "publishedAt",
             "publicToken",
+            "analysisRunId",
+            "analysisRubrics",
+            "analysisPreparedAt",
           ])
           .run();
 

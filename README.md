@@ -67,6 +67,24 @@ Después de aplicar las migraciones de `supabase/migrations`, activar la persist
 DATA_GRAPH_PROVIDER=supabase
 ```
 
+Para conservar la autenticación remota y usar Supabase/PostgreSQL local únicamente para los datos:
+
+```bash
+supabase start
+supabase status
+```
+
+Copiar la API URL y la `service_role key` locales sin cambiar las variables públicas de Auth:
+
+```dotenv
+DATA_GRAPH_PROVIDER=supabase
+DATA_GRAPH_SUPABASE_URL=http://127.0.0.1:55321
+DATA_GRAPH_SUPABASE_SECRET_KEY=...
+```
+
+El volumen local persiste entre reinicios de Next.js y `supabase stop`. `supabase db reset` sí elimina
+los datos y vuelve a ejecutar migraciones y seed.
+
 La aplicación queda disponible en `http://localhost:3000`. Para ejecutar todos los chequeos:
 
 ```bash

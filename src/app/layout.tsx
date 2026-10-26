@@ -1,7 +1,6 @@
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 
-import { ColorSchemeScript, mantineHtmlProps } from "@mantine/core";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
@@ -13,10 +12,7 @@ export const metadata: Metadata = {
 };
 
 const RootLayout = ({ children }: Readonly<{ children: ReactNode }>) => (
-  <html lang="es" {...mantineHtmlProps}>
-    <head>
-      <ColorSchemeScript defaultColorScheme="auto" />
-    </head>
+  <html lang="es" data-mantine-color-scheme="dark">
     <body>
       <Providers>{children}</Providers>
     </body>

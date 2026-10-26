@@ -67,7 +67,7 @@ export const Providers = ({ children }: { children: ReactNode }) => {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
-    <MantineProvider theme={theme} defaultColorScheme="auto">
+    <MantineProvider theme={theme} defaultColorScheme="dark">
       <I18nProvider>
         <Notifications />
         <QueryClientProvider client={queryClient}>

@@ -4,6 +4,7 @@ import {
   Alert,
   Button,
   Divider,
+  Loader,
   Paper,
   Stack,
   Text,
@@ -14,7 +15,7 @@ import {
   IconCheck,
   IconInfoCircle,
 } from "@tabler/icons-react";
-import { useActionState, useState } from "react";
+import { useActionState, useState, useSyncExternalStore } from "react";
 
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -32,6 +33,11 @@ export const LoginForm = ({ next }: { next: string }) => {
   );
   const [googlePending, setGooglePending] = useState(false);
   const [googleError, setGoogleError] = useState<string>();
+  const mounted = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
 
   const signInWithGoogle = async () => {
     setGooglePending(true);
@@ -50,6 +56,16 @@ export const LoginForm = ({ next }: { next: string }) => {
       setGoogleError(t("No se pudo iniciar el acceso con Google."));
     }
   };
+
+  if (!mounted) {
+    return (
+      <Paper withBorder p="xl" radius="md">
+        <Stack align="center" py="xl">
+          <Loader />
+        </Stack>
+      </Paper>
+    );
+  }
 
   return (
     <Paper component="form" action={action} withBorder p="xl" radius="md">
@@ -76,6 +92,8 @@ export const LoginForm = ({ next }: { next: string }) => {
         <TextInput
           name="email"
           type="email"
+          data-lpignore="true"
+          data-1p-ignore="true"
           label="Email"
           placeholder="nombre@ejemplo.com"
           autoComplete="email"

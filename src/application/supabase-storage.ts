@@ -10,10 +10,23 @@ const requiredEnvironmentVariable = (name: string) => {
   return value;
 };
 
+const dataGraphEnvironmentVariable = (
+  specificName: string,
+  fallbackName: string,
+) =>
+  process.env[specificName]?.trim() ||
+  requiredEnvironmentVariable(fallbackName);
+
 export const createSupabaseBartlettStorage = () => {
   const client = createClient(
-    requiredEnvironmentVariable("NEXT_PUBLIC_SUPABASE_URL"),
-    requiredEnvironmentVariable("SUPABASE_SECRET_KEY"),
+    dataGraphEnvironmentVariable(
+      "DATA_GRAPH_SUPABASE_URL",
+      "NEXT_PUBLIC_SUPABASE_URL",
+    ),
+    dataGraphEnvironmentVariable(
+      "DATA_GRAPH_SUPABASE_SECRET_KEY",
+      "SUPABASE_SECRET_KEY",
+    ),
     {
       auth: { persistSession: false, autoRefreshToken: false },
     },
@@ -21,7 +34,17 @@ export const createSupabaseBartlettStorage = () => {
   return createSupabaseDataGraphStorage({
     client,
     naming: supabaseNaming.snakeCase(),
-    createError: ({ message, cause }) =>
-      new Error(message, { cause: cause instanceof Error ? cause : undefined }),
+    overrides: {
+      RecallAnalysis: { table: "recall_analyses" },
+    },
+    createError: ({ message, cause }) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.error("Supabase data graph storage error", { message, cause });
+      }
+
+      return new Error(message, {
+        cause: cause instanceof Error ? cause : undefined,
+      });
+    },
   });
 };

@@ -105,11 +105,20 @@ describe("Bartlett application bootstrap", () => {
       value: { title: "Experimento editado" },
     });
 
+    const prepared = await asAdmin(() =>
+      Experiment.prepareAnalysis({
+        experiment: Experiment.refById("experiment-test"),
+        preparedAt: "2026-10-22T12:59:00.000Z",
+      }),
+    );
+    expect(prepared.ok).toBe(true);
+
     const published = await asAdmin(() =>
       Experiment.publish({
         experiment: Experiment.refById("experiment-test"),
         publishedAt: "2026-10-22T13:00:00.000Z",
         publicToken: "public-test-token",
+        analysisRunId: "analysis-live-test",
       }),
     );
 
@@ -218,16 +227,16 @@ describe("Bartlett application bootstrap", () => {
       experiment: Experiment.refById("experiment-test"),
     });
 
-    const prematureAnalysis = await asAdmin(() =>
+    const interimAnalysis = await asAdmin(() =>
       AnalysisRun.start({
         id: "analysis-too-early",
         experiment: Experiment.refById("experiment-test"),
         createdAt: "2026-10-22T13:11:31.000Z",
       }),
     );
-    expect(prematureAnalysis).toMatchObject({
-      ok: false,
-      failure: { reason: "experiment_not_ready_for_analysis" },
+    expect(interimAnalysis).toMatchObject({
+      ok: true,
+      value: { status: "running" },
     });
 
     const closed = await asAdmin(() =>
@@ -267,10 +276,23 @@ describe("Bartlett application bootstrap", () => {
     expect(recallAnalysis).toMatchObject({
       ok: true,
       value: {
-        status: "completed",
-        rubricVersion: "bartlett-heuristic-v1",
+        status: "queued",
       },
     });
+    await vi.advanceTimersByTimeAsync(1);
+    const storedRecallAnalyses = await BartlettApplication.graph.read(
+      query(RecallAnalysis),
+      { scope: "bootstrap.recall-analyses" },
+    );
+    expect(storedRecallAnalyses).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "recall-analysis-test",
+          status: "completed",
+          rubricVersion: "bartlett-heuristic-v1",
+        }),
+      ]),
+    );
 
     const finishedAnalysis = await asAdmin(() =>
       AnalysisRun.finish({
@@ -342,6 +364,14 @@ describe("Bartlett application bootstrap", () => {
         retainedUnitsCount: 1,
         omittedUnitsCount: 1,
         intrusionCount: 0,
+        unitAssessments: [
+          {
+            unitId: "es-u01",
+            presence: "full",
+            recallExcerpt: "Una canoa se acercó.",
+            confidence: 0.9,
+          },
+        ],
         phenomena: [
           {
             kind: "omission",
@@ -359,6 +389,7 @@ describe("Bartlett application bootstrap", () => {
         retainedUnitsCount: 1,
         omittedUnitsCount: 0,
         intrusionCount: 0,
+        unitAssessments: [],
         phenomena: [{ kind: "inventado", confidence: 8 }],
       }),
     ).toThrow("fenómeno inválido");
