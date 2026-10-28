@@ -181,6 +181,15 @@ export const ParticipantSession = defineClientEntity(ParticipantSessionSchema, {
       }),
       output: ParticipantSessionSchema,
     }),
+    deletePermanently: defineClientDomainOperation({
+      authority: 'server',
+      exposure: 'bridge',
+      bridge: {
+        invalidate: [["ParticipantSession"], ["RecallAnalysis"]],
+      },
+      input: graphSchema.object({ session: field.ref(ParticipantSessionSchema) }),
+      output: ParticipantSessionSchema,
+    }),
   },
 });
 

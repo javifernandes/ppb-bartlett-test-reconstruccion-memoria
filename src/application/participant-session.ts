@@ -47,7 +47,7 @@ export const ParticipantSession = entity({
     exposure: "bridge",
     layer: "participation",
   },
-  operations: ({ self, commands, operation }) => ({
+  operations: ({ self, commands, operation, app }) => ({
     start: operation({
       input: graphSchema.object({
         id: self.fields.id,
@@ -345,6 +345,57 @@ export const ParticipantSession = entity({
           .run();
 
         return submitted;
+      },
+    }),
+    deletePermanently: operation({
+      requires: [app.require.authenticated()],
+      input: graphSchema.object({ session: field.ref(self) }),
+      output: self,
+      bridge: {
+        invalidate: [["ParticipantSession"], ["RecallAnalysis"]],
+      },
+      *run({ session }) {
+        const current = yield* session.resolve();
+
+        if (!current) {
+          return yield* failOperation(
+            "participant_session_not_found",
+            "La participación no existe.",
+          );
+        }
+
+        const [deleted] = yield* commands
+          .where((candidate) => candidate.id.eq(current.id))
+          .deleteManyReturning([
+            "id",
+            "experiment",
+            "contentLanguage",
+            "countryCode",
+            "browserLocale",
+            "timezone",
+            "deviceType",
+            "browser",
+            "operatingSystem",
+            "screenWidth",
+            "screenHeight",
+            "status",
+            "startedAt",
+            "intervalStartedAt",
+            "recallingStartedAt",
+            "lastActivityAt",
+            "recallText",
+            "submittedAt",
+          ])
+          .run();
+
+        if (!deleted) {
+          return yield* failOperation(
+            "participant_session_not_found",
+            "La participación no existe.",
+          );
+        }
+
+        return deleted;
       },
     }),
   }),

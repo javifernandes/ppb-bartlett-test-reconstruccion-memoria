@@ -200,6 +200,16 @@ const english: Record<string, string> = {
   "También se borrarán todas las participaciones, respuestas y corridas de análisis asociadas. Esta acción no se puede deshacer.":
     "All associated participations, responses, and analysis runs will also be deleted. This action cannot be undone.",
   "Eliminar definitivamente": "Delete permanently",
+  "Eliminar respuesta": "Delete response",
+  "Borra esta participación y su análisis asociado.":
+    "Deletes this participation and its associated analysis.",
+  "Vas a eliminar definitivamente esta participación.":
+    "You are about to permanently delete this participation.",
+  "También se borrará su análisis asociado y las estadísticas globales se recalcularán. Esta acción no se puede deshacer.":
+    "Its associated analysis will also be deleted and global statistics will be recalculated. This action cannot be undone.",
+  "Respuesta eliminada": "Response deleted",
+  "La participación y su análisis asociado fueron eliminados.":
+    "The participation and its associated analysis were deleted.",
   Respuestas: "Responses",
   "Palabras de la historia": "Story words",
   "Promedio de palabras": "Average word count",

@@ -9,6 +9,7 @@ import {
   Container,
   Group,
   Loader,
+  Modal,
   Paper,
   SimpleGrid,
   Stack,
@@ -16,8 +17,10 @@ import {
   Title,
   Tooltip,
 } from "@mantine/core";
-import { useGraphQuery } from "@ontahi/react/graph";
-import { IconChevronDown, IconSparkles } from "@tabler/icons-react";
+import { useDisclosure } from "@mantine/hooks";
+import { notifications } from "@mantine/notifications";
+import { useGraphQuery, useOperation } from "@ontahi/react/graph";
+import { IconChevronDown, IconSparkles, IconTrash } from "@tabler/icons-react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -257,6 +260,7 @@ const ResponseDetailPage = () => {
   const { t } = useI18n();
   const [analysisVisible, setAnalysisVisible] = useState(false);
   const [selectedPhenomena, setSelectedPhenomena] = useState<number[]>([]);
+  const [deleteOpened, deleteModal] = useDisclosure(false);
   const { experimentId, sessionId } = useParams<{
     experimentId: string;
     sessionId: string;
@@ -295,6 +299,21 @@ const ResponseDetailPage = () => {
       .first();
   }, [requestedRunId, sessionId]);
   const analysis = useGraphQuery(analysisQuery);
+  const deletePermanently = useOperation(
+    ParticipantSession.domain.deletePermanently,
+    {
+      onSuccess: () => {
+        notifications.show({
+          title: t("Respuesta eliminada"),
+          message: t(
+            "La participación y su análisis asociado fueron eliminados.",
+          ),
+          color: "teal",
+        });
+        window.location.replace(`/experiments/${experimentId}?view=responses`);
+      },
+    },
+  );
   const belongsToExperiment =
     response.data?.experiment.locator.id === experimentId;
   const sourceStory =
@@ -773,11 +792,63 @@ const ResponseDetailPage = () => {
                     )}
                   </Stack>
                 </Card>
+
+                <Card withBorder padding="lg">
+                  <Group justify="space-between" align="center" wrap="wrap">
+                    <div>
+                      <Text fw={600}>{t("Eliminar respuesta")}</Text>
+                      <Text c="dimmed" size="sm">
+                        {t("Borra esta participación y su análisis asociado.")}
+                      </Text>
+                    </div>
+                    <Button
+                      color="red"
+                      variant="light"
+                      leftSection={<IconTrash size={18} />}
+                      onClick={deleteModal.open}
+                    >
+                      {t("Eliminar")}
+                    </Button>
+                  </Group>
+                </Card>
               </>
             )}
           </Stack>
         </Container>
       </AppShell.Main>
+
+      <Modal
+        opened={deleteOpened}
+        onClose={deleteModal.close}
+        title={t("Eliminar respuesta")}
+        centered
+      >
+        <Stack>
+          <Text>{t("Vas a eliminar definitivamente esta participación.")}</Text>
+          <Text c="dimmed">
+            {t(
+              "También se borrará su análisis asociado y las estadísticas globales se recalcularán. Esta acción no se puede deshacer.",
+            )}
+          </Text>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={deleteModal.close}>
+              {t("Cancelar")}
+            </Button>
+            <Button
+              color="red"
+              leftSection={<IconTrash size={18} />}
+              loading={deletePermanently.isExecuting}
+              onClick={() =>
+                void deletePermanently.executeAsync({
+                  session: ParticipantSession.refById(sessionId),
+                })
+              }
+            >
+              {t("Eliminar definitivamente")}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </AppShell>
   );
 };

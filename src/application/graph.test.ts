@@ -304,6 +304,23 @@ describe("Bartlett application bootstrap", () => {
       value: { status: "completed" },
     });
 
+    const deletedSession = await asAdmin(() =>
+      ParticipantSession.deletePermanently({
+        session: ParticipantSession.refById("session-test"),
+      }),
+    );
+    expect(deletedSession).toMatchObject({
+      ok: true,
+      value: { id: "session-test", status: "submitted" },
+    });
+    const sessionsAfterDeletion = await BartlettApplication.graph.read(
+      query(ParticipantSession),
+      { scope: "bootstrap.after-session-deletion" },
+    );
+    expect(sessionsAfterDeletion.map((session) => session.id)).not.toContain(
+      "session-test",
+    );
+
     const rejectedSubmission = await ParticipantSession.submitRecall({
       session: ParticipantSession.refById("session-pending"),
       experiment: Experiment.refById("experiment-test"),
