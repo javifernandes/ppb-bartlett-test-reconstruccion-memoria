@@ -328,6 +328,10 @@ describe("Bartlett application bootstrap", () => {
         contentLanguage: "es",
         story: "La historia fue editada.",
         recallText: "Recuerdo que la historia había sido editada.",
+        readingSeconds: 0,
+        distractorSeconds: 30,
+        recallSeconds: 270,
+        totalSeconds: 300,
         status: "active",
       },
     });

@@ -34,6 +34,10 @@ const SharedResult = ResultShare.view("SharedResult", {
   contentLanguage: true,
   story: true,
   recallText: true,
+  readingSeconds: true,
+  distractorSeconds: true,
+  recallSeconds: true,
+  totalSeconds: true,
   status: true,
 });
 
@@ -95,6 +99,12 @@ const readPhenomena = (value: unknown): SharedPhenomenon[] =>
 
 const countWords = (value: string) =>
   value.trim().match(/[\p{L}\p{N}]+/gu)?.length ?? 0;
+
+const formatDuration = (totalSeconds: number) => {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return minutes > 0 ? `${minutes} min ${seconds} s` : `${seconds} s`;
+};
 
 const AnnotatedText = ({
   text,
@@ -437,6 +447,41 @@ const SharedResultPage = () => {
                 </SimpleGrid>
               </Stack>
             </Card>
+
+            <SimpleGrid cols={{ base: 2, md: 4 }}>
+              <Paper withBorder p="md">
+                <Text size="sm" c="dimmed">
+                  {t("Tiempo total")}
+                </Text>
+                <Text size="xl" fw={700}>
+                  {formatDuration(share.data.totalSeconds)}
+                </Text>
+              </Paper>
+              <Paper withBorder p="md">
+                <Text size="sm" c="dimmed">
+                  {t("Lectura")}
+                </Text>
+                <Text size="xl" fw={700}>
+                  {formatDuration(share.data.readingSeconds)}
+                </Text>
+              </Paper>
+              <Paper withBorder p="md">
+                <Text size="sm" c="dimmed">
+                  {t("Intervalo / distractor")}
+                </Text>
+                <Text size="xl" fw={700}>
+                  {formatDuration(share.data.distractorSeconds)}
+                </Text>
+              </Paper>
+              <Paper withBorder p="md">
+                <Text size="sm" c="dimmed">
+                  {t("Reconstrucción")}
+                </Text>
+                <Text size="xl" fw={700}>
+                  {formatDuration(share.data.recallSeconds)}
+                </Text>
+              </Paper>
+            </SimpleGrid>
 
             <Card withBorder padding="lg">
               <Group justify="space-between" align="flex-start" mb="lg">

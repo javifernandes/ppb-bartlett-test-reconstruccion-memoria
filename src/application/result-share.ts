@@ -5,6 +5,12 @@ import { failOperation } from "@ontahi/core/runtime/server";
 import { Experiment } from "./experiment";
 import { ParticipantSession } from "./participant-session";
 
+const secondsBetween = (from?: string | null, to?: string | null) => {
+  if (!from || !to) return 0;
+  const duration = Math.round((Date.parse(to) - Date.parse(from)) / 1_000);
+  return Number.isFinite(duration) ? Math.max(0, duration) : 0;
+};
+
 export const ResultShare = entity({
   name: "ResultShare",
   fields: {
@@ -14,6 +20,10 @@ export const ResultShare = entity({
     contentLanguage: field.enum(["es", "en"] as const),
     story: field.nonEmptyString({ trim: true }),
     recallText: field.nonEmptyString({ trim: true, maxLength: 5_000 }),
+    readingSeconds: field.integer({ min: 0, max: 604_800 }),
+    distractorSeconds: field.integer({ min: 0, max: 604_800 }),
+    recallSeconds: field.integer({ min: 0, max: 604_800 }),
+    totalSeconds: field.integer({ min: 0, max: 604_800 }),
     status: field.enum(["active", "disabled"] as const),
     createdAt: field.nonEmptyString({ trim: true }),
   },
@@ -58,6 +68,24 @@ export const ResultShare = entity({
                   ? experiment.alternateStory
                   : experiment.story,
               recallText: session.recallText,
+              readingSeconds: secondsBetween(
+                session.startedAt,
+                session.intervalStartedAt ??
+                  session.recallingStartedAt ??
+                  session.submittedAt,
+              ),
+              distractorSeconds: secondsBetween(
+                session.intervalStartedAt,
+                session.recallingStartedAt,
+              ),
+              recallSeconds: secondsBetween(
+                session.recallingStartedAt,
+                session.submittedAt ?? session.lastActivityAt,
+              ),
+              totalSeconds: secondsBetween(
+                session.startedAt,
+                session.submittedAt ?? session.lastActivityAt,
+              ),
               status: "active",
               createdAt,
             },
@@ -68,6 +96,10 @@ export const ResultShare = entity({
               "contentLanguage",
               "story",
               "recallText",
+              "readingSeconds",
+              "distractorSeconds",
+              "recallSeconds",
+              "totalSeconds",
               "status",
               "createdAt",
             ],
@@ -90,6 +122,10 @@ export const ResultShare = entity({
             "contentLanguage",
             "story",
             "recallText",
+            "readingSeconds",
+            "distractorSeconds",
+            "recallSeconds",
+            "totalSeconds",
             "status",
             "createdAt",
           ])

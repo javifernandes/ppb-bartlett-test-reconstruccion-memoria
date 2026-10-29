@@ -333,6 +333,7 @@ const english: Record<string, string> = {
   Completada: "Completed",
   Recorrido: "Timeline",
   Intervalo: "Interval",
+  "Intervalo / distractor": "Interval / distractor",
   Comparación: "Comparison",
   "Historia original y reconstrucción de la persona.":
     "Original story and the participant's reconstruction.",
