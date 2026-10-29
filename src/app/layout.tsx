@@ -7,6 +7,9 @@ import type { ReactNode } from "react";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    "https://ppb-bartlett-test-reconstruccion-me.vercel.app",
+  ),
   title: "Prueba de Bartlett",
   description: "Experimentos de reconstrucción de una historia",
 };

@@ -162,6 +162,7 @@ const PublicParticipationPage = () => {
   const { publicToken } = useParams<{ publicToken: string }>();
   const searchParams = useSearchParams();
   const shareChannelId = searchParams.get("s")?.trim() || null;
+  const requestedLanguage = searchParams.get("lang");
   const [step, setStep] = useState<ParticipantStep>("introduction");
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [selectedContentLanguage, setSelectedContentLanguage] = useState<
@@ -209,6 +210,12 @@ const PublicParticipationPage = () => {
   const distractorComplete =
     selectedNumbers.length === expectedNumbers.length &&
     selectedNumbers.every((value, index) => value === expectedNumbers[index]);
+
+  useEffect(() => {
+    if (requestedLanguage === "es" || requestedLanguage === "en") {
+      setLocale(requestedLanguage);
+    }
+  }, [requestedLanguage, setLocale]);
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
