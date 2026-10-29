@@ -5,6 +5,7 @@ import { AnalysisRun } from "./analysis-run";
 import { Experiment } from "./experiment";
 import { ParticipantSession } from "./participant-session";
 import { RecallAnalysis } from "./recall-analysis";
+import { ShareChannel } from "./share-channel";
 import { createBartlettSeed } from "./seed";
 import { createSupabaseBartlettStorage } from "./supabase-storage";
 
@@ -20,6 +21,7 @@ const createBartlettApplication = () => {
     ParticipantSession,
     AnalysisRun,
     RecallAnalysis,
+    ShareChannel,
   ] as const;
   const inMemoryStorage = createInMemoryDataGraphStorage({
     dataset: createBartlettSeed(demoEnabled),
@@ -43,4 +45,10 @@ export const BartlettApplication =
     ? (developmentGlobal.bartlettApplication ??= createBartlettApplication())
     : createBartlettApplication();
 
-export { AnalysisRun, Experiment, ParticipantSession, RecallAnalysis };
+export {
+  AnalysisRun,
+  Experiment,
+  ParticipantSession,
+  RecallAnalysis,
+  ShareChannel,
+};

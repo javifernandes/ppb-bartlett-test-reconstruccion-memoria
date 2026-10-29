@@ -19,7 +19,7 @@ import {
 } from "@mantine/core";
 import { useGraphQuery, useOperation } from "@ontahi/react/graph";
 import { IconCheck, IconRefresh } from "@tabler/icons-react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import {
@@ -27,6 +27,7 @@ import {
   Experiment,
   ParticipantSession,
   RecallAnalysis,
+  ShareChannel,
 } from "@/generated/client-entities";
 import { LanguageSelector, useI18n } from "@/app/i18n";
 import { createId } from "@/lib/create-id";
@@ -159,6 +160,8 @@ const createDistractorValues = (seed: string) => {
 const PublicParticipationPage = () => {
   const { locale, setLocale, t } = useI18n();
   const { publicToken } = useParams<{ publicToken: string }>();
+  const searchParams = useSearchParams();
+  const shareChannelId = searchParams.get("s")?.trim() || null;
   const [step, setStep] = useState<ParticipantStep>("introduction");
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [selectedContentLanguage, setSelectedContentLanguage] = useState<
@@ -347,6 +350,9 @@ const PublicParticipationPage = () => {
     const result = await startSession.executeAsync({
       id,
       experiment: Experiment.refById(experiment.data.id),
+      shareChannel: shareChannelId
+        ? ShareChannel.refById(shareChannelId)
+        : null,
       contentLanguage,
       ...collectParticipantClientMetadata(),
       startedAt: new Date().toISOString(),

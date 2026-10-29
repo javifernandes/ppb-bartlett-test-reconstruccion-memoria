@@ -11,6 +11,7 @@ import { AnalysisRun } from "./analysis-run";
 import { Experiment } from "./experiment";
 import { ParticipantSession } from "./participant-session";
 import { RecallAnalysis } from "./recall-analysis";
+import { ShareChannel } from "./share-channel";
 
 export type LocalRuntimeAuthority = {
   principal: Principal | null;
@@ -91,6 +92,7 @@ const ParticipantSessionReadPolicy = defineGraphReadPolicy<
     select: [
       "id",
       "experiment",
+      "shareChannel",
       "contentLanguage",
       "countryCode",
       "browserLocale",
@@ -123,6 +125,26 @@ const ParticipantSessionReadPolicy = defineGraphReadPolicy<
       session.id.in(authority.participantSessionIds),
     );
   },
+});
+
+const ShareChannelReadPolicy = defineGraphReadPolicy<
+  typeof ShareChannel,
+  LocalRuntimeAuthority
+>({
+  entity: ShareChannel,
+  modes: ["get", "run", "count"],
+  cardinalities: ["one", "many"],
+  maxLimit: 500,
+  allow: {
+    select: ["id", "experiment", "name", "status", "createdAt"],
+    filter: {
+      id: ["eq", "in"],
+      experiment: ["eq", "in"],
+      status: ["eq", "in"],
+    },
+    order: ["name", "createdAt"],
+  },
+  scope: authenticatedScope,
 });
 
 const AnalysisRunReadPolicy = defineGraphReadPolicy<
@@ -190,4 +212,5 @@ export const localGraphReadPolicies = [
   ParticipantSessionReadPolicy,
   AnalysisRunReadPolicy,
   RecallAnalysisReadPolicy,
+  ShareChannelReadPolicy,
 ] as const;

@@ -7,6 +7,7 @@ import {
   Experiment,
   ParticipantSession,
   RecallAnalysis,
+  ShareChannel,
 } from "./graph";
 import { analyzeRecallHeuristically } from "./recall-analysis";
 import { parseRecallAnalysisOutput } from "./recall-analysis-model";
@@ -156,16 +157,33 @@ describe("Bartlett application bootstrap", () => {
       failure: { reason: "experiment_not_editable" },
     });
 
+    const channel = await asAdmin(() =>
+      ShareChannel.create({
+        id: "share-family",
+        experiment: Experiment.refById("experiment-test"),
+        name: "Familia",
+        createdAt: "2026-10-22T13:04:00.000Z",
+      }),
+    );
+    expect(channel).toMatchObject({
+      ok: true,
+      value: { name: "Familia", status: "active" },
+    });
+
     const session = await ParticipantSession.start({
       id: "session-test",
       experiment: Experiment.refById("experiment-test"),
+      shareChannel: ShareChannel.refById("share-family"),
       contentLanguage: "es",
       ...participantClientMetadata,
       startedAt: "2026-10-22T13:05:00.000Z",
     });
     expect(session).toMatchObject({
       ok: true,
-      value: { status: "reading" },
+      value: {
+        status: "reading",
+        shareChannel: { locator: { id: "share-family" } },
+      },
     });
 
     const interval = await ParticipantSession.finishReading({
@@ -213,6 +231,7 @@ describe("Bartlett application bootstrap", () => {
     await ParticipantSession.start({
       id: "session-pending",
       experiment: Experiment.refById("experiment-test"),
+      shareChannel: null,
       contentLanguage: "es",
       ...participantClientMetadata,
       startedAt: "2026-10-22T13:11:00.000Z",
@@ -335,6 +354,7 @@ describe("Bartlett application bootstrap", () => {
     const rejectedSession = await ParticipantSession.start({
       id: "session-too-late",
       experiment: Experiment.refById("experiment-test"),
+      shareChannel: null,
       contentLanguage: "es",
       ...participantClientMetadata,
       startedAt: "2026-10-22T13:13:00.000Z",

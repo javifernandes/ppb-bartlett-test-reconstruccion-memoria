@@ -6,6 +6,7 @@ import {
 } from "@ontahi/core/runtime/server";
 
 import { Experiment } from "./experiment";
+import { ShareChannel } from "./share-channel";
 import {
   type ParticipantRequestMetadata,
   participantRequestMetadataResourceKey,
@@ -16,6 +17,7 @@ export const ParticipantSession = entity({
   fields: {
     id: field.id(),
     experiment: field.ref(Experiment),
+    shareChannel: field.nullable(field.ref(ShareChannel)),
     contentLanguage: field.enum(["es", "en"] as const),
     countryCode: field.nullable(field.nonEmptyString({ trim: true })),
     browserLocale: field.nullable(field.nonEmptyString({ trim: true })),
@@ -52,6 +54,9 @@ export const ParticipantSession = entity({
       input: graphSchema.object({
         id: self.fields.id,
         experiment: field.ref(Experiment),
+        shareChannel: graphSchema.nullable(
+          graphSchema.existingRef(ShareChannel),
+        ),
         contentLanguage: self.fields.contentLanguage,
         browserLocale: field.nonEmptyString({ trim: true }),
         timezone: field.nonEmptyString({ trim: true }),
@@ -67,6 +72,7 @@ export const ParticipantSession = entity({
       *run({
         id,
         experiment,
+        shareChannel,
         contentLanguage,
         browserLocale,
         timezone,
@@ -78,6 +84,7 @@ export const ParticipantSession = entity({
         startedAt,
       }) {
         const target = yield* experiment.resolve();
+        const channel = shareChannel;
         const requestMetadata = getCurrentInvocationContext()?.resources.get(
           participantRequestMetadataResourceKey,
         ) as ParticipantRequestMetadata | undefined;
@@ -99,11 +106,24 @@ export const ParticipantSession = entity({
           );
         }
 
+        if (
+          shareChannel &&
+          (!channel ||
+            channel.experiment.locator.id !== target.id ||
+            channel.status !== "active")
+        ) {
+          return yield* failOperation(
+            "share_channel_not_available",
+            "Este enlace de difusión ya no está disponible.",
+          );
+        }
+
         return yield* commands
           .insertReturning(
             {
               id,
               experiment,
+              shareChannel: channel ? ShareChannel.refById(channel.id) : null,
               contentLanguage,
               countryCode: requestMetadata?.countryCode ?? null,
               browserLocale,
@@ -124,6 +144,7 @@ export const ParticipantSession = entity({
             [
               "id",
               "experiment",
+              "shareChannel",
               "contentLanguage",
               "countryCode",
               "browserLocale",
@@ -183,6 +204,7 @@ export const ParticipantSession = entity({
             [
               "id",
               "experiment",
+              "shareChannel",
               "contentLanguage",
               "countryCode",
               "browserLocale",
@@ -252,6 +274,7 @@ export const ParticipantSession = entity({
             [
               "id",
               "experiment",
+              "shareChannel",
               "contentLanguage",
               "countryCode",
               "browserLocale",
@@ -324,6 +347,7 @@ export const ParticipantSession = entity({
             [
               "id",
               "experiment",
+              "shareChannel",
               "contentLanguage",
               "countryCode",
               "browserLocale",
@@ -369,6 +393,7 @@ export const ParticipantSession = entity({
           .deleteManyReturning([
             "id",
             "experiment",
+            "shareChannel",
             "contentLanguage",
             "countryCode",
             "browserLocale",

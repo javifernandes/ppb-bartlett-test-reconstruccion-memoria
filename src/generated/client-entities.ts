@@ -14,8 +14,11 @@ import {
 export const ExperimentSchema = defineEntitySchema("Experiment", {
     id: field.id(), title: field.nonEmptyString({ trim: true }), participantTitle: field.nonEmptyString({ trim: true }), introduction: field.nonEmptyString({ trim: true }), consentText: field.nonEmptyString({ trim: true }), story: field.nonEmptyString({ trim: true }), recallInstructions: field.nonEmptyString({ trim: true }), primaryLanguage: field.enum(["es", "en"] as const), alternateLanguage: field.nullable(field.enum(["es", "en"] as const)), alternateParticipantTitle: field.nullable(field.nonEmptyString({ trim: true })), alternateIntroduction: field.nullable(field.nonEmptyString({ trim: true })), alternateConsentText: field.nullable(field.nonEmptyString({ trim: true })), alternateStory: field.nullable(field.nonEmptyString({ trim: true })), alternateRecallInstructions: field.nullable(field.nonEmptyString({ trim: true })), intervalSeconds: field.integer({ min: 0, max: 3600 }), distractorEnabled: field.boolean(), status: field.enum(["draft", "published", "closed"] as const), createdAt: field.nonEmptyString({ trim: true }), publishedAt: field.nullable(field.nonEmptyString({ trim: true })), publicToken: field.nullable(field.nonEmptyString({ trim: true })), analysisRunId: field.nullable(field.nonEmptyString({ trim: true })), analysisRubrics: field.nullable(field.json()), analysisPreparedAt: field.nullable(field.nonEmptyString({ trim: true })),
 }).display({ primary: "title", search: ["title"] });
+export const ShareChannelSchema = defineEntitySchema("ShareChannel", {
+    id: field.id(), experiment: field.ref(ExperimentSchema), name: field.nonEmptyString({ trim: true, maxLength: 80 }), status: field.enum(["active", "disabled"] as const), createdAt: field.nonEmptyString({ trim: true }),
+}).display({ primary: "name", search: ["name"] });
 export const ParticipantSessionSchema = defineEntitySchema("ParticipantSession", {
-    id: field.id(), experiment: field.ref(ExperimentSchema), contentLanguage: field.enum(["es", "en"] as const), countryCode: field.nullable(field.nonEmptyString({ trim: true })), browserLocale: field.nullable(field.nonEmptyString({ trim: true })), timezone: field.nullable(field.nonEmptyString({ trim: true })), deviceType: field.nullable(field.enum(["mobile", "tablet", "desktop"] as const)), browser: field.nullable(field.nonEmptyString({ trim: true })), operatingSystem: field.nullable(field.nonEmptyString({ trim: true })), screenWidth: field.nullable(field.integer({ min: 0, max: 20000 })), screenHeight: field.nullable(field.integer({ min: 0, max: 20000 })), status: field.enum([
+    id: field.id(), experiment: field.ref(ExperimentSchema), shareChannel: field.nullable(field.ref(ShareChannelSchema)), contentLanguage: field.enum(["es", "en"] as const), countryCode: field.nullable(field.nonEmptyString({ trim: true })), browserLocale: field.nullable(field.nonEmptyString({ trim: true })), timezone: field.nullable(field.nonEmptyString({ trim: true })), deviceType: field.nullable(field.enum(["mobile", "tablet", "desktop"] as const)), browser: field.nullable(field.nonEmptyString({ trim: true })), operatingSystem: field.nullable(field.nonEmptyString({ trim: true })), screenWidth: field.nullable(field.integer({ min: 0, max: 20000 })), screenHeight: field.nullable(field.integer({ min: 0, max: 20000 })), status: field.enum([
         "reading", "interval", "recalling", "submitted",
     ] as const), startedAt: field.nonEmptyString({ trim: true }), intervalStartedAt: field.nullable(field.nonEmptyString({ trim: true })), recallingStartedAt: field.nullable(field.nonEmptyString({ trim: true })), lastActivityAt: field.nonEmptyString({ trim: true }), recallText: field.nullable(field.nonEmptyString({ trim: true, maxLength: 5000 })), submittedAt: field.nullable(field.nonEmptyString({ trim: true })),
 });
@@ -125,6 +128,9 @@ export const ParticipantSession = defineClientEntity(ParticipantSessionSchema, {
       input: graphSchema.object({
         id: ParticipantSessionSchema.fields.id,
         experiment: field.ref(ExperimentSchema),
+        shareChannel: graphSchema.nullable(
+          graphSchema.existingRef(ShareChannelSchema),
+        ),
         contentLanguage: ParticipantSessionSchema.fields.contentLanguage,
         browserLocale: field.nonEmptyString({ trim: true }),
         timezone: field.nonEmptyString({ trim: true }),
@@ -245,6 +251,35 @@ export const RecallAnalysis = defineClientEntity(RecallAnalysisSchema, {
   },
 });
 
+export const ShareChannel = defineClientEntity(ShareChannelSchema, {
+
+  domainOperations: {
+    create: defineClientDomainOperation({
+      authority: 'server',
+      exposure: 'bridge',
+      bridge: {
+        invalidate: [["ShareChannel"]],
+      },
+      input: graphSchema.object({
+        id: ShareChannelSchema.fields.id,
+        experiment: field.ref(ExperimentSchema),
+        name: ShareChannelSchema.fields.name,
+        createdAt: ShareChannelSchema.fields.createdAt,
+      }),
+      output: ShareChannelSchema,
+    }),
+    disable: defineClientDomainOperation({
+      authority: 'server',
+      exposure: 'bridge',
+      bridge: {
+        invalidate: [["ShareChannel"]],
+      },
+      input: graphSchema.object({ channel: field.ref(ShareChannelSchema) }),
+      output: ShareChannelSchema,
+    }),
+  },
+});
+
 export const clientApplication = defineClientApplication({
-  entities: [Experiment, ParticipantSession, AnalysisRun, RecallAnalysis],
+  entities: [Experiment, ParticipantSession, AnalysisRun, RecallAnalysis, ShareChannel],
 });

@@ -112,6 +112,23 @@ const english: Record<string, string> = {
   "Ya podés compartirlo con participantes.":
     "You can now share it with participants.",
   "Mostrar QR": "Show QR",
+  "Opciones avanzadas": "Advanced options",
+  "Enlaces de difusión": "Distribution links",
+  "Creá enlaces distintos para conocer desde qué grupo llegaron las respuestas.":
+    "Create separate links to see which group each response came from.",
+  "No se pudieron cargar los enlaces de difusión.":
+    "Distribution links could not be loaded.",
+  "Nombre del enlace": "Link name",
+  "Ej. Familia, Trabajo, María": "E.g. Family, Work, Maria",
+  "Crear enlace": "Create link",
+  "Enlace de difusión creado": "Distribution link created",
+  "No se pudo crear el enlace": "The link could not be created",
+  Desactivar: "Disable",
+  "No se pudo desactivar el enlace": "The link could not be disabled",
+  "{count} respuestas": "{count} responses",
+  Origen: "Source",
+  "Enlace general": "General link",
+  "Enlace desactivado": "Disabled link",
   "Código QR para participantes": "Participant QR code",
   "Escaneá el código para abrir el experimento.":
     "Scan the code to open the experiment.",

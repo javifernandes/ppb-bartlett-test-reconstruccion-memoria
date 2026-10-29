@@ -40,6 +40,7 @@ import {
   IconPencil,
   IconQrcode,
   IconRocket,
+  IconSettings,
   IconTrash,
   IconUsersGroup,
 } from "@tabler/icons-react";
@@ -55,6 +56,7 @@ import {
   Experiment,
   ParticipantSession,
   RecallAnalysis,
+  ShareChannel,
 } from "@/generated/client-entities";
 import { createId } from "@/lib/create-id";
 import {
@@ -90,6 +92,7 @@ const ExperimentWorkspace = Experiment.view("ExperimentWorkspace", {
 
 const ParticipantSessionRow = ParticipantSession.view("ParticipantSessionRow", {
   id: true,
+  shareChannel: true,
   contentLanguage: true,
   countryCode: true,
   browserLocale: true,
@@ -106,6 +109,13 @@ const ParticipantSessionRow = ParticipantSession.view("ParticipantSessionRow", {
   lastActivityAt: true,
   recallText: true,
   submittedAt: true,
+});
+
+const ShareChannelRow = ShareChannel.view("ShareChannelRow", {
+  id: true,
+  name: true,
+  status: true,
+  createdAt: true,
 });
 
 const AnalysisRunRow = AnalysisRun.view("AnalysisRunRow", {
@@ -192,6 +202,17 @@ const ExperimentWorkspacePage = () => {
     [experimentId],
   );
   const sessions = useGraphQuery(sessionsQuery);
+  const shareChannelsQuery = useMemo(
+    () =>
+      ShareChannel.all()
+        .where((channel) =>
+          channel.experiment.eq(Experiment.refById(experimentId)),
+        )
+        .as(ShareChannelRow)
+        .orderBy((channel) => channel.createdAt.asc()),
+    [experimentId],
+  );
+  const shareChannels = useGraphQuery(shareChannelsQuery);
   const analysisRunsQuery = useMemo(
     () =>
       AnalysisRun.all()
@@ -219,11 +240,14 @@ const ExperimentWorkspacePage = () => {
   const [deleteOpened, deleteModal] = useDisclosure(false);
   const [qrOpened, qrModal] = useDisclosure(false);
   const [publicOrigin, setPublicOrigin] = useState("");
+  const [qrChannelId, setQrChannelId] = useState<string | null>(null);
+  const [newChannelName, setNewChannelName] = useState("");
   const [sessionFilter, setSessionFilter] = useState<SessionFilter>("all");
   const [languageFilter, setLanguageFilter] = useState<"all" | "es" | "en">(
     "all",
   );
   const [countryFilter, setCountryFilter] = useState("all");
+  const [sourceFilter, setSourceFilter] = useState("all");
   const [sessionSearch, setSessionSearch] = useState("");
   const [visibleSessionCount, setVisibleSessionCount] = useState(20);
   const updateDraft = useOperation(Experiment.domain.updateDraft);
@@ -251,6 +275,8 @@ const ExperimentWorkspacePage = () => {
   });
   const startAnalysis = useOperation(AnalysisRun.domain.start);
   const finishAnalysis = useOperation(AnalysisRun.domain.finish);
+  const createShareChannel = useOperation(ShareChannel.domain.create);
+  const disableShareChannel = useOperation(ShareChannel.domain.disable);
   const form = useForm<{
     title: string;
     participantTitle: string;
@@ -470,8 +496,14 @@ const ExperimentWorkspacePage = () => {
     window.location.reload();
   };
 
-  const copyPublicLink = async (publicToken: string) => {
-    const url = `${window.location.origin}/p/${publicToken}`;
+  const participantUrl = (publicToken: string, channelId?: string | null) =>
+    `${window.location.origin}/p/${publicToken}${channelId ? `?s=${encodeURIComponent(channelId)}` : ""}`;
+
+  const copyPublicLink = async (
+    publicToken: string,
+    channelId?: string | null,
+  ) => {
+    const url = participantUrl(publicToken, channelId);
     await navigator.clipboard.writeText(url);
     notifications.show({
       title: t("Enlace copiado"),
@@ -480,9 +512,48 @@ const ExperimentWorkspacePage = () => {
     });
   };
 
-  const openQr = () => {
+  const openQr = (channelId?: string | null) => {
     setPublicOrigin(window.location.origin);
+    setQrChannelId(channelId ?? null);
     qrModal.open();
+  };
+
+  const handleCreateShareChannel = async () => {
+    const name = newChannelName.trim();
+    if (!name) return;
+    const result = await createShareChannel.executeAsync({
+      id: createId(),
+      experiment: Experiment.refById(experimentId),
+      name,
+      createdAt: new Date().toISOString(),
+    });
+    if (!result.ok) {
+      notifications.show({
+        title: t("No se pudo crear el enlace"),
+        message: result.message,
+        color: "red",
+      });
+      return;
+    }
+    setNewChannelName("");
+    notifications.show({
+      title: t("Enlace de difusión creado"),
+      message: result.value.name,
+      color: "teal",
+    });
+  };
+
+  const handleDisableShareChannel = async (channelId: string) => {
+    const result = await disableShareChannel.executeAsync({
+      channel: ShareChannel.refById(channelId),
+    });
+    if (!result.ok) {
+      notifications.show({
+        title: t("No se pudo desactivar el enlace"),
+        message: result.message,
+        color: "red",
+      });
+    }
   };
 
   const handleClose = async () => {
@@ -530,6 +601,10 @@ const ExperimentWorkspacePage = () => {
           session.id,
           session.status,
           session.contentLanguage,
+          session.shareChannel
+            ? (shareChannelNames.get(String(session.shareChannel.locator.id)) ??
+              "")
+            : t("Enlace general"),
           session.countryCode ?? "",
           session.browserLocale ?? "",
           session.timezone ?? "",
@@ -552,7 +627,7 @@ const ExperimentWorkspacePage = () => {
           .join(","),
       );
     const csv = [
-      "id_sesion,estado,idioma_contenido,pais,idioma_navegador,zona_horaria,tipo_dispositivo,navegador,sistema_operativo,ancho_pantalla,alto_pantalla,inicio,inicio_intervalo,inicio_reconstruccion,envio,ultima_actividad,duracion_total_segundos,duracion_lectura_segundos,duracion_reconstruccion_segundos,reconstruccion",
+      "id_sesion,estado,idioma_contenido,origen,pais,idioma_navegador,zona_horaria,tipo_dispositivo,navegador,sistema_operativo,ancho_pantalla,alto_pantalla,inicio,inicio_intervalo,inicio_reconstruccion,envio,ultima_actividad,duracion_total_segundos,duracion_lectura_segundos,duracion_reconstruccion_segundos,reconstruccion",
       ...rows,
     ].join("\n");
     const url = URL.createObjectURL(
@@ -566,6 +641,18 @@ const ExperimentWorkspacePage = () => {
   };
 
   const sessionRows = sessions.data ?? [];
+  const shareChannelRows = shareChannels.data ?? [];
+  const shareChannelNames = new Map(
+    shareChannelRows.map((channel) => [channel.id, channel.name]),
+  );
+  const shareChannelCounts = sessionRows.reduce((counts, session) => {
+    if (session.status !== "submitted") return counts;
+    const id = session.shareChannel
+      ? String(session.shareChannel.locator.id)
+      : undefined;
+    if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
+    return counts;
+  }, new Map<string, number>());
   const completedSessions = sessionRows.filter(
     (session) => session.status === "submitted",
   );
@@ -638,6 +725,8 @@ const ExperimentWorkspacePage = () => {
       return false;
     if (countryFilter !== "all" && session.countryCode !== countryFilter)
       return false;
+    const sessionSource = session.shareChannel?.locator.id ?? "general";
+    if (sourceFilter !== "all" && sessionSource !== sourceFilter) return false;
     const search = sessionSearch.trim().toLocaleLowerCase();
     return (
       !search ||
@@ -795,11 +884,150 @@ const ExperimentWorkspacePage = () => {
                           <Button
                             variant="light"
                             leftSection={<IconQrcode size={18} />}
-                            onClick={openQr}
+                            onClick={() => openQr()}
                           >
                             {t("Mostrar QR")}
                           </Button>
                         </Group>
+                        <Accordion variant="separated">
+                          <Accordion.Item value="distribution-links">
+                            <Accordion.Control
+                              icon={<IconSettings size={18} />}
+                            >
+                              {t("Opciones avanzadas")}
+                            </Accordion.Control>
+                            <Accordion.Panel>
+                              <Stack gap="md">
+                                <div>
+                                  <Text fw={650}>
+                                    {t("Enlaces de difusión")}
+                                  </Text>
+                                  <Text size="sm" c="dimmed">
+                                    {t(
+                                      "Creá enlaces distintos para conocer desde qué grupo llegaron las respuestas.",
+                                    )}
+                                  </Text>
+                                </div>
+                                {shareChannels.isLoading && (
+                                  <Loader size="sm" />
+                                )}
+                                {shareChannels.isError && (
+                                  <Text c="red" size="sm">
+                                    {t(
+                                      "No se pudieron cargar los enlaces de difusión.",
+                                    )}
+                                  </Text>
+                                )}
+                                {shareChannelRows.map((channel) => (
+                                  <Paper key={channel.id} withBorder p="sm">
+                                    <Group
+                                      justify="space-between"
+                                      align="center"
+                                      wrap="wrap"
+                                    >
+                                      <div>
+                                        <Group gap="xs">
+                                          <Text fw={600}>{channel.name}</Text>
+                                          {channel.status === "disabled" && (
+                                            <Badge color="gray" variant="light">
+                                              {t("Desactivado")}
+                                            </Badge>
+                                          )}
+                                        </Group>
+                                        <Text size="xs" c="dimmed">
+                                          {t("{count} respuestas", {
+                                            count:
+                                              shareChannelCounts.get(
+                                                channel.id,
+                                              ) ?? 0,
+                                          })}
+                                        </Text>
+                                      </div>
+                                      <Group gap="xs">
+                                        <Button
+                                          size="compact-sm"
+                                          variant="default"
+                                          leftSection={<IconCopy size={15} />}
+                                          disabled={
+                                            channel.status === "disabled"
+                                          }
+                                          onClick={() =>
+                                            void copyPublicLink(
+                                              experiment.data
+                                                ?.publicToken as string,
+                                              channel.id,
+                                            )
+                                          }
+                                        >
+                                          {t("Copiar")}
+                                        </Button>
+                                        <Button
+                                          size="compact-sm"
+                                          variant="light"
+                                          leftSection={<IconQrcode size={15} />}
+                                          disabled={
+                                            channel.status === "disabled"
+                                          }
+                                          onClick={() => openQr(channel.id)}
+                                        >
+                                          QR
+                                        </Button>
+                                        {channel.status === "active" && (
+                                          <Button
+                                            size="compact-sm"
+                                            variant="subtle"
+                                            color="red"
+                                            loading={
+                                              disableShareChannel.isExecuting
+                                            }
+                                            onClick={() =>
+                                              void handleDisableShareChannel(
+                                                channel.id,
+                                              )
+                                            }
+                                          >
+                                            {t("Desactivar")}
+                                          </Button>
+                                        )}
+                                      </Group>
+                                    </Group>
+                                  </Paper>
+                                ))}
+                                <Group align="flex-end" wrap="wrap">
+                                  <TextInput
+                                    label={t("Nombre del enlace")}
+                                    placeholder={t(
+                                      "Ej. Familia, Trabajo, María",
+                                    )}
+                                    value={newChannelName}
+                                    maxLength={80}
+                                    style={{ flex: 1 }}
+                                    onChange={(event) =>
+                                      setNewChannelName(
+                                        event.currentTarget.value,
+                                      )
+                                    }
+                                    onKeyDown={(event) => {
+                                      if (event.key === "Enter") {
+                                        event.preventDefault();
+                                        void handleCreateShareChannel();
+                                      }
+                                    }}
+                                  />
+                                  <Button
+                                    loading={createShareChannel.isExecuting}
+                                    disabled={!newChannelName.trim()}
+                                    onClick={() =>
+                                      void handleCreateShareChannel()
+                                    }
+                                  >
+                                    {t("Crear enlace")}
+                                  </Button>
+                                </Group>
+                              </Stack>
+                            </Accordion.Panel>
+                          </Accordion.Item>
+                        </Accordion>
                       </Stack>
                     </Card>
                   )}
@@ -1325,6 +1553,26 @@ const ExperimentWorkspacePage = () => {
                                 setVisibleSessionCount(20);
                               }}
                             />
+                            <Select
+                              label={t("Origen")}
+                              value={sourceFilter}
+                              data={[
+                                { value: "all", label: t("Todos") },
+                                {
+                                  value: "general",
+                                  label: t("Enlace general"),
+                                },
+                                ...shareChannelRows.map((channel) => ({
+                                  value: channel.id,
+                                  label: channel.name,
+                                })),
+                              ]}
+                              allowDeselect={false}
+                              onChange={(value) => {
+                                setSourceFilter(value ?? "all");
+                                setVisibleSessionCount(20);
+                              }}
+                            />
                             <TextInput
                               label={t("Buscar")}
                               placeholder={t("ID o texto de la respuesta")}
@@ -1355,7 +1603,7 @@ const ExperimentWorkspacePage = () => {
                               </Paper>
                             )}
                           {visibleSessions.length > 0 && (
-                            <Table.ScrollContainer minWidth={720}>
+                            <Table.ScrollContainer minWidth={860}>
                               <Table verticalSpacing="sm" highlightOnHover>
                                 <Table.Thead>
                                   <Table.Tr>
@@ -1364,6 +1612,7 @@ const ExperimentWorkspacePage = () => {
                                     <Table.Th>{t("Inicio")}</Table.Th>
                                     <Table.Th>{t("Idioma")}</Table.Th>
                                     <Table.Th>{t("País")}</Table.Th>
+                                    <Table.Th>{t("Origen")}</Table.Th>
                                     <Table.Th>{t("Duración")}</Table.Th>
                                     <Table.Th>{t("Palabras")}</Table.Th>
                                     <Table.Th />
@@ -1455,6 +1704,18 @@ const ExperimentWorkspacePage = () => {
                                         ) : (
                                           "—"
                                         )}
+                                      </Table.Td>
+                                      <Table.Td>
+                                        <Text size="sm">
+                                          {session.shareChannel
+                                            ? (shareChannelNames.get(
+                                                String(
+                                                  session.shareChannel.locator
+                                                    .id,
+                                                ),
+                                              ) ?? t("Enlace desactivado"))
+                                            : t("Enlace general")}
+                                        </Text>
                                       </Table.Td>
                                       <Table.Td>
                                         {formatDuration(
@@ -1619,7 +1880,7 @@ const ExperimentWorkspacePage = () => {
           {publicOrigin && experiment.data?.publicToken ? (
             <Card bg="white" p="md" radius="md">
               <QRCodeSVG
-                value={`${publicOrigin}/p/${experiment.data.publicToken}`}
+                value={`${publicOrigin}/p/${experiment.data.publicToken}${qrChannelId ? `?s=${encodeURIComponent(qrChannelId)}` : ""}`}
                 size={280}
                 marginSize={1}
                 level="M"
@@ -1636,7 +1897,7 @@ const ExperimentWorkspacePage = () => {
             style={{ overflowWrap: "anywhere" }}
           >
             {publicOrigin && experiment.data?.publicToken
-              ? `${publicOrigin}/p/${experiment.data.publicToken}`
+              ? `${publicOrigin}/p/${experiment.data.publicToken}${qrChannelId ? `?s=${encodeURIComponent(qrChannelId)}` : ""}`
               : ""}
           </Text>
         </Stack>

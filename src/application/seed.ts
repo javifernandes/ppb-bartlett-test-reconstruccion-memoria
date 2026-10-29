@@ -51,6 +51,7 @@ const createBilingualDemoSessions = () =>
     return {
       id: `session-bilingual-${String(index + 1).padStart(3, "0")}`,
       experiment: bilingualDemoExperimentId,
+      shareChannel: null,
       contentLanguage,
       countryCode: ["AR", "US", "BR", "MX"][index % 4],
       ...demoClientMetadata,
@@ -101,6 +102,7 @@ const createAnalysisDemoSessions = () =>
     return {
       id: `session-demo-${String(index + 1).padStart(2, "0")}`,
       experiment: demoExperimentId,
+      shareChannel: null,
       contentLanguage: "es" as const,
       countryCode: ["AR", "UY", "MX", "US", "CL", "CO"][index % 6],
       ...demoClientMetadata,
@@ -271,6 +273,7 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
   ParticipantSession: demoEnabled
     ? [...createBilingualDemoSessions(), ...createAnalysisDemoSessions()]
     : [],
+  ShareChannel: [],
   AnalysisRun: demoEnabled
     ? [
         {
