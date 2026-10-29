@@ -119,6 +119,7 @@ const AnnotatedText = ({
   selectedIndices: number[];
   onSelect: (indices: number[]) => void;
 }) => {
+  const { t } = useI18n();
   const candidates = phenomena
     .map((phenomenon, index) => {
       const excerpt =
@@ -177,10 +178,11 @@ const AnnotatedText = ({
         key={`${side}-${start}-${end}`}
         onClick={() => onSelect(indices)}
         aria-label={active
-          .map(
-            (candidate) =>
+          .map((candidate) =>
+            t(
               phenomenonNames[candidate.phenomenon.kind] ??
-              candidate.phenomenon.kind,
+                candidate.phenomenon.kind,
+            ),
           )
           .join(", ")}
         style={{

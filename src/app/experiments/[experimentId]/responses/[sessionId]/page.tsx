@@ -189,6 +189,7 @@ const AnnotatedText = ({
   selectedIndices: number[];
   onSelect: (indices: number[]) => void;
 }) => {
+  const { t } = useI18n();
   const candidates = phenomena
     .map((phenomenon, index) => {
       const excerpt =
@@ -244,7 +245,7 @@ const AnnotatedText = ({
         key={`${side}-${start}-${end}`}
         onClick={() => onSelect(indices)}
         aria-label={active
-          .map((candidate) => phenomenonLabels[candidate.phenomenon.kind])
+          .map((candidate) => t(phenomenonLabels[candidate.phenomenon.kind]))
           .join(", ")}
         style={{
           display: "inline",
@@ -791,7 +792,7 @@ const ResponseDetailPage = () => {
                               color={phenomenonColors[kind]}
                               variant="light"
                             >
-                              {phenomenonLabels[kind]} · {count}
+                              {t(phenomenonLabels[kind])} · {count}
                             </Badge>
                           ) : null;
                         })}
@@ -885,7 +886,7 @@ const ResponseDetailPage = () => {
                                   <Badge
                                     color={phenomenonColors[phenomenon.kind]}
                                   >
-                                    {phenomenonLabels[phenomenon.kind]}
+                                    {t(phenomenonLabels[phenomenon.kind])}
                                   </Badge>
                                   <Text size="xs" c="dimmed">
                                     {t("Confianza")}{" "}

@@ -299,6 +299,12 @@ const english: Record<string, string> = {
   "Baja retención": "Low retention",
   "Presenta transformaciones recurrentes": "Contains recurring transformations",
   "Fenómenos detectados": "Detected phenomena",
+  "Unidad retenida": "Retained unit",
+  "Omisión candidata": "Candidate omission",
+  "Intrusión candidata": "Candidate intrusion",
+  "Sustitución candidata": "Candidate substitution",
+  "Racionalización posible": "Possible rationalization",
+  "Acentuación posible": "Possible accentuation",
   "Detección automática con evidencia textual. Las interpretaciones requieren revisión humana.":
     "Automatic detection with textual evidence. Interpretations require human review.",
   "Unidades retenidas": "Retained units",
