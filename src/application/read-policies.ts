@@ -11,12 +11,17 @@ import { AnalysisRun } from "./analysis-run";
 import { Experiment } from "./experiment";
 import { ParticipantSession } from "./participant-session";
 import { RecallAnalysis } from "./recall-analysis";
+import { ResultShare } from "./result-share";
 import { ShareChannel } from "./share-channel";
 
 export type LocalRuntimeAuthority = {
   principal: Principal | null;
   participantSessionIds: string[];
   participantPublicToken?: string;
+  resultShare?: {
+    token: string;
+    sessionId: string;
+  };
   resources: ServerRuntimeResourceMap;
   cacheScope: readonly string[];
 };
@@ -119,11 +124,46 @@ const ParticipantSessionReadPolicy = defineGraphReadPolicy<
   },
   scope: ({ authority, entity }) => {
     if (authority.principal) return selectionAll();
-    if (authority.participantSessionIds.length === 0) return selectionNone();
+    const allowedIds = authority.participantSessionIds;
+    if (allowedIds.length === 0) return selectionNone();
 
-    return selection(entity, (session) =>
-      session.id.in(authority.participantSessionIds),
-    );
+    return selection(entity, (session) => session.id.in(allowedIds));
+  },
+});
+
+const ResultShareReadPolicy = defineGraphReadPolicy<
+  typeof ResultShare,
+  LocalRuntimeAuthority
+>({
+  entity: ResultShare,
+  modes: ["get", "run", "count"],
+  cardinalities: ["one", "many"],
+  maxLimit: 100,
+  allow: {
+    select: [
+      "id",
+      "experiment",
+      "session",
+      "contentLanguage",
+      "story",
+      "recallText",
+      "status",
+      "createdAt",
+    ],
+    filter: {
+      id: ["eq", "in"],
+      experiment: ["eq", "in"],
+      session: ["eq", "in"],
+      status: ["eq", "in"],
+    },
+    order: ["createdAt"],
+  },
+  scope: ({ authority, entity }) => {
+    if (authority.principal) return selectionAll();
+    if (!authority.resultShare) return selectionNone();
+    return selection(entity, (share) =>
+      share.id.eq(authority.resultShare!.token),
+    ).and((share) => share.status.eq("active"));
   },
 });
 
@@ -204,7 +244,15 @@ const RecallAnalysisReadPolicy = defineGraphReadPolicy<
       "createdAt",
     ],
   },
-  scope: authenticatedScope,
+  scope: ({ authority, entity }) => {
+    if (authority.principal) return selectionAll();
+    if (!authority.resultShare) return selectionNone();
+    return selection(entity, (analysis) =>
+      analysis.session.eq(
+        ParticipantSession.refById(authority.resultShare!.sessionId),
+      ),
+    );
+  },
 });
 
 export const localGraphReadPolicies = [
@@ -212,5 +260,6 @@ export const localGraphReadPolicies = [
   ParticipantSessionReadPolicy,
   AnalysisRunReadPolicy,
   RecallAnalysisReadPolicy,
+  ResultShareReadPolicy,
   ShareChannelReadPolicy,
 ] as const;

@@ -227,6 +227,26 @@ const english: Record<string, string> = {
   "Respuesta eliminada": "Response deleted",
   "La participación y su análisis asociado fueron eliminados.":
     "The participation and its associated analysis were deleted.",
+  "Compartir resultado": "Share result",
+  "Generá un enlace anónimo para compartir únicamente esta comparación.":
+    "Create an anonymous link that shares only this comparison.",
+  "Crear enlace público": "Create public link",
+  "Enlace público creado": "Public link created",
+  "No se pudo crear el enlace público": "The public link could not be created",
+  "Ya podés compartir este resultado.": "You can now share this result.",
+  Abrir: "Open",
+  "Resultado compartido": "Shared result",
+  "Comparación anónima entre la historia original y una reconstrucción.":
+    "Anonymous comparison between the original story and a reconstruction.",
+  "Este resultado no está disponible": "This result is not available",
+  "El enlace puede haber sido desactivado o ser incorrecto.":
+    "The link may have been disabled or may be incorrect.",
+  "Análisis automático": "Automatic analysis",
+  "Las interpretaciones automáticas son orientativas y requieren revisión humana.":
+    "Automatic interpretations are indicative and require human review.",
+  "En preparación": "In progress",
+  "El análisis todavía se está preparando. La comparación de textos ya está disponible.":
+    "The analysis is still being prepared. The text comparison is already available.",
   Respuestas: "Responses",
   "Palabras de la historia": "Story words",
   "Promedio de palabras": "Average word count",

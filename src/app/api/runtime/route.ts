@@ -1,6 +1,8 @@
 import { createNextRuntimeProtocolRouteHandler } from "@ontahi/runtime-nextjs/runtime-protocol";
+import { query } from "@ontahi/core/data-graph";
 
 import { localRuntimeProtocolDispatcher } from "@/application/runtime";
+import { BartlettApplication, ResultShare } from "@/application/graph";
 import {
   participantRequestMetadataFromRequest,
   participantRequestMetadataResourceKey,
@@ -17,6 +19,30 @@ const participantTokenFromReferer = (referer: string | null) => {
   } catch {
     return undefined;
   }
+};
+
+const resultShareTokenFromReferer = (referer: string | null) => {
+  if (!referer) return undefined;
+  try {
+    return new URL(referer).pathname.match(/^\/r\/([^/]+)/)?.[1];
+  } catch {
+    return undefined;
+  }
+};
+
+const referenceId = (value: unknown) => {
+  if (typeof value === "string") return value;
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "locator" in value &&
+    typeof value.locator === "object" &&
+    value.locator !== null &&
+    "id" in value.locator
+  ) {
+    return String(value.locator.id);
+  }
+  return undefined;
 };
 
 export const POST = createNextRuntimeProtocolRouteHandler({
@@ -39,6 +65,23 @@ export const POST = createNextRuntimeProtocolRouteHandler({
     const participantPublicToken = participantTokenFromReferer(
       request.headers.get("referer"),
     );
+    const resultShareToken = resultShareTokenFromReferer(
+      request.headers.get("referer"),
+    );
+    const resultShare = resultShareToken
+      ? (
+          await BartlettApplication.graph.read(
+            query(ResultShare).where((share) => share.id.eq(resultShareToken)),
+            { scope: `public-result-share.${resultShareToken}` },
+          )
+        ).find((share) => share.status === "active")
+      : undefined;
+    const resultShareAuthority = resultShare
+      ? {
+          token: resultShare.id,
+          sessionId: referenceId(resultShare.session)!,
+        }
+      : undefined;
 
     return {
       principal: user
@@ -46,6 +89,7 @@ export const POST = createNextRuntimeProtocolRouteHandler({
         : null,
       participantSessionIds,
       participantPublicToken,
+      resultShare: resultShareAuthority,
       resources: new Map([
         [
           participantRequestMetadataResourceKey,
@@ -57,6 +101,7 @@ export const POST = createNextRuntimeProtocolRouteHandler({
         : [
             "participant",
             participantPublicToken ?? "unknown",
+            resultShareAuthority?.token ?? "no-result-share",
             ...participantSessionIds.sort(),
           ],
     };

@@ -30,6 +30,9 @@ export const AnalysisRunSchema = defineEntitySchema("AnalysisRun", {
 export const RecallAnalysisSchema = defineEntitySchema("RecallAnalysis", {
     id: field.id(), run: field.ref(AnalysisRunSchema), session: field.ref(ParticipantSessionSchema), experiment: field.ref(ExperimentSchema), status: field.enum(["completed"] as const), rubricVersion: field.nonEmptyString({ trim: true }), analyzerProvider: field.nonEmptyString({ trim: true }), analyzerModel: field.nonEmptyString({ trim: true }), promptVersion: field.nonEmptyString({ trim: true }), inputTokens: field.nullable(field.integer({ min: 0 })), outputTokens: field.nullable(field.integer({ min: 0 })), retainedUnitsCount: field.integer({ min: 0 }), omittedUnitsCount: field.integer({ min: 0 }), intrusionCount: field.integer({ min: 0 }), phenomena: field.json(), unitAssessments: field.json(), createdAt: field.nonEmptyString({ trim: true }),
 });
+export const ResultShareSchema = defineEntitySchema("ResultShare", {
+    id: field.id(), experiment: field.ref(ExperimentSchema), session: field.ref(ParticipantSessionSchema), contentLanguage: field.enum(["es", "en"] as const), story: field.nonEmptyString({ trim: true }), recallText: field.nonEmptyString({ trim: true, maxLength: 5000 }), status: field.enum(["active", "disabled"] as const), createdAt: field.nonEmptyString({ trim: true }),
+});
 
 export const Experiment = defineClientEntity(ExperimentSchema, {
 
@@ -251,6 +254,35 @@ export const RecallAnalysis = defineClientEntity(RecallAnalysisSchema, {
   },
 });
 
+export const ResultShare = defineClientEntity(ResultShareSchema, {
+
+  domainOperations: {
+    create: defineClientDomainOperation({
+      authority: 'server',
+      exposure: 'bridge',
+      bridge: {
+        invalidate: [["ResultShare"]],
+      },
+      input: graphSchema.object({
+        id: ResultShareSchema.fields.id,
+        experiment: graphSchema.existingRef(ExperimentSchema),
+        session: graphSchema.existingRef(ParticipantSessionSchema),
+        createdAt: ResultShareSchema.fields.createdAt,
+      }),
+      output: ResultShareSchema,
+    }),
+    disable: defineClientDomainOperation({
+      authority: 'server',
+      exposure: 'bridge',
+      bridge: {
+        invalidate: [["ResultShare"]],
+      },
+      input: graphSchema.object({ share: graphSchema.existingRef(ResultShareSchema) }),
+      output: ResultShareSchema,
+    }),
+  },
+});
+
 export const ShareChannel = defineClientEntity(ShareChannelSchema, {
 
   domainOperations: {
@@ -281,5 +313,5 @@ export const ShareChannel = defineClientEntity(ShareChannelSchema, {
 });
 
 export const clientApplication = defineClientApplication({
-  entities: [Experiment, ParticipantSession, AnalysisRun, RecallAnalysis, ShareChannel],
+  entities: [Experiment, ParticipantSession, AnalysisRun, RecallAnalysis, ResultShare, ShareChannel],
 });

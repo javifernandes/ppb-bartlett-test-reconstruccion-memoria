@@ -7,6 +7,7 @@ import {
   Experiment,
   ParticipantSession,
   RecallAnalysis,
+  ResultShare,
   ShareChannel,
 } from "./graph";
 import { analyzeRecallHeuristically } from "./recall-analysis";
@@ -311,6 +312,35 @@ describe("Bartlett application bootstrap", () => {
         }),
       ]),
     );
+
+    const sharedResult = await asAdmin(() =>
+      ResultShare.create({
+        id: "shared-result-test",
+        experiment: Experiment.refById("experiment-test"),
+        session: ParticipantSession.refById("session-test"),
+        createdAt: "2026-10-22T13:12:32.000Z",
+      }),
+    );
+    expect(sharedResult).toMatchObject({
+      ok: true,
+      value: {
+        id: "shared-result-test",
+        contentLanguage: "es",
+        story: "La historia fue editada.",
+        recallText: "Recuerdo que la historia había sido editada.",
+        status: "active",
+      },
+    });
+
+    const disabledShare = await asAdmin(() =>
+      ResultShare.disable({
+        share: ResultShare.refById("shared-result-test"),
+      }),
+    );
+    expect(disabledShare).toMatchObject({
+      ok: true,
+      value: { status: "disabled" },
+    });
 
     const finishedAnalysis = await asAdmin(() =>
       AnalysisRun.finish({

@@ -20,7 +20,14 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import { useGraphQuery, useOperation } from "@ontahi/react/graph";
-import { IconChevronDown, IconSparkles, IconTrash } from "@tabler/icons-react";
+import {
+  IconChevronDown,
+  IconCopy,
+  IconExternalLink,
+  IconShare2,
+  IconSparkles,
+  IconTrash,
+} from "@tabler/icons-react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -29,9 +36,11 @@ import {
   Experiment,
   ParticipantSession,
   RecallAnalysis,
+  ResultShare,
 } from "@/generated/client-entities";
 import { AdminHeader } from "@/app/admin-header";
 import { useI18n } from "@/app/i18n";
+import { createId } from "@/lib/create-id";
 
 const ResponseExperiment = Experiment.view("ResponseExperiment", {
   id: true,
@@ -70,6 +79,12 @@ const ResponseAnalysis = RecallAnalysis.view("ResponseAnalysis", {
   omittedUnitsCount: true,
   intrusionCount: true,
   phenomena: true,
+  createdAt: true,
+});
+
+const PublicResultShare = ResultShare.view("PublicResultShare", {
+  id: true,
+  status: true,
   createdAt: true,
 });
 
@@ -299,6 +314,22 @@ const ResponseDetailPage = () => {
       .first();
   }, [requestedRunId, sessionId]);
   const analysis = useGraphQuery(analysisQuery);
+  const resultSharesQuery = useMemo(
+    () =>
+      ResultShare.all()
+        .where((share) =>
+          share.session.eq(ParticipantSession.refById(sessionId)),
+        )
+        .as(PublicResultShare)
+        .orderBy((share) => share.createdAt.desc()),
+    [sessionId],
+  );
+  const resultShares = useGraphQuery(resultSharesQuery);
+  const activeResultShare = resultShares.data?.find(
+    (share) => share.status === "active",
+  );
+  const createResultShare = useOperation(ResultShare.domain.create);
+  const disableResultShare = useOperation(ResultShare.domain.disable);
   const deletePermanently = useOperation(
     ParticipantSession.domain.deletePermanently,
     {
@@ -344,6 +375,50 @@ const ResponseDetailPage = () => {
     1,
     readingSeconds + intervalSeconds + recallingSeconds,
   );
+
+  const createPublicResultLink = async () => {
+    const result = await createResultShare.executeAsync({
+      id: createId(),
+      experiment: Experiment.refById(experimentId),
+      session: ParticipantSession.refById(sessionId),
+      createdAt: new Date().toISOString(),
+    });
+    if (!result.ok) {
+      notifications.show({
+        title: t("No se pudo crear el enlace público"),
+        message: result.message,
+        color: "red",
+      });
+      return;
+    }
+    notifications.show({
+      title: t("Enlace público creado"),
+      message: t("Ya podés compartir este resultado."),
+      color: "teal",
+    });
+  };
+
+  const copyPublicResultLink = async (token: string) => {
+    await navigator.clipboard.writeText(`${window.location.origin}/r/${token}`);
+    notifications.show({
+      title: t("Enlace copiado"),
+      message: t("Ya podés compartir este resultado."),
+      color: "teal",
+    });
+  };
+
+  const disablePublicResultLink = async (token: string) => {
+    const result = await disableResultShare.executeAsync({
+      share: ResultShare.refById(token),
+    });
+    if (!result.ok) {
+      notifications.show({
+        title: t("No se pudo desactivar el enlace"),
+        message: result.message,
+        color: "red",
+      });
+    }
+  };
 
   return (
     <AppShell header={{ height: 64 }} padding="md">
@@ -584,6 +659,85 @@ const ResponseDetailPage = () => {
                       </Text>
                     </div>
                   </SimpleGrid>
+                </Card>
+
+                <Card withBorder padding="lg">
+                  <Stack gap="md">
+                    <Group justify="space-between" align="center" wrap="wrap">
+                      <div>
+                        <Group gap="xs">
+                          <IconShare2 size={19} />
+                          <Text fw={600}>{t("Compartir resultado")}</Text>
+                        </Group>
+                        <Text c="dimmed" size="sm" mt={4}>
+                          {t(
+                            "Generá un enlace anónimo para compartir únicamente esta comparación.",
+                          )}
+                        </Text>
+                      </div>
+                      {!resultShares.isLoading && !activeResultShare && (
+                        <Button
+                          leftSection={<IconShare2 size={18} />}
+                          loading={createResultShare.isExecuting}
+                          disabled={response.data.status !== "submitted"}
+                          onClick={() => void createPublicResultLink()}
+                        >
+                          {t("Crear enlace público")}
+                        </Button>
+                      )}
+                    </Group>
+
+                    {resultShares.isLoading && <Loader size="sm" />}
+                    {activeResultShare && (
+                      <Paper withBorder p="sm">
+                        <Group justify="space-between" wrap="wrap">
+                          <Text
+                            size="sm"
+                            ff="monospace"
+                            style={{ overflowWrap: "anywhere" }}
+                          >
+                            /r/{activeResultShare.id}
+                          </Text>
+                          <Group gap="xs">
+                            <Button
+                              variant="default"
+                              size="compact-sm"
+                              leftSection={<IconCopy size={15} />}
+                              onClick={() =>
+                                void copyPublicResultLink(activeResultShare.id)
+                              }
+                            >
+                              {t("Copiar")}
+                            </Button>
+                            <Button
+                              component="a"
+                              href={`/r/${activeResultShare.id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              variant="light"
+                              size="compact-sm"
+                              leftSection={<IconExternalLink size={15} />}
+                            >
+                              {t("Abrir")}
+                            </Button>
+                            <Button
+                              color="red"
+                              variant="subtle"
+                              size="compact-sm"
+                              loading={disableResultShare.isExecuting}
+                              onClick={() =>
+                                void disablePublicResultLink(
+                                  activeResultShare.id,
+                                )
+                              }
+                            >
+                              {t("Desactivar")}
+                            </Button>
+                          </Group>
+                        </Group>
+                      </Paper>
+                    )}
+                  </Stack>
                 </Card>
 
                 <Card withBorder padding="lg">

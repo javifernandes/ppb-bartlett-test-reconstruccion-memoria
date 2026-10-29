@@ -286,4 +286,5 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
       ]
     : [],
   RecallAnalysis: demoEnabled ? createAnalysisDemoResults() : [],
+  ResultShare: [],
 });
