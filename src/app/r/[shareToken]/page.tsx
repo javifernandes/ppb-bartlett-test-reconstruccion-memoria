@@ -19,7 +19,7 @@ import {
 import { useGraphQuery } from "@ontahi/react/graph";
 import { IconChevronDown, IconSparkles } from "@tabler/icons-react";
 import { useParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { LanguageSelector, useI18n } from "@/app/i18n";
 import {
@@ -215,30 +215,25 @@ const SharedResultPage = () => {
   const [analysisVisible, setAnalysisVisible] = useState(true);
   const [selectedPhenomena, setSelectedPhenomena] = useState<number[]>([]);
   const { shareToken } = useParams<{ shareToken: string }>();
-  const shareQuery = useMemo(
-    () =>
-      ResultShare.all()
-        .where((share) => share.id.eq(shareToken))
-        .as(SharedResult)
-        .one(),
-    [shareToken],
+  const share = useGraphQuery(
+    ResultShare.all()
+      .where((share) => share.id.eq(shareToken))
+      .as(SharedResult)
+      .one(),
   );
-  const share = useGraphQuery(shareQuery);
   const sessionId = share.data
     ? String(share.data.session.locator.id)
-    : "missing-session";
-  const analysisQuery = useMemo(
-    () =>
-      RecallAnalysis.all()
-        .where((analysis) =>
-          analysis.session.eq(ParticipantSession.refById(sessionId)),
-        )
-        .as(SharedAnalysis)
-        .orderBy((analysis) => analysis.createdAt.desc())
-        .first(),
-    [sessionId],
+    : undefined;
+  const analysis = useGraphQuery(
+    RecallAnalysis.all()
+      .where((analysis) =>
+        analysis.session.eq(ParticipantSession.refById(sessionId ?? "")),
+      )
+      .as(SharedAnalysis)
+      .orderBy((analysis) => analysis.createdAt.desc())
+      .first(),
+    { enabled: Boolean(sessionId) },
   );
-  const analysis = useGraphQuery(analysisQuery);
   const phenomena = readPhenomena(analysis.data?.phenomena);
   const selected = selectedPhenomena.flatMap((index) =>
     phenomena[index] ? [phenomena[index]] : [],

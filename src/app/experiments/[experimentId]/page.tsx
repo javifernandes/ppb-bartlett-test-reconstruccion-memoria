@@ -46,7 +46,7 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 
 import { AdminHeader } from "@/app/admin-header";
@@ -182,59 +182,43 @@ const ExperimentWorkspacePage = () => {
   const { locale, t } = useI18n();
   const { experimentId } = useParams<{ experimentId: string }>();
   const searchParams = useSearchParams();
-  const experimentQuery = useMemo(
-    () =>
-      Experiment.all()
-        .where((experiment) => experiment.id.eq(experimentId))
-        .as(ExperimentWorkspace)
-        .one(),
-    [experimentId],
+  const experiment = useGraphQuery(
+    Experiment.all()
+      .where((experiment) => experiment.id.eq(experimentId))
+      .as(ExperimentWorkspace)
+      .one(),
   );
-  const experiment = useGraphQuery(experimentQuery);
-  const sessionsQuery = useMemo(
-    () =>
-      ParticipantSession.all()
-        .where((session) =>
-          session.experiment.eq(Experiment.refById(experimentId)),
-        )
-        .as(ParticipantSessionRow)
-        .orderBy((session) => session.startedAt.desc()),
-    [experimentId],
+  const sessions = useGraphQuery(
+    ParticipantSession.all()
+      .where((session) =>
+        session.experiment.eq(Experiment.refById(experimentId)),
+      )
+      .as(ParticipantSessionRow)
+      .orderBy((session) => session.startedAt.desc()),
   );
-  const sessions = useGraphQuery(sessionsQuery);
-  const shareChannelsQuery = useMemo(
-    () =>
-      ShareChannel.all()
-        .where((channel) =>
-          channel.experiment.eq(Experiment.refById(experimentId)),
-        )
-        .as(ShareChannelRow)
-        .orderBy((channel) => channel.createdAt.asc()),
-    [experimentId],
+  const shareChannels = useGraphQuery(
+    ShareChannel.all()
+      .where((channel) =>
+        channel.experiment.eq(Experiment.refById(experimentId)),
+      )
+      .as(ShareChannelRow)
+      .orderBy((channel) => channel.createdAt.asc()),
   );
-  const shareChannels = useGraphQuery(shareChannelsQuery);
-  const analysisRunsQuery = useMemo(
-    () =>
-      AnalysisRun.all()
-        .where((run) => run.experiment.eq(Experiment.refById(experimentId)))
-        .as(AnalysisRunRow)
-        .orderBy((run) => run.createdAt.desc()),
-    [experimentId],
+  const analysisRuns = useGraphQuery(
+    AnalysisRun.all()
+      .where((run) => run.experiment.eq(Experiment.refById(experimentId)))
+      .as(AnalysisRunRow)
+      .orderBy((run) => run.createdAt.desc()),
   );
-  const analysisRuns = useGraphQuery(analysisRunsQuery);
   const currentAnalysisRunId = experiment.data?.analysisRunId;
-  const sessionAnalysesQuery = useMemo(
-    () =>
-      RecallAnalysis.all()
-        .where((analysis) =>
-          analysis.run.eq(
-            AnalysisRun.refById(currentAnalysisRunId ?? "missing-run"),
-          ),
-        )
-        .as(SessionAnalysisRow),
-    [currentAnalysisRunId],
+  const sessionAnalyses = useGraphQuery(
+    RecallAnalysis.all()
+      .where((analysis) =>
+        analysis.run.eq(AnalysisRun.refById(currentAnalysisRunId ?? "")),
+      )
+      .as(SessionAnalysisRow),
+    { enabled: Boolean(currentAnalysisRunId) },
   );
-  const sessionAnalyses = useGraphQuery(sessionAnalysesQuery);
   const [publishOpened, publishModal] = useDisclosure(false);
   const [closeOpened, closeModal] = useDisclosure(false);
   const [deleteOpened, deleteModal] = useDisclosure(false);
