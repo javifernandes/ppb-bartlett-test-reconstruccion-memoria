@@ -12,20 +12,25 @@ import {
   Paper,
   Progress,
   SegmentedControl,
-  SimpleGrid,
   Stack,
   Text,
   Textarea,
   Title,
 } from "@mantine/core";
 import { useGraphQuery } from "@ontahi/react/graph";
-import { IconArrowLeft, IconCheck, IconRefresh } from "@tabler/icons-react";
+import { IconArrowLeft, IconCheck } from "@tabler/icons-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { Experiment } from "@/generated/client-entities";
 import { LanguageSelector, useI18n } from "@/app/i18n";
+import {
+  createDistractorValues,
+  expectedDistractorOrder,
+  isDistractorOrderCorrect,
+} from "@/features/participation/distractor";
+import { DistractorCard } from "@/features/participation/distractor-card";
 
 const ParticipantPreview = Experiment.view("ParticipantPreview", {
   id: true,
@@ -60,25 +65,6 @@ const progressByStep: Record<PreviewStep, number> = {
   complete: 100,
 };
 
-const createDistractorValues = (seed: string) => {
-  let state = [...seed].reduce(
-    (value, character) => (value * 31 + character.charCodeAt(0)) >>> 0,
-    2166136261,
-  );
-  const values = new Set<number>();
-  while (values.size < 8) {
-    state = (state * 1664525 + 1013904223) >>> 0;
-    values.add(10 + (state % 90));
-  }
-  const shuffled = [...values];
-  for (let index = shuffled.length - 1; index > 0; index -= 1) {
-    state = (state * 1664525 + 1013904223) >>> 0;
-    const target = state % (index + 1);
-    [shuffled[index], shuffled[target]] = [shuffled[target], shuffled[index]];
-  }
-  return shuffled;
-};
-
 const ParticipantPreviewPage = () => {
   const { locale, setLocale, t } = useI18n();
   const { experimentId } = useParams<{ experimentId: string }>();
@@ -102,12 +88,13 @@ const ParticipantPreviewPage = () => {
     [experimentId],
   );
   const expectedNumbers = useMemo(
-    () => [...distractorValues].sort((left, right) => right - left),
+    () => expectedDistractorOrder(distractorValues),
     [distractorValues],
   );
-  const distractorComplete =
-    selectedNumbers.length === expectedNumbers.length &&
-    selectedNumbers.every((value, index) => value === expectedNumbers[index]);
+  const distractorComplete = isDistractorOrderCorrect(
+    selectedNumbers,
+    expectedNumbers,
+  );
 
   useEffect(() => {
     if (step !== "interval" || intervalStartedAt === undefined) return;
@@ -271,61 +258,16 @@ const ParticipantPreviewPage = () => {
           animated={remainingSeconds > 0}
         />
         {experiment.data.distractorEnabled && (
-          <Paper withBorder p="lg" w="100%">
-            <Stack gap="md">
-              <div>
-                <Text fw={700}>{t("Ordená los números de mayor a menor")}</Text>
-                <Text c="dimmed" size="sm">
-                  {t("Tocá cada número en el orden correcto.")}
-                </Text>
-              </div>
-              <SimpleGrid cols={4} spacing="xs">
-                {distractorValues.map((value) => (
-                  <Button
-                    key={value}
-                    variant="light"
-                    size="lg"
-                    px={0}
-                    fullWidth
-                    disabled={selectedNumbers.includes(value)}
-                    style={{ minWidth: 0 }}
-                    styles={{ label: { overflow: "visible" } }}
-                    onClick={() =>
-                      setSelectedNumbers((current) => [...current, value])
-                    }
-                  >
-                    {value}
-                  </Button>
-                ))}
-              </SimpleGrid>
-              <Text mih={24} fw={600}>
-                {selectedNumbers.length > 0
-                  ? selectedNumbers.join(" › ")
-                  : t("Tu orden aparecerá acá")}
-              </Text>
-              {selectedNumbers.length === expectedNumbers.length &&
-                !distractorComplete && (
-                  <Text c="red">
-                    {t("Ese orden no es correcto. Probá de nuevo.")}
-                  </Text>
-                )}
-              {distractorComplete && (
-                <Text c="teal" fw={600}>
-                  {t("¡Orden correcto!")}
-                </Text>
-              )}
-              <Group justify="center">
-                <Button
-                  variant="subtle"
-                  leftSection={<IconRefresh size={18} />}
-                  disabled={selectedNumbers.length === 0}
-                  onClick={() => setSelectedNumbers([])}
-                >
-                  {t("Reiniciar")}
-                </Button>
-              </Group>
-            </Stack>
-          </Paper>
+          <DistractorCard
+            values={distractorValues}
+            selectedValues={selectedNumbers}
+            expectedValues={expectedNumbers}
+            complete={distractorComplete}
+            onSelect={(value) =>
+              setSelectedNumbers((current) => [...current, value])
+            }
+            onReset={() => setSelectedNumbers([])}
+          />
         )}
         <Button
           size="lg"
