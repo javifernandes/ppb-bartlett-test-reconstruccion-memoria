@@ -282,50 +282,40 @@ const ResponseDetailPage = () => {
     sessionId: string;
   }>();
   const requestedRunId = useSearchParams().get("analysisRunId");
-  const experimentQuery = useMemo(
-    () =>
-      Experiment.all()
-        .where((experiment) => experiment.id.eq(experimentId))
-        .as(ResponseExperiment)
-        .one(),
-    [experimentId],
+  const experiment = useGraphQuery(
+    Experiment.all()
+      .where((experiment) => experiment.id.eq(experimentId))
+      .as(ResponseExperiment)
+      .one(),
   );
-  const responseQuery = useMemo(
-    () =>
-      ParticipantSession.all()
-        .where((session) => session.id.eq(sessionId))
-        .as(ResponseDetail)
-        .one(),
-    [sessionId],
+  const response = useGraphQuery(
+    ParticipantSession.all()
+      .where((session) => session.id.eq(sessionId))
+      .as(ResponseDetail)
+      .one(),
   );
-  const experiment = useGraphQuery(experimentQuery);
-  const response = useGraphQuery(responseQuery);
-  const analysisQuery = useMemo(() => {
-    let query = RecallAnalysis.all().where((analysis) =>
-      analysis.session.eq(ParticipantSession.refById(sessionId)),
-    );
-    if (requestedRunId) {
-      query = query.where((analysis) =>
-        analysis.run.eq(AnalysisRun.refById(requestedRunId)),
+  const analysis = useGraphQuery(
+    (() => {
+      let query = RecallAnalysis.all().where((analysis) =>
+        analysis.session.eq(ParticipantSession.refById(sessionId)),
       );
-    }
-    return query
-      .as(ResponseAnalysis)
-      .orderBy((analysis) => analysis.createdAt.desc())
-      .first();
-  }, [requestedRunId, sessionId]);
-  const analysis = useGraphQuery(analysisQuery);
-  const resultSharesQuery = useMemo(
-    () =>
-      ResultShare.all()
-        .where((share) =>
-          share.session.eq(ParticipantSession.refById(sessionId)),
-        )
-        .as(PublicResultShare)
-        .orderBy((share) => share.createdAt.desc()),
-    [sessionId],
+      if (requestedRunId) {
+        query = query.where((analysis) =>
+          analysis.run.eq(AnalysisRun.refById(requestedRunId)),
+        );
+      }
+      return query
+        .as(ResponseAnalysis)
+        .orderBy((analysis) => analysis.createdAt.desc())
+        .first();
+    })(),
   );
-  const resultShares = useGraphQuery(resultSharesQuery);
+  const resultShares = useGraphQuery(
+    ResultShare.all()
+      .where((share) => share.session.eq(ParticipantSession.refById(sessionId)))
+      .as(PublicResultShare)
+      .orderBy((share) => share.createdAt.desc()),
+  );
   const activeResultShare = resultShares.data?.find(
     (share) => share.status === "active",
   );

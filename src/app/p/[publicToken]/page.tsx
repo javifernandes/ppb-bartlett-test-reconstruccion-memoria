@@ -174,24 +174,19 @@ const PublicParticipationPage = () => {
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
   const [recall, setRecall] = useState("");
   const [errorMessage, setErrorMessage] = useState<string>();
-  const experimentQuery = useMemo(
-    () =>
-      Experiment.all()
-        .where((experiment) => experiment.publicToken.eq(publicToken))
-        .as(PublicExperiment)
-        .one(),
-    [publicToken],
+  const experiment = useGraphQuery(
+    Experiment.all()
+      .where((experiment) => experiment.publicToken.eq(publicToken))
+      .as(PublicExperiment)
+      .one(),
   );
-  const experiment = useGraphQuery(experimentQuery);
-  const sessionQuery = useMemo(
-    () =>
-      ParticipantSession.all()
-        .where((session) => session.id.eq(sessionId ?? "missing-session"))
-        .as(ResumableSession)
-        .first(),
-    [sessionId],
+  const savedSession = useGraphQuery(
+    ParticipantSession.all()
+      .where((session) => session.id.eq(sessionId ?? ""))
+      .as(ResumableSession)
+      .first(),
+    { enabled: Boolean(sessionId) },
   );
-  const savedSession = useGraphQuery(sessionQuery);
   const startSession = useOperation(ParticipantSession.domain.start);
   const finishReadingOperation = useOperation(
     ParticipantSession.domain.finishReading,

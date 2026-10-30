@@ -91,15 +91,12 @@ const ParticipantPreviewPage = () => {
   const [selectedContentLanguage, setSelectedContentLanguage] = useState<
     "es" | "en"
   >();
-  const experimentQuery = useMemo(
-    () =>
-      Experiment.all()
-        .where((experiment) => experiment.id.eq(experimentId))
-        .as(ParticipantPreview)
-        .one(),
-    [experimentId],
+  const experiment = useGraphQuery(
+    Experiment.all()
+      .where((experiment) => experiment.id.eq(experimentId))
+      .as(ParticipantPreview)
+      .one(),
   );
-  const experiment = useGraphQuery(experimentQuery);
   const distractorValues = useMemo(
     () => createDistractorValues(`${experimentId}:preview`),
     [experimentId],

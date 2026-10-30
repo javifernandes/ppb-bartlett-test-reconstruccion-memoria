@@ -97,46 +97,32 @@ const AnalysisPage = () => {
     experimentId: string;
     analysisRunId: string;
   }>();
-  const experimentQuery = useMemo(
-    () =>
-      Experiment.all()
-        .where((experiment) => experiment.id.eq(experimentId))
-        .as(AnalysisExperiment)
-        .one(),
-    [experimentId],
+  const experiment = useGraphQuery(
+    Experiment.all()
+      .where((experiment) => experiment.id.eq(experimentId))
+      .as(AnalysisExperiment)
+      .one(),
   );
-  const runQuery = useMemo(
-    () =>
-      AnalysisRun.all()
-        .where((run) => run.id.eq(analysisRunId))
-        .as(AnalysisRunDetail)
-        .one(),
-    [analysisRunId],
+  const run = useGraphQuery(
+    AnalysisRun.all()
+      .where((run) => run.id.eq(analysisRunId))
+      .as(AnalysisRunDetail)
+      .one(),
   );
-  const responsesQuery = useMemo(
-    () =>
-      ParticipantSession.all()
-        .where((session) =>
-          session.experiment.eq(Experiment.refById(experimentId)),
-        )
-        .where((session) => session.status.eq("submitted"))
-        .as(AnalyzedResponse)
-        .orderBy((session) => session.submittedAt.asc()),
-    [experimentId],
+  const responses = useGraphQuery(
+    ParticipantSession.all()
+      .where((session) =>
+        session.experiment.eq(Experiment.refById(experimentId)),
+      )
+      .where((session) => session.status.eq("submitted"))
+      .as(AnalyzedResponse)
+      .orderBy((session) => session.submittedAt.asc()),
   );
-  const experiment = useGraphQuery(experimentQuery);
-  const run = useGraphQuery(runQuery);
-  const responses = useGraphQuery(responsesQuery);
-  const recallAnalysesQuery = useMemo(
-    () =>
-      RecallAnalysis.all()
-        .where((analysis) =>
-          analysis.run.eq(AnalysisRun.refById(analysisRunId)),
-        )
-        .as(RecallAnalysisRow),
-    [analysisRunId],
+  const recallAnalyses = useGraphQuery(
+    RecallAnalysis.all()
+      .where((analysis) => analysis.run.eq(AnalysisRun.refById(analysisRunId)))
+      .as(RecallAnalysisRow),
   );
-  const recallAnalyses = useGraphQuery(recallAnalysesQuery);
   const analyzeRecall = useOperation(RecallAnalysis.domain.analyze);
   const scheduledAnalysisIds = useRef(new Set<string>());
   const [analysisFailures, setAnalysisFailures] = useState<
