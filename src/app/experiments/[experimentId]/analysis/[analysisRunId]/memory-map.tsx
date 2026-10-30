@@ -21,8 +21,8 @@ import {
   demoMemoryUnits,
   type DemoMemoryUnit,
   type DemoTransformation,
-} from "@/application/demo-memory-map";
-import { inferConceptAnchors } from "@/application/story-concepts";
+} from "@/application/seed/demo-memory-map";
+import { inferConceptAnchors } from "@/application/analysis/story-concepts";
 
 type Mode = "retention" | "transformations";
 

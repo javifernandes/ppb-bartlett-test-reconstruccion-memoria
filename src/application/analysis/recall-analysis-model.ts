@@ -2,7 +2,7 @@ import type {
   RecallPhenomenon,
   RecallPhenomenonKind,
   RecallUnitAssessment,
-} from "./recall-analysis";
+} from "../entities/recall-analysis";
 import type { StoryAnalysisUnit } from "./story-analysis-model";
 
 export type RecallAnalysisOutput = {
