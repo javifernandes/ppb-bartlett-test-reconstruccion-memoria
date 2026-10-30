@@ -1,14 +1,14 @@
 import { createInMemoryDataGraphStorage } from "@ontahi/core/data-graph";
 import { inProcessTasks, ontahi } from "@ontahi/core/runtime/server";
 
-import { AnalysisRun } from "./analysis-run";
-import { Experiment } from "./experiment";
-import { ParticipantSession } from "./participant-session";
-import { RecallAnalysis } from "./recall-analysis";
-import { ResultShare } from "./result-share";
-import { ShareChannel } from "./share-channel";
+import { AnalysisRun } from "./entities/analysis-run";
+import { Experiment } from "./entities/experiment";
+import { ParticipantSession } from "./entities/participant-session";
+import { RecallAnalysis } from "./entities/recall-analysis";
+import { ResultShare } from "./entities/result-share";
+import { ShareChannel } from "./entities/share-channel";
 import { createBartlettSeed } from "./seed";
-import { createSupabaseBartlettStorage } from "./supabase-storage";
+import { createSupabaseBartlettStorage } from "./storage/supabase-storage";
 
 const demoEnabled = process.env.SEED_DEMO_DATA === "true";
 const useSupabaseStorage =
