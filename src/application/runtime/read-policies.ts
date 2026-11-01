@@ -65,6 +65,8 @@ const ExperimentReadPolicy = defineGraphReadPolicy<
       "analysisRunId",
       "analysisRubrics",
       "analysisPreparedAt",
+      "semanticAnalysisRubrics",
+      "semanticAnalysisPreparedAt",
     ],
     filter: {
       id: ["eq", "in"],
@@ -200,7 +202,17 @@ const AnalysisRunReadPolicy = defineGraphReadPolicy<
   cardinalities: ["one", "many"],
   maxLimit: 100,
   allow: {
-    select: ["id", "experiment", "status", "analyzerVersion", "createdAt"],
+    select: [
+      "id",
+      "experiment",
+      "status",
+      "analyzerVersion",
+      "schemaVersion",
+      "rubricSnapshot",
+      "completedAt",
+      "sourceResponseCount",
+      "createdAt",
+    ],
     filter: {
       id: ["eq", "in"],
       experiment: ["eq", "in"],
@@ -232,6 +244,8 @@ const RecallAnalysisReadPolicy = defineGraphReadPolicy<
       "intrusionCount",
       "phenomena",
       "unitAssessments",
+      "semanticAssessment",
+      "semanticSummary",
       "createdAt",
     ],
     filter: {

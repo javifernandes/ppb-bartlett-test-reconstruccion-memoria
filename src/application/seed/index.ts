@@ -159,6 +159,8 @@ const createAnalysisDemoResults = () =>
         recallExcerpt: level === "absent" ? null : unit.text,
         confidence: 0.9,
       })),
+      semanticAssessment: null,
+      semanticSummary: null,
       createdAt: new Date(
         Date.UTC(2026, 9, 22, 12, responseIndex),
       ).toISOString(),
@@ -195,6 +197,8 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
       analysisRunId: null,
       analysisRubrics: null,
       analysisPreparedAt: null,
+      semanticAnalysisRubrics: null,
+      semanticAnalysisPreparedAt: null,
     },
     ...(demoEnabled
       ? [
@@ -229,6 +233,8 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
             analysisRunId: null,
             analysisRubrics: null,
             analysisPreparedAt: null,
+            semanticAnalysisRubrics: null,
+            semanticAnalysisPreparedAt: null,
           },
           {
             id: demoExperimentId,
@@ -266,6 +272,8 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
               },
             ],
             analysisPreparedAt: "2026-10-22T09:00:30.000Z",
+            semanticAnalysisRubrics: null,
+            semanticAnalysisPreparedAt: null,
           },
         ]
       : []),
@@ -281,6 +289,16 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
           experiment: demoExperimentId,
           status: "completed" as const,
           analyzerVersion: "local:demo-fixture-v1",
+          schemaVersion: "bartlett-v1",
+          rubricSnapshot: [
+            {
+              language: "es",
+              version: "story-units-v1",
+              units: demoMemoryUnits.map(({ id, text }) => ({ id, text })),
+            },
+          ],
+          completedAt: "2026-10-22T09:15:00.000Z",
+          sourceResponseCount: createAnalysisDemoSessions().length,
           createdAt: "2026-10-22T09:15:00.000Z",
         },
       ]

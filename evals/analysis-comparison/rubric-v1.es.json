@@ -1,0 +1,87 @@
+{
+  "version": "story-units-v1",
+  "language": "es",
+  "units": [
+    {
+      "id": "es-u01",
+      "text": "Al amanecer, una mujer llegó a un pueblo junto al río llevando una canasta cubierta con hojas azules.",
+      "concepts": [
+        "Al amanecer",
+        "una mujer llegó",
+        "un pueblo junto al río",
+        "una canasta cubierta con hojas azules"
+      ]
+    },
+    {
+      "id": "es-u02",
+      "text": "Dijo que venía de la montaña y buscaba la casa donde las piedras cantaban durante la lluvia.",
+      "concepts": [
+        "venía de la montaña",
+        "buscaba la casa",
+        "las piedras cantaban",
+        "durante la lluvia"
+      ]
+    },
+    {
+      "id": "es-u03",
+      "text": "Un anciano le advirtió que no cruzara el puente antes de que pasaran tres canoas, porque el río todavía estaba soñando.",
+      "concepts": [
+        "Un anciano le advirtió",
+        "no cruzara el puente",
+        "tres canoas",
+        "el río todavía estaba soñando"
+      ]
+    },
+    {
+      "id": "es-u04",
+      "text": "La mujer esperó, pero sólo vio pasar dos.",
+      "concepts": ["La mujer esperó", "sólo vio pasar dos"]
+    },
+    {
+      "id": "es-u05",
+      "text": "Entonces dejó la canasta en la orilla y cruzó.",
+      "concepts": ["dejó la canasta en la orilla", "cruzó"]
+    },
+    {
+      "id": "es-u06",
+      "text": "Cuando llegó al otro lado, escuchó un silbido dentro de la canasta.",
+      "concepts": [
+        "llegó al otro lado",
+        "escuchó un silbido",
+        "dentro de la canasta"
+      ]
+    },
+    {
+      "id": "es-u07",
+      "text": "Al abrirla encontró un pez pequeño con plumas blancas.",
+      "concepts": ["Al abrirla", "un pez pequeño", "plumas blancas"]
+    },
+    {
+      "id": "es-u08",
+      "text": "El pez pronunció el nombre del anciano y después quedó inmóvil.",
+      "concepts": ["El pez pronunció el nombre del anciano", "quedó inmóvil"]
+    },
+    {
+      "id": "es-u09",
+      "text": "Esa noche comenzó a llover.",
+      "concepts": ["Esa noche", "comenzó a llover"]
+    },
+    {
+      "id": "es-u10",
+      "text": "Desde el pueblo se oyó cantar a las piedras, pero la mujer no regresó.",
+      "concepts": [
+        "Desde el pueblo se oyó cantar a las piedras",
+        "la mujer no regresó"
+      ]
+    },
+    {
+      "id": "es-u11",
+      "text": "A la mañana siguiente, encontraron la canasta vacía debajo del puente.",
+      "concepts": [
+        "A la mañana siguiente",
+        "encontraron la canasta vacía",
+        "debajo del puente"
+      ]
+    }
+  ]
+}

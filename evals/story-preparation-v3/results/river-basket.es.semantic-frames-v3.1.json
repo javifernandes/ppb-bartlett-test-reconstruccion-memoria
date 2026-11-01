@@ -1,0 +1,1266 @@
+{
+  "generatedAt": "2026-10-31T00:49:05.937Z",
+  "sourceRubric": "/Users/jfernandes/dev/personal/bookops/ppb-bartlett-test-reconstruccion-memoria/evals/story-preparation-v2/results/rubric-es-2026-10-30T23-45-19.490Z.json",
+  "model": "deepseek-chat",
+  "usage": {
+    "prompt_tokens": 3577,
+    "completion_tokens": 3366,
+    "total_tokens": 6943,
+    "prompt_tokens_details": {
+      "cached_tokens": 256
+    },
+    "prompt_cache_hit_tokens": 256,
+    "prompt_cache_miss_tokens": 3321
+  },
+  "rubric": {
+    "language": "es",
+    "version": "semantic-frames-v3",
+    "promptVersion": "prepare-story-semantic-frames-v3",
+    "narrativeUnits": [
+      {
+        "id": "es-u01",
+        "text": "Al amanecer, una mujer llegó a un pueblo junto al río llevando una canasta cubierta con hojas azules.",
+        "facts": [
+          {
+            "id": "es-f01",
+            "localId": "f01",
+            "unitId": "es-u01",
+            "statement": "Una mujer llegó a un pueblo.",
+            "storyExcerpt": "una mujer llegó a un pueblo",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": [],
+            "frame": {
+              "predicate": {
+                "label": "llegar_a",
+                "sourceExcerpt": "una mujer llegó a un pueblo"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "una mujer",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "destination",
+                  "expected": "pueblo",
+                  "sourceExcerpt": "un pueblo",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f02",
+            "localId": "f02",
+            "unitId": "es-u01",
+            "statement": "La llegada de la mujer ocurrió al amanecer.",
+            "storyExcerpt": "Al amanecer, una mujer llegó",
+            "importance": "supporting",
+            "kind": "temporal",
+            "dependencies": ["f01"],
+            "frame": {
+              "predicate": {
+                "label": "ocurrir_en",
+                "sourceExcerpt": "Al amanecer, una mujer llegó"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "llegada de la mujer",
+                  "sourceExcerpt": "una mujer llegó",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "time",
+                  "expected": "amanecer",
+                  "sourceExcerpt": "Al amanecer",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f03",
+            "localId": "f03",
+            "unitId": "es-u01",
+            "statement": "El pueblo estaba junto al río.",
+            "storyExcerpt": "un pueblo junto al río",
+            "importance": "supporting",
+            "kind": "spatial",
+            "dependencies": [],
+            "frame": {
+              "predicate": {
+                "label": "estar_junto_a",
+                "sourceExcerpt": "un pueblo junto al río"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "pueblo",
+                  "sourceExcerpt": "un pueblo",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "relation_target",
+                  "expected": "río",
+                  "sourceExcerpt": "el río",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f04",
+            "localId": "f04",
+            "unitId": "es-u01",
+            "statement": "La mujer llevaba una canasta.",
+            "storyExcerpt": "llevando una canasta",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f01"],
+            "frame": {
+              "predicate": {
+                "label": "llevar",
+                "sourceExcerpt": "llevando una canasta"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "una mujer",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "canasta",
+                  "sourceExcerpt": "una canasta",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f05",
+            "localId": "f05",
+            "unitId": "es-u01",
+            "statement": "La canasta estaba cubierta con hojas.",
+            "storyExcerpt": "una canasta cubierta con hojas",
+            "importance": "supporting",
+            "kind": "attribute",
+            "dependencies": ["f04"],
+            "frame": {
+              "predicate": {
+                "label": "estar_cubierto_con",
+                "sourceExcerpt": "una canasta cubierta con hojas"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "canasta",
+                  "sourceExcerpt": "una canasta",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "relation_target",
+                  "expected": "hojas",
+                  "sourceExcerpt": "hojas",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f06",
+            "localId": "f06",
+            "unitId": "es-u01",
+            "statement": "Las hojas que cubrían la canasta eran azules.",
+            "storyExcerpt": "hojas azules",
+            "importance": "detail",
+            "kind": "attribute",
+            "dependencies": ["f05"],
+            "frame": {
+              "predicate": {
+                "label": "tener_color",
+                "sourceExcerpt": "hojas azules"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "hojas",
+                  "sourceExcerpt": "hojas",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "attribute",
+                  "expected": "azul",
+                  "sourceExcerpt": "azules",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "es-u02",
+        "text": "Dijo que venía de la montaña y buscaba la casa donde las piedras cantaban durante la lluvia.",
+        "facts": [
+          {
+            "id": "es-f07",
+            "localId": "f07",
+            "unitId": "es-u02",
+            "statement": "La mujer dijo que venía de la montaña.",
+            "storyExcerpt": "Dijo que venía de la montaña",
+            "importance": "supporting",
+            "kind": "event",
+            "dependencies": ["f01"],
+            "frame": {
+              "predicate": {
+                "label": "decir_venir_de",
+                "sourceExcerpt": "Dijo que venía de la montaña"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "Dijo",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "source",
+                  "expected": "montaña",
+                  "sourceExcerpt": "la montaña",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f08",
+            "localId": "f08",
+            "unitId": "es-u02",
+            "statement": "La mujer buscaba una casa.",
+            "storyExcerpt": "buscaba la casa",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f01"],
+            "frame": {
+              "predicate": {
+                "label": "buscar",
+                "sourceExcerpt": "buscaba la casa"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "buscaba",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "casa",
+                  "sourceExcerpt": "la casa",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f09",
+            "localId": "f09",
+            "unitId": "es-u02",
+            "statement": "En esa casa las piedras cantaban durante la lluvia.",
+            "storyExcerpt": "la casa donde las piedras cantaban durante la lluvia",
+            "importance": "backbone",
+            "kind": "state",
+            "dependencies": ["f08"],
+            "frame": {
+              "predicate": {
+                "label": "cantar_durante_lluvia",
+                "sourceExcerpt": "la casa donde las piedras cantaban durante la lluvia"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "piedras",
+                  "sourceExcerpt": "las piedras",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "location",
+                  "expected": "casa",
+                  "sourceExcerpt": "la casa",
+                  "required": true
+                },
+                {
+                  "slotId": "s3",
+                  "role": "time",
+                  "expected": "durante la lluvia",
+                  "sourceExcerpt": "durante la lluvia",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "es-u03",
+        "text": "Un anciano le advirtió que no cruzara el puente antes de que pasaran tres canoas, porque el río todavía estaba soñando.",
+        "facts": [
+          {
+            "id": "es-f10",
+            "localId": "f10",
+            "unitId": "es-u03",
+            "statement": "Un anciano advirtió a la mujer.",
+            "storyExcerpt": "Un anciano le advirtió",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f01"],
+            "frame": {
+              "predicate": {
+                "label": "advertir",
+                "sourceExcerpt": "Un anciano le advirtió"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "anciano",
+                  "sourceExcerpt": "Un anciano",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "patient",
+                  "expected": "mujer",
+                  "sourceExcerpt": "le",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f11",
+            "localId": "f11",
+            "unitId": "es-u03",
+            "statement": "El anciano le dijo que no cruzara el puente.",
+            "storyExcerpt": "que no cruzara el puente",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f10"],
+            "frame": {
+              "predicate": {
+                "label": "advertir_no_cruzar",
+                "sourceExcerpt": "que no cruzara el puente"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "anciano",
+                  "sourceExcerpt": "Un anciano",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "patient",
+                  "expected": "mujer",
+                  "sourceExcerpt": "le",
+                  "required": true
+                },
+                {
+                  "slotId": "s3",
+                  "role": "theme",
+                  "expected": "puente",
+                  "sourceExcerpt": "el puente",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f12",
+            "localId": "f12",
+            "unitId": "es-u03",
+            "statement": "El anciano le dijo que esperara a que pasaran canoas.",
+            "storyExcerpt": "antes de que pasaran tres canoas",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f10"],
+            "frame": {
+              "predicate": {
+                "label": "advertir_esperar_canoas",
+                "sourceExcerpt": "antes de que pasaran tres canoas"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "anciano",
+                  "sourceExcerpt": "Un anciano",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "patient",
+                  "expected": "mujer",
+                  "sourceExcerpt": "le",
+                  "required": true
+                },
+                {
+                  "slotId": "s3",
+                  "role": "theme",
+                  "expected": "canoas",
+                  "sourceExcerpt": "canoas",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f13",
+            "localId": "f13",
+            "unitId": "es-u03",
+            "statement": "La cantidad de canoas indicada fue tres.",
+            "storyExcerpt": "tres canoas",
+            "importance": "supporting",
+            "kind": "quantity",
+            "dependencies": ["f12"],
+            "frame": {
+              "predicate": {
+                "label": "ser_cantidad_de",
+                "sourceExcerpt": "tres canoas"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "quantity",
+                  "expected": "tres",
+                  "sourceExcerpt": "tres",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "canoas",
+                  "sourceExcerpt": "canoas",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f14",
+            "localId": "f14",
+            "unitId": "es-u03",
+            "statement": "El anciano justificó la advertencia diciendo que el río todavía estaba soñando.",
+            "storyExcerpt": "porque el río todavía estaba soñando",
+            "importance": "supporting",
+            "kind": "causal",
+            "dependencies": ["f10"],
+            "frame": {
+              "predicate": {
+                "label": "justificar_porque",
+                "sourceExcerpt": "porque el río todavía estaba soñando"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "anciano",
+                  "sourceExcerpt": "Un anciano",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "content",
+                  "expected": "el río todavía estaba soñando",
+                  "sourceExcerpt": "el río todavía estaba soñando",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "es-u04",
+        "text": "La mujer esperó, pero sólo vio pasar dos.",
+        "facts": [
+          {
+            "id": "es-f15",
+            "localId": "f15",
+            "unitId": "es-u04",
+            "statement": "La mujer esperó.",
+            "storyExcerpt": "La mujer esperó",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f10"],
+            "frame": {
+              "predicate": {
+                "label": "esperar",
+                "sourceExcerpt": "La mujer esperó"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "La mujer",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f16",
+            "localId": "f16",
+            "unitId": "es-u04",
+            "statement": "La mujer vio pasar canoas.",
+            "storyExcerpt": "sólo vio pasar dos",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f15"],
+            "frame": {
+              "predicate": {
+                "label": "ver_pasar",
+                "sourceExcerpt": "sólo vio pasar dos"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "vio",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "canoas",
+                  "sourceExcerpt": "pasar dos",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f17",
+            "localId": "f17",
+            "unitId": "es-u04",
+            "statement": "La cantidad de canoas que vio pasar fue dos.",
+            "storyExcerpt": "dos",
+            "importance": "supporting",
+            "kind": "quantity",
+            "dependencies": ["f16"],
+            "frame": {
+              "predicate": {
+                "label": "ser_cantidad_de",
+                "sourceExcerpt": "sólo vio pasar dos"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "quantity",
+                  "expected": "dos",
+                  "sourceExcerpt": "dos",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "canoas vistas pasar",
+                  "sourceExcerpt": "vio pasar dos",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "es-u05",
+        "text": "Entonces dejó la canasta en la orilla y cruzó.",
+        "facts": [
+          {
+            "id": "es-f18",
+            "localId": "f18",
+            "unitId": "es-u05",
+            "statement": "La mujer dejó la canasta en la orilla.",
+            "storyExcerpt": "dejó la canasta en la orilla",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f04", "f16"],
+            "frame": {
+              "predicate": {
+                "label": "dejar_en",
+                "sourceExcerpt": "dejó la canasta en la orilla"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "dejó",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "canasta",
+                  "sourceExcerpt": "la canasta",
+                  "required": true
+                },
+                {
+                  "slotId": "s3",
+                  "role": "location",
+                  "expected": "orilla",
+                  "sourceExcerpt": "la orilla",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f19",
+            "localId": "f19",
+            "unitId": "es-u05",
+            "statement": "La mujer cruzó el puente.",
+            "storyExcerpt": "cruzó",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f18"],
+            "frame": {
+              "predicate": {
+                "label": "cruzar",
+                "sourceExcerpt": "cruzó"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "cruzó",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "puente",
+                  "sourceExcerpt": "el puente",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "es-u06",
+        "text": "Cuando llegó al otro lado, escuchó un silbido dentro de la canasta.",
+        "facts": [
+          {
+            "id": "es-f20",
+            "localId": "f20",
+            "unitId": "es-u06",
+            "statement": "La mujer llegó al otro lado.",
+            "storyExcerpt": "Cuando llegó al otro lado",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f19"],
+            "frame": {
+              "predicate": {
+                "label": "llegar_a",
+                "sourceExcerpt": "Cuando llegó al otro lado"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "llegó",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "destination",
+                  "expected": "otro lado",
+                  "sourceExcerpt": "al otro lado",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f21",
+            "localId": "f21",
+            "unitId": "es-u06",
+            "statement": "La mujer escuchó un silbido dentro de la canasta.",
+            "storyExcerpt": "escuchó un silbido dentro de la canasta",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f20"],
+            "frame": {
+              "predicate": {
+                "label": "escuchar_dentro_de",
+                "sourceExcerpt": "escuchó un silbido dentro de la canasta"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "escuchó",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "silbido",
+                  "sourceExcerpt": "un silbido",
+                  "required": true
+                },
+                {
+                  "slotId": "s3",
+                  "role": "location",
+                  "expected": "canasta",
+                  "sourceExcerpt": "la canasta",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "es-u07",
+        "text": "Al abrirla encontró un pez pequeño con plumas blancas.",
+        "facts": [
+          {
+            "id": "es-f22",
+            "localId": "f22",
+            "unitId": "es-u07",
+            "statement": "La mujer abrió la canasta.",
+            "storyExcerpt": "Al abrirla",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f21"],
+            "frame": {
+              "predicate": {
+                "label": "abrir",
+                "sourceExcerpt": "Al abrirla"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "Al abrirla",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "canasta",
+                  "sourceExcerpt": "abrirla",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f23",
+            "localId": "f23",
+            "unitId": "es-u07",
+            "statement": "La mujer encontró un pez dentro de la canasta.",
+            "storyExcerpt": "encontró un pez",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f22"],
+            "frame": {
+              "predicate": {
+                "label": "encontrar",
+                "sourceExcerpt": "encontró un pez"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "encontró",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "pez",
+                  "sourceExcerpt": "un pez",
+                  "required": true
+                },
+                {
+                  "slotId": "s3",
+                  "role": "location",
+                  "expected": "canasta",
+                  "sourceExcerpt": "Al abrirla",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f24",
+            "localId": "f24",
+            "unitId": "es-u07",
+            "statement": "El pez era pequeño.",
+            "storyExcerpt": "un pez pequeño",
+            "importance": "detail",
+            "kind": "attribute",
+            "dependencies": ["f23"],
+            "frame": {
+              "predicate": {
+                "label": "tener_tamaño",
+                "sourceExcerpt": "un pez pequeño"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "pez",
+                  "sourceExcerpt": "un pez",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "attribute",
+                  "expected": "pequeño",
+                  "sourceExcerpt": "pequeño",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f25",
+            "localId": "f25",
+            "unitId": "es-u07",
+            "statement": "El pez tenía plumas.",
+            "storyExcerpt": "con plumas",
+            "importance": "supporting",
+            "kind": "attribute",
+            "dependencies": ["f23"],
+            "frame": {
+              "predicate": {
+                "label": "tener_plumas",
+                "sourceExcerpt": "con plumas"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "pez",
+                  "sourceExcerpt": "un pez",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "attribute",
+                  "expected": "plumas",
+                  "sourceExcerpt": "plumas",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f26",
+            "localId": "f26",
+            "unitId": "es-u07",
+            "statement": "Las plumas del pez eran blancas.",
+            "storyExcerpt": "plumas blancas",
+            "importance": "detail",
+            "kind": "attribute",
+            "dependencies": ["f25"],
+            "frame": {
+              "predicate": {
+                "label": "tener_color",
+                "sourceExcerpt": "plumas blancas"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "plumas del pez",
+                  "sourceExcerpt": "plumas",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "attribute",
+                  "expected": "blanco",
+                  "sourceExcerpt": "blancas",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "es-u08",
+        "text": "El pez pronunció el nombre del anciano y después quedó inmóvil.",
+        "facts": [
+          {
+            "id": "es-f27",
+            "localId": "f27",
+            "unitId": "es-u08",
+            "statement": "El pez pronunció el nombre del anciano.",
+            "storyExcerpt": "El pez pronunció el nombre del anciano",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f23", "f10"],
+            "frame": {
+              "predicate": {
+                "label": "pronunciar_nombre_de",
+                "sourceExcerpt": "El pez pronunció el nombre del anciano"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "pez",
+                  "sourceExcerpt": "El pez",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "content",
+                  "expected": "nombre del anciano",
+                  "sourceExcerpt": "el nombre del anciano",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f28",
+            "localId": "f28",
+            "unitId": "es-u08",
+            "statement": "Después de pronunciar el nombre, el pez quedó inmóvil.",
+            "storyExcerpt": "después quedó inmóvil",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f27"],
+            "frame": {
+              "predicate": {
+                "label": "quedar_inmóvil",
+                "sourceExcerpt": "después quedó inmóvil"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "pez",
+                  "sourceExcerpt": "quedó",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "attribute",
+                  "expected": "inmóvil",
+                  "sourceExcerpt": "inmóvil",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "es-u09",
+        "text": "Esa noche comenzó a llover.",
+        "facts": [
+          {
+            "id": "es-f29",
+            "localId": "f29",
+            "unitId": "es-u09",
+            "statement": "Comenzó a llover.",
+            "storyExcerpt": "Esa noche comenzó a llover",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": [],
+            "frame": {
+              "predicate": {
+                "label": "comenzar_a_llover",
+                "sourceExcerpt": "Esa noche comenzó a llover"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "lluvia",
+                  "sourceExcerpt": "comenzó a llover",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f30",
+            "localId": "f30",
+            "unitId": "es-u09",
+            "statement": "La lluvia comenzó durante la noche.",
+            "storyExcerpt": "Esa noche",
+            "importance": "supporting",
+            "kind": "temporal",
+            "dependencies": ["f29"],
+            "frame": {
+              "predicate": {
+                "label": "ocurrir_en",
+                "sourceExcerpt": "Esa noche comenzó a llover"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "comienzo de la lluvia",
+                  "sourceExcerpt": "comenzó a llover",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "time",
+                  "expected": "noche",
+                  "sourceExcerpt": "Esa noche",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "es-u10",
+        "text": "Desde el pueblo se oyó cantar a las piedras, pero la mujer no regresó.",
+        "facts": [
+          {
+            "id": "es-f31",
+            "localId": "f31",
+            "unitId": "es-u10",
+            "statement": "Desde el pueblo se oyó cantar a las piedras.",
+            "storyExcerpt": "Desde el pueblo se oyó cantar a las piedras",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f29", "f09"],
+            "frame": {
+              "predicate": {
+                "label": "oír_cantar_desde",
+                "sourceExcerpt": "Desde el pueblo se oyó cantar a las piedras"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "piedras",
+                  "sourceExcerpt": "las piedras",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "location",
+                  "expected": "pueblo",
+                  "sourceExcerpt": "el pueblo",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f32",
+            "localId": "f32",
+            "unitId": "es-u10",
+            "statement": "La mujer no regresó.",
+            "storyExcerpt": "la mujer no regresó",
+            "importance": "backbone",
+            "kind": "state",
+            "dependencies": ["f19"],
+            "frame": {
+              "predicate": {
+                "label": "no_regresar",
+                "sourceExcerpt": "la mujer no regresó"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "la mujer",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "es-u11",
+        "text": "A la mañana siguiente, encontraron la canasta vacía debajo del puente.",
+        "facts": [
+          {
+            "id": "es-f33",
+            "localId": "f33",
+            "unitId": "es-u11",
+            "statement": "Encontraron la canasta.",
+            "storyExcerpt": "A la mañana siguiente, encontraron la canasta",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f18"],
+            "frame": {
+              "predicate": {
+                "label": "encontrar",
+                "sourceExcerpt": "encontraron la canasta"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "personas no especificadas",
+                  "sourceExcerpt": "encontraron",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "canasta",
+                  "sourceExcerpt": "la canasta",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f34",
+            "localId": "f34",
+            "unitId": "es-u11",
+            "statement": "El hallazgo de la canasta ocurrió a la mañana siguiente.",
+            "storyExcerpt": "A la mañana siguiente",
+            "importance": "supporting",
+            "kind": "temporal",
+            "dependencies": ["f33"],
+            "frame": {
+              "predicate": {
+                "label": "ocurrir_en",
+                "sourceExcerpt": "A la mañana siguiente, encontraron la canasta"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "hallazgo de la canasta",
+                  "sourceExcerpt": "encontraron la canasta",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "time",
+                  "expected": "mañana siguiente",
+                  "sourceExcerpt": "A la mañana siguiente",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f35",
+            "localId": "f35",
+            "unitId": "es-u11",
+            "statement": "La canasta estaba vacía.",
+            "storyExcerpt": "la canasta vacía",
+            "importance": "backbone",
+            "kind": "state",
+            "dependencies": ["f33"],
+            "frame": {
+              "predicate": {
+                "label": "estar_vacío",
+                "sourceExcerpt": "la canasta vacía"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "canasta",
+                  "sourceExcerpt": "la canasta",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "attribute",
+                  "expected": "vacía",
+                  "sourceExcerpt": "vacía",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "es-f36",
+            "localId": "f36",
+            "unitId": "es-u11",
+            "statement": "La canasta fue encontrada debajo del puente.",
+            "storyExcerpt": "debajo del puente",
+            "importance": "supporting",
+            "kind": "spatial",
+            "dependencies": ["f33"],
+            "frame": {
+              "predicate": {
+                "label": "estar_debajo_de",
+                "sourceExcerpt": "debajo del puente"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "canasta",
+                  "sourceExcerpt": "la canasta",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "relation_target",
+                  "expected": "puente",
+                  "sourceExcerpt": "el puente",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "review": {
+      "version": "manual-review-1",
+      "note": "Se separaron del evento base las cantidades y referencias temporales que ya tienen un hecho propio.",
+      "overriddenFactIds": ["es-f12", "es-f16", "es-f29", "es-f33"]
+    }
+  }
+}

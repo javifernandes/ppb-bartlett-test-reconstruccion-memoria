@@ -1,0 +1,1247 @@
+{
+  "generatedAt": "2026-11-01T06:00:48.403Z",
+  "sourceRubric": "/Users/jfernandes/dev/personal/bookops/ppb-bartlett-test-reconstruccion-memoria/evals/story-preparation-v2/results/rubric-en-aligned-2026-11-01T05-58-11.990Z.json",
+  "model": "deepseek-chat",
+  "usage": {
+    "prompt_tokens": 3255,
+    "completion_tokens": 3160,
+    "total_tokens": 6415,
+    "prompt_tokens_details": {
+      "cached_tokens": 640
+    },
+    "prompt_cache_hit_tokens": 640,
+    "prompt_cache_miss_tokens": 2615
+  },
+  "rubric": {
+    "language": "en",
+    "version": "semantic-frames-v3",
+    "promptVersion": "prepare-story-semantic-frames-v3",
+    "narrativeUnits": [
+      {
+        "id": "en-u01",
+        "text": "At dawn, a woman arrived at a village by the river carrying a basket covered with blue leaves.",
+        "facts": [
+          {
+            "id": "en-f01",
+            "localId": "f01",
+            "unitId": "en-u01",
+            "statement": "A woman arrived at a village.",
+            "storyExcerpt": "a woman arrived at a village",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": [],
+            "frame": {
+              "predicate": {
+                "label": "llegar_a",
+                "sourceExcerpt": "a woman arrived at a village"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "a woman",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "destination",
+                  "expected": "pueblo",
+                  "sourceExcerpt": "a village",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f02",
+            "localId": "f02",
+            "unitId": "en-u01",
+            "statement": "The woman's arrival occurred at dawn.",
+            "storyExcerpt": "At dawn, a woman arrived",
+            "importance": "supporting",
+            "kind": "temporal",
+            "dependencies": ["f01"],
+            "frame": {
+              "predicate": {
+                "label": "ocurrir_en",
+                "sourceExcerpt": "At dawn, a woman arrived"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "llegada de la mujer",
+                  "sourceExcerpt": "a woman arrived",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "time",
+                  "expected": "amanecer",
+                  "sourceExcerpt": "At dawn",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f03",
+            "localId": "f03",
+            "unitId": "en-u01",
+            "statement": "The village was by the river.",
+            "storyExcerpt": "a village by the river",
+            "importance": "supporting",
+            "kind": "spatial",
+            "dependencies": [],
+            "frame": {
+              "predicate": {
+                "label": "estar_junto_a",
+                "sourceExcerpt": "a village by the river"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "pueblo",
+                  "sourceExcerpt": "a village",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "relation_target",
+                  "expected": "río",
+                  "sourceExcerpt": "the river",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f04",
+            "localId": "f04",
+            "unitId": "en-u01",
+            "statement": "The woman was carrying a basket.",
+            "storyExcerpt": "carrying a basket",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f01"],
+            "frame": {
+              "predicate": {
+                "label": "llevar",
+                "sourceExcerpt": "carrying a basket"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "a woman",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "canasta",
+                  "sourceExcerpt": "a basket",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f05",
+            "localId": "f05",
+            "unitId": "en-u01",
+            "statement": "The basket was covered with leaves.",
+            "storyExcerpt": "a basket covered with blue leaves",
+            "importance": "supporting",
+            "kind": "attribute",
+            "dependencies": ["f04"],
+            "frame": {
+              "predicate": {
+                "label": "estar_cubierto_con",
+                "sourceExcerpt": "a basket covered with blue leaves"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "canasta",
+                  "sourceExcerpt": "a basket",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "relation_target",
+                  "expected": "hojas",
+                  "sourceExcerpt": "blue leaves",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f06",
+            "localId": "f06",
+            "unitId": "en-u01",
+            "statement": "The leaves covering the basket were blue.",
+            "storyExcerpt": "blue leaves",
+            "importance": "detail",
+            "kind": "attribute",
+            "dependencies": ["f05"],
+            "frame": {
+              "predicate": {
+                "label": "tener_color",
+                "sourceExcerpt": "blue leaves"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "hojas",
+                  "sourceExcerpt": "leaves",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "attribute",
+                  "expected": "azul",
+                  "sourceExcerpt": "blue",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "en-u02",
+        "text": "She said she had come from the mountains and was looking for the house where the stones sang during the rain.",
+        "facts": [
+          {
+            "id": "en-f07",
+            "localId": "f07",
+            "unitId": "en-u02",
+            "statement": "The woman said she had come from the mountains.",
+            "storyExcerpt": "She said she had come from the mountains",
+            "importance": "supporting",
+            "kind": "event",
+            "dependencies": ["f01"],
+            "frame": {
+              "predicate": {
+                "label": "venir_de",
+                "sourceExcerpt": "She said she had come from the mountains"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "She",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "source",
+                  "expected": "montañas",
+                  "sourceExcerpt": "the mountains",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f08",
+            "localId": "f08",
+            "unitId": "en-u02",
+            "statement": "The woman was looking for a house.",
+            "storyExcerpt": "was looking for the house",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f01"],
+            "frame": {
+              "predicate": {
+                "label": "buscar",
+                "sourceExcerpt": "was looking for the house"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "She",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "casa",
+                  "sourceExcerpt": "the house",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f09",
+            "localId": "f09",
+            "unitId": "en-u02",
+            "statement": "The stones sang in that house during the rain.",
+            "storyExcerpt": "the house where the stones sang during the rain",
+            "importance": "backbone",
+            "kind": "state",
+            "dependencies": ["f08"],
+            "frame": {
+              "predicate": {
+                "label": "cantar",
+                "sourceExcerpt": "the house where the stones sang during the rain"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "piedras",
+                  "sourceExcerpt": "the stones",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "location",
+                  "expected": "casa",
+                  "sourceExcerpt": "the house",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "en-u03",
+        "text": "An old man warned her not to cross the bridge until three canoes had passed, because the river was still dreaming.",
+        "facts": [
+          {
+            "id": "en-f10",
+            "localId": "f10",
+            "unitId": "en-u03",
+            "statement": "An old man warned the woman.",
+            "storyExcerpt": "An old man warned her",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f01"],
+            "frame": {
+              "predicate": {
+                "label": "advertir",
+                "sourceExcerpt": "An old man warned her"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "anciano",
+                  "sourceExcerpt": "An old man",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "patient",
+                  "expected": "mujer",
+                  "sourceExcerpt": "her",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f11",
+            "localId": "f11",
+            "unitId": "en-u03",
+            "statement": "The old man told her not to cross the bridge.",
+            "storyExcerpt": "not to cross the bridge",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f10"],
+            "frame": {
+              "predicate": {
+                "label": "advertir_no_cruzar",
+                "sourceExcerpt": "not to cross the bridge"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "anciano",
+                  "sourceExcerpt": "An old man",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "patient",
+                  "expected": "mujer",
+                  "sourceExcerpt": "her",
+                  "required": true
+                },
+                {
+                  "slotId": "s3",
+                  "role": "theme",
+                  "expected": "puente",
+                  "sourceExcerpt": "the bridge",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f12",
+            "localId": "f12",
+            "unitId": "en-u03",
+            "statement": "The old man told her to wait until canoes had passed.",
+            "storyExcerpt": "until three canoes had passed",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f10"],
+            "frame": {
+              "predicate": {
+                "label": "advertir_esperar_hasta",
+                "sourceExcerpt": "until three canoes had passed"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "anciano",
+                  "sourceExcerpt": "An old man",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "patient",
+                  "expected": "mujer",
+                  "sourceExcerpt": "her",
+                  "required": true
+                },
+                {
+                  "slotId": "s3",
+                  "role": "theme",
+                  "expected": "canoas",
+                  "sourceExcerpt": "three canoes",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f13",
+            "localId": "f13",
+            "unitId": "en-u03",
+            "statement": "The indicated number of canoes was three.",
+            "storyExcerpt": "three canoes",
+            "importance": "supporting",
+            "kind": "quantity",
+            "dependencies": ["f12"],
+            "frame": {
+              "predicate": {
+                "label": "tener_cantidad",
+                "sourceExcerpt": "three canoes"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "canoas",
+                  "sourceExcerpt": "canoes",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "quantity",
+                  "expected": "tres",
+                  "sourceExcerpt": "three",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f14",
+            "localId": "f14",
+            "unitId": "en-u03",
+            "statement": "The old man justified the warning by saying the river was still dreaming.",
+            "storyExcerpt": "because the river was still dreaming",
+            "importance": "supporting",
+            "kind": "causal",
+            "dependencies": ["f10"],
+            "frame": {
+              "predicate": {
+                "label": "advertir_porque",
+                "sourceExcerpt": "because the river was still dreaming"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "anciano",
+                  "sourceExcerpt": "An old man",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "cause",
+                  "expected": "el río seguía soñando",
+                  "sourceExcerpt": "the river was still dreaming",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "en-u04",
+        "text": "The woman waited, but she saw only two.",
+        "facts": [
+          {
+            "id": "en-f15",
+            "localId": "f15",
+            "unitId": "en-u04",
+            "statement": "The woman waited.",
+            "storyExcerpt": "The woman waited",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f10"],
+            "frame": {
+              "predicate": {
+                "label": "esperar",
+                "sourceExcerpt": "The woman waited"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "The woman",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f16",
+            "localId": "f16",
+            "unitId": "en-u04",
+            "statement": "The woman saw canoes pass.",
+            "storyExcerpt": "she saw only two",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f15"],
+            "frame": {
+              "predicate": {
+                "label": "ver_pasar",
+                "sourceExcerpt": "she saw only two"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "she",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "canoas",
+                  "sourceExcerpt": "only two",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f17",
+            "localId": "f17",
+            "unitId": "en-u04",
+            "statement": "The number of canoes she saw was two.",
+            "storyExcerpt": "only two",
+            "importance": "supporting",
+            "kind": "quantity",
+            "dependencies": ["f16"],
+            "frame": {
+              "predicate": {
+                "label": "tener_cantidad",
+                "sourceExcerpt": "only two"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "canoas vistas",
+                  "sourceExcerpt": "she saw only two",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "quantity",
+                  "expected": "dos",
+                  "sourceExcerpt": "two",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "en-u05",
+        "text": "Then she left the basket on the riverbank and crossed.",
+        "facts": [
+          {
+            "id": "en-f18",
+            "localId": "f18",
+            "unitId": "en-u05",
+            "statement": "The woman left the basket on the riverbank.",
+            "storyExcerpt": "she left the basket on the riverbank",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f04", "f16"],
+            "frame": {
+              "predicate": {
+                "label": "dejar",
+                "sourceExcerpt": "she left the basket on the riverbank"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "she",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "canasta",
+                  "sourceExcerpt": "the basket",
+                  "required": true
+                },
+                {
+                  "slotId": "s3",
+                  "role": "location",
+                  "expected": "orilla del río",
+                  "sourceExcerpt": "on the riverbank",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f19",
+            "localId": "f19",
+            "unitId": "en-u05",
+            "statement": "The woman crossed the bridge.",
+            "storyExcerpt": "crossed",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f18"],
+            "frame": {
+              "predicate": {
+                "label": "cruzar",
+                "sourceExcerpt": "crossed"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "she",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "puente",
+                  "sourceExcerpt": "the bridge",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "en-u06",
+        "text": "When she reached the other side, she heard a whistle coming from inside the basket.",
+        "facts": [
+          {
+            "id": "en-f20",
+            "localId": "f20",
+            "unitId": "en-u06",
+            "statement": "The woman reached the other side.",
+            "storyExcerpt": "she reached the other side",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f19"],
+            "frame": {
+              "predicate": {
+                "label": "llegar_a",
+                "sourceExcerpt": "she reached the other side"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "she",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "destination",
+                  "expected": "el otro lado",
+                  "sourceExcerpt": "the other side",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f21",
+            "localId": "f21",
+            "unitId": "en-u06",
+            "statement": "The woman heard a whistle inside the basket.",
+            "storyExcerpt": "she heard a whistle coming from inside the basket",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f20"],
+            "frame": {
+              "predicate": {
+                "label": "oír",
+                "sourceExcerpt": "she heard a whistle coming from inside the basket"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "she",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "silbido",
+                  "sourceExcerpt": "a whistle",
+                  "required": true
+                },
+                {
+                  "slotId": "s3",
+                  "role": "source",
+                  "expected": "interior de la canasta",
+                  "sourceExcerpt": "from inside the basket",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "en-u07",
+        "text": "When she opened it, she found a small fish with white feathers.",
+        "facts": [
+          {
+            "id": "en-f22",
+            "localId": "f22",
+            "unitId": "en-u07",
+            "statement": "The woman opened the basket.",
+            "storyExcerpt": "she opened it",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f21"],
+            "frame": {
+              "predicate": {
+                "label": "abrir",
+                "sourceExcerpt": "she opened it"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "she",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "canasta",
+                  "sourceExcerpt": "it",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f23",
+            "localId": "f23",
+            "unitId": "en-u07",
+            "statement": "The woman found a fish inside the basket.",
+            "storyExcerpt": "she found a small fish with white feathers",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f22"],
+            "frame": {
+              "predicate": {
+                "label": "encontrar",
+                "sourceExcerpt": "she found a small fish with white feathers"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "she",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "pez",
+                  "sourceExcerpt": "a small fish",
+                  "required": true
+                },
+                {
+                  "slotId": "s3",
+                  "role": "location",
+                  "expected": "interior de la canasta",
+                  "sourceExcerpt": "she opened it",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f24",
+            "localId": "f24",
+            "unitId": "en-u07",
+            "statement": "The fish was small.",
+            "storyExcerpt": "a small fish",
+            "importance": "detail",
+            "kind": "attribute",
+            "dependencies": ["f23"],
+            "frame": {
+              "predicate": {
+                "label": "tener_tamaño",
+                "sourceExcerpt": "a small fish"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "pez",
+                  "sourceExcerpt": "fish",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "attribute",
+                  "expected": "pequeño",
+                  "sourceExcerpt": "small",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f25",
+            "localId": "f25",
+            "unitId": "en-u07",
+            "statement": "The fish had feathers.",
+            "storyExcerpt": "fish with white feathers",
+            "importance": "supporting",
+            "kind": "attribute",
+            "dependencies": ["f23"],
+            "frame": {
+              "predicate": {
+                "label": "tener",
+                "sourceExcerpt": "fish with white feathers"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "pez",
+                  "sourceExcerpt": "fish",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "attribute",
+                  "expected": "plumas",
+                  "sourceExcerpt": "feathers",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f26",
+            "localId": "f26",
+            "unitId": "en-u07",
+            "statement": "The fish's feathers were white.",
+            "storyExcerpt": "white feathers",
+            "importance": "detail",
+            "kind": "attribute",
+            "dependencies": ["f25"],
+            "frame": {
+              "predicate": {
+                "label": "tener_color",
+                "sourceExcerpt": "white feathers"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "plumas",
+                  "sourceExcerpt": "feathers",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "attribute",
+                  "expected": "blanco",
+                  "sourceExcerpt": "white",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "en-u08",
+        "text": "The fish spoke the old man's name and then became still.",
+        "facts": [
+          {
+            "id": "en-f27",
+            "localId": "f27",
+            "unitId": "en-u08",
+            "statement": "The fish spoke the old man's name.",
+            "storyExcerpt": "The fish spoke the old man's name",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f23", "f10"],
+            "frame": {
+              "predicate": {
+                "label": "decir_nombre",
+                "sourceExcerpt": "The fish spoke the old man's name"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "pez",
+                  "sourceExcerpt": "The fish",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "content",
+                  "expected": "nombre del anciano",
+                  "sourceExcerpt": "the old man's name",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f28",
+            "localId": "f28",
+            "unitId": "en-u08",
+            "statement": "After speaking the name, the fish became still.",
+            "storyExcerpt": "then became still",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f27"],
+            "frame": {
+              "predicate": {
+                "label": "quedarse_quieto",
+                "sourceExcerpt": "then became still"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "pez",
+                  "sourceExcerpt": "The fish",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "en-u09",
+        "text": "That night, it began to rain.",
+        "facts": [
+          {
+            "id": "en-f29",
+            "localId": "f29",
+            "unitId": "en-u09",
+            "statement": "It began to rain.",
+            "storyExcerpt": "began to rain",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": [],
+            "frame": {
+              "predicate": {
+                "label": "empezar_a_llover",
+                "sourceExcerpt": "began to rain"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "lluvia",
+                  "sourceExcerpt": "rain",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f30",
+            "localId": "f30",
+            "unitId": "en-u09",
+            "statement": "The rain began at night.",
+            "storyExcerpt": "That night",
+            "importance": "supporting",
+            "kind": "temporal",
+            "dependencies": ["f29"],
+            "frame": {
+              "predicate": {
+                "label": "ocurrir_en",
+                "sourceExcerpt": "That night, it began to rain"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "inicio de la lluvia",
+                  "sourceExcerpt": "began to rain",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "time",
+                  "expected": "esa noche",
+                  "sourceExcerpt": "That night",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "en-u10",
+        "text": "From the village, the people could hear the stones singing, but the woman did not return.",
+        "facts": [
+          {
+            "id": "en-f31",
+            "localId": "f31",
+            "unitId": "en-u10",
+            "statement": "The stones were heard singing from the village.",
+            "storyExcerpt": "From the village, the people could hear the stones singing",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f29", "f09"],
+            "frame": {
+              "predicate": {
+                "label": "oír_cantar",
+                "sourceExcerpt": "From the village, the people could hear the stones singing"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "la gente",
+                  "sourceExcerpt": "the people",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "piedras",
+                  "sourceExcerpt": "the stones",
+                  "required": true
+                },
+                {
+                  "slotId": "s3",
+                  "role": "location",
+                  "expected": "pueblo",
+                  "sourceExcerpt": "From the village",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f32",
+            "localId": "f32",
+            "unitId": "en-u10",
+            "statement": "The woman did not return.",
+            "storyExcerpt": "the woman did not return",
+            "importance": "backbone",
+            "kind": "state",
+            "dependencies": ["f19"],
+            "frame": {
+              "predicate": {
+                "label": "no_regresar",
+                "sourceExcerpt": "the woman did not return"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "mujer",
+                  "sourceExcerpt": "the woman",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "en-u11",
+        "text": "The next morning, they found the empty basket beneath the bridge.",
+        "facts": [
+          {
+            "id": "en-f33",
+            "localId": "f33",
+            "unitId": "en-u11",
+            "statement": "They found the basket.",
+            "storyExcerpt": "they found the empty basket beneath the bridge",
+            "importance": "backbone",
+            "kind": "event",
+            "dependencies": ["f18"],
+            "frame": {
+              "predicate": {
+                "label": "encontrar",
+                "sourceExcerpt": "they found the empty basket beneath the bridge"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "agent",
+                  "expected": "la gente",
+                  "sourceExcerpt": "they",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "theme",
+                  "expected": "canasta",
+                  "sourceExcerpt": "the empty basket",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f34",
+            "localId": "f34",
+            "unitId": "en-u11",
+            "statement": "The basket was found the next morning.",
+            "storyExcerpt": "The next morning",
+            "importance": "supporting",
+            "kind": "temporal",
+            "dependencies": ["f33"],
+            "frame": {
+              "predicate": {
+                "label": "ocurrir_en",
+                "sourceExcerpt": "The next morning, they found"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "hallazgo de la canasta",
+                  "sourceExcerpt": "they found the empty basket",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "time",
+                  "expected": "la mañana siguiente",
+                  "sourceExcerpt": "The next morning",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f35",
+            "localId": "f35",
+            "unitId": "en-u11",
+            "statement": "The basket was empty.",
+            "storyExcerpt": "the empty basket",
+            "importance": "backbone",
+            "kind": "state",
+            "dependencies": ["f33"],
+            "frame": {
+              "predicate": {
+                "label": "estar_vacío",
+                "sourceExcerpt": "the empty basket"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "canasta",
+                  "sourceExcerpt": "basket",
+                  "required": true
+                }
+              ]
+            }
+          },
+          {
+            "id": "en-f36",
+            "localId": "f36",
+            "unitId": "en-u11",
+            "statement": "The basket was found beneath the bridge.",
+            "storyExcerpt": "beneath the bridge",
+            "importance": "supporting",
+            "kind": "spatial",
+            "dependencies": ["f33"],
+            "frame": {
+              "predicate": {
+                "label": "estar_debajo_de",
+                "sourceExcerpt": "beneath the bridge"
+              },
+              "slots": [
+                {
+                  "slotId": "s1",
+                  "role": "theme",
+                  "expected": "canasta",
+                  "sourceExcerpt": "the empty basket",
+                  "required": true
+                },
+                {
+                  "slotId": "s2",
+                  "role": "relation_target",
+                  "expected": "puente",
+                  "sourceExcerpt": "the bridge",
+                  "required": true
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

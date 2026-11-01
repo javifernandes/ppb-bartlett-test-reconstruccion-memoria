@@ -38,6 +38,10 @@ export const Experiment = entity({
     analysisRunId: field.nullable(field.nonEmptyString({ trim: true })),
     analysisRubrics: field.nullable(field.json()),
     analysisPreparedAt: field.nullable(field.nonEmptyString({ trim: true })),
+    semanticAnalysisRubrics: field.nullable(field.json()),
+    semanticAnalysisPreparedAt: field.nullable(
+      field.nonEmptyString({ trim: true }),
+    ),
   },
   display: { primary: "title", search: ["title"] },
   domainOperationDefaults: {
@@ -80,6 +84,8 @@ export const Experiment = entity({
               analysisRunId: null,
               analysisRubrics: null,
               analysisPreparedAt: null,
+              semanticAnalysisRubrics: null,
+              semanticAnalysisPreparedAt: null,
             },
             [
               "id",
@@ -105,6 +111,8 @@ export const Experiment = entity({
               "analysisRunId",
               "analysisRubrics",
               "analysisPreparedAt",
+              "semanticAnalysisRubrics",
+              "semanticAnalysisPreparedAt",
             ],
           )
           .run(),
@@ -207,6 +215,8 @@ export const Experiment = entity({
               analysisRunId: null,
               analysisRubrics: null,
               analysisPreparedAt: null,
+              semanticAnalysisRubrics: null,
+              semanticAnalysisPreparedAt: null,
             },
             [
               "id",
@@ -232,6 +242,8 @@ export const Experiment = entity({
               "analysisRunId",
               "analysisRubrics",
               "analysisPreparedAt",
+              "semanticAnalysisRubrics",
+              "semanticAnalysisPreparedAt",
             ],
           )
           .run();
@@ -369,6 +381,8 @@ export const Experiment = entity({
               "analysisRunId",
               "analysisRubrics",
               "analysisPreparedAt",
+              "semanticAnalysisRubrics",
+              "semanticAnalysisPreparedAt",
             ],
           )
           .run();
@@ -431,6 +445,8 @@ export const Experiment = entity({
             "analysisRunId",
             "analysisRubrics",
             "analysisPreparedAt",
+            "semanticAnalysisRubrics",
+            "semanticAnalysisPreparedAt",
           ])
           .run();
 
@@ -477,6 +493,8 @@ export const Experiment = entity({
             "analysisRunId",
             "analysisRubrics",
             "analysisPreparedAt",
+            "semanticAnalysisRubrics",
+            "semanticAnalysisPreparedAt",
           ])
           .run();
 

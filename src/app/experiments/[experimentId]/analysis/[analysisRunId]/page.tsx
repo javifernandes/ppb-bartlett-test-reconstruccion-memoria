@@ -28,6 +28,10 @@ import { AdminHeader } from "@/app/admin-header";
 import { useI18n } from "@/app/i18n";
 import { createId } from "@/lib/create-id";
 import { MemoryMap } from "./memory-map";
+import {
+  SemanticDashboard,
+  type SemanticDashboardAnalysis,
+} from "./semantic-dashboard";
 import { ExperimentWorkspaceTabs } from "../../workspace-tabs";
 
 const AnalysisExperiment = Experiment.view("AnalysisExperiment", {
@@ -46,6 +50,8 @@ const AnalysisRunDetail = AnalysisRun.view("AnalysisRunDetail", {
   experiment: true,
   status: true,
   analyzerVersion: true,
+  schemaVersion: true,
+  rubricSnapshot: true,
   createdAt: true,
 });
 
@@ -69,6 +75,8 @@ const RecallAnalysisRow = RecallAnalysis.view("RecallAnalysisRow", {
   intrusionCount: true,
   phenomena: true,
   unitAssessments: true,
+  semanticAssessment: true,
+  semanticSummary: true,
 });
 
 const countWords = (value: string) =>
@@ -176,6 +184,7 @@ const AnalysisPage = () => {
   );
   useEffect(() => {
     if (
+      run.data?.schemaVersion !== "bartlett-v1" ||
       run.data?.status !== "running" ||
       responses.isLoading ||
       recallAnalyses.isLoading ||
@@ -243,6 +252,7 @@ const AnalysisPage = () => {
     responses.isError,
     responses.isLoading,
     run.data?.status,
+    run.data?.schemaVersion,
     semanticAnalyses,
     analysisRetryNonce,
   ]);
@@ -286,6 +296,36 @@ const AnalysisPage = () => {
         .length,
       transformations: [],
     };
+  });
+  const isSemanticRun = run.data?.schemaVersion === "semantic-frames-v3.1";
+  const semanticRubrics = (run.data?.rubricSnapshot ?? []) as Array<{
+    language: "es" | "en";
+    narrativeUnits: Array<{
+      facts: Array<{
+        id: string;
+        statement: string;
+        importance: "backbone" | "supporting" | "detail";
+      }>;
+    }>;
+  }>;
+  const semanticDashboardAnalyses = responseMetrics.flatMap((response) => {
+    if (
+      !response.semanticAnalysis?.semanticAssessment ||
+      !response.semanticAnalysis.semanticSummary
+    ) {
+      return [];
+    }
+    return [
+      {
+        sessionId: response.id,
+        language: response.contentLanguage,
+        semanticAssessment: response.semanticAnalysis.semanticAssessment,
+        semanticSummary: response.semanticAnalysis.semanticSummary,
+        readingSeconds: response.readingSeconds,
+        recallSeconds: response.recallSeconds,
+        totalSeconds: response.totalSeconds,
+      } satisfies SemanticDashboardAnalysis,
+    ];
   });
   const loading =
     experiment.isLoading ||
@@ -482,64 +522,72 @@ const AnalysisPage = () => {
                   </Card>
                 ) : (
                   <>
-                    {primaryRubric && (
+                    {isSemanticRun && semanticRubrics.length > 0 ? (
+                      <SemanticDashboard
+                        rubrics={semanticRubrics}
+                        analyses={semanticDashboardAnalyses}
+                        locale={locale}
+                      />
+                    ) : primaryRubric ? (
                       <MemoryMap
                         story={experiment.data.story}
                         units={memoryUnits}
                         responseCount={primaryAnalyses.length}
                       />
-                    )}
+                    ) : null}
 
-                    <Card withBorder padding="lg">
-                      <Stack gap="md">
-                        <div>
-                          <Title order={2}>{t("Fenómenos detectados")}</Title>
-                          <Text c="dimmed">
-                            {t(
-                              "Detección automática con evidencia textual. Las interpretaciones requieren revisión humana.",
-                            )}
-                          </Text>
-                        </div>
-                        <SimpleGrid cols={{ base: 1, sm: 3 }}>
+                    {!isSemanticRun && (
+                      <Card withBorder padding="lg">
+                        <Stack gap="md">
                           <div>
-                            <Text size="sm" c="dimmed">
-                              {t("Unidades retenidas")}
-                            </Text>
-                            <Text size="xl" fw={700}>
-                              {semanticAnalyses.reduce(
-                                (total, analysis) =>
-                                  total + analysis.retainedUnitsCount,
-                                0,
+                            <Title order={2}>{t("Fenómenos detectados")}</Title>
+                            <Text c="dimmed">
+                              {t(
+                                "Detección automática con evidencia textual. Las interpretaciones requieren revisión humana.",
                               )}
                             </Text>
                           </div>
-                          <div>
-                            <Text size="sm" c="dimmed">
-                              {t("Omisiones candidatas")}
-                            </Text>
-                            <Text size="xl" fw={700}>
-                              {semanticAnalyses.reduce(
-                                (total, analysis) =>
-                                  total + analysis.omittedUnitsCount,
-                                0,
-                              )}
-                            </Text>
-                          </div>
-                          <div>
-                            <Text size="sm" c="dimmed">
-                              {t("Intrusiones candidatas")}
-                            </Text>
-                            <Text size="xl" fw={700}>
-                              {semanticAnalyses.reduce(
-                                (total, analysis) =>
-                                  total + analysis.intrusionCount,
-                                0,
-                              )}
-                            </Text>
-                          </div>
-                        </SimpleGrid>
-                      </Stack>
-                    </Card>
+                          <SimpleGrid cols={{ base: 1, sm: 3 }}>
+                            <div>
+                              <Text size="sm" c="dimmed">
+                                {t("Unidades retenidas")}
+                              </Text>
+                              <Text size="xl" fw={700}>
+                                {semanticAnalyses.reduce(
+                                  (total, analysis) =>
+                                    total + analysis.retainedUnitsCount,
+                                  0,
+                                )}
+                              </Text>
+                            </div>
+                            <div>
+                              <Text size="sm" c="dimmed">
+                                {t("Omisiones candidatas")}
+                              </Text>
+                              <Text size="xl" fw={700}>
+                                {semanticAnalyses.reduce(
+                                  (total, analysis) =>
+                                    total + analysis.omittedUnitsCount,
+                                  0,
+                                )}
+                              </Text>
+                            </div>
+                            <div>
+                              <Text size="sm" c="dimmed">
+                                {t("Intrusiones candidatas")}
+                              </Text>
+                              <Text size="xl" fw={700}>
+                                {semanticAnalyses.reduce(
+                                  (total, analysis) =>
+                                    total + analysis.intrusionCount,
+                                  0,
+                                )}
+                              </Text>
+                            </div>
+                          </SimpleGrid>
+                        </Stack>
+                      </Card>
+                    )}
                   </>
                 )}
               </>
