@@ -1,8 +1,8 @@
 begin;
 
 alter table public.experiments
-  add column live_analysis_run_id uuid references public.analysis_runs(id),
-  add column reporting_analysis_run_id uuid references public.analysis_runs(id);
+  add column live_analysis_run_id text references public.analysis_runs(id),
+  add column reporting_analysis_run_id text references public.analysis_runs(id);
 
 update public.experiments
 set
