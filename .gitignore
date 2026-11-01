@@ -10,6 +10,11 @@ dist/
 build/
 coverage/
 evals/recall-analysis/results/
+evals/analysis-comparison/results/
+evals/story-preparation-v2/results/
+evals/story-preparation-v3/results/*
+!evals/story-preparation-v3/results/river-basket.es.semantic-frames-v3.1.json
+!evals/story-preparation-v3/results/river-basket.en.semantic-frames-v3.1.json
 *.tsbuildinfo
 
 # Local environment

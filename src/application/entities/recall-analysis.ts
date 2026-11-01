@@ -192,6 +192,8 @@ export const RecallAnalysis = entity({
     intrusionCount: field.integer({ min: 0 }),
     phenomena: field.json(),
     unitAssessments: field.json(),
+    semanticAssessment: field.nullable(field.json()),
+    semanticSummary: field.nullable(field.json()),
     createdAt: field.nonEmptyString({ trim: true }),
   },
   domainOperationDefaults: {
@@ -320,6 +322,8 @@ export const RecallAnalysis = entity({
               intrusionCount: result.intrusionCount,
               phenomena: result.phenomena,
               unitAssessments: result.unitAssessments,
+              semanticAssessment: null,
+              semanticSummary: null,
               createdAt,
             },
             [
@@ -339,6 +343,8 @@ export const RecallAnalysis = entity({
               "intrusionCount",
               "phenomena",
               "unitAssessments",
+              "semanticAssessment",
+              "semanticSummary",
               "createdAt",
             ],
           )

@@ -15,6 +15,10 @@ export const AnalysisRun = entity({
       "completed_with_errors",
     ] as const),
     analyzerVersion: field.nonEmptyString({ trim: true }),
+    schemaVersion: field.nonEmptyString({ trim: true }),
+    rubricSnapshot: field.nullable(field.json()),
+    completedAt: field.nullable(field.nonEmptyString({ trim: true })),
+    sourceResponseCount: field.nullable(field.integer({ min: 0 })),
     createdAt: field.nonEmptyString({ trim: true }),
   },
   domainOperationDefaults: {
@@ -55,9 +59,23 @@ export const AnalysisRun = entity({
                 process.env.RECALL_ANALYSIS_PROVIDER === "deepseek"
                   ? `deepseek:${process.env.DEEPSEEK_MODEL?.trim() || "deepseek-flash"}`
                   : "local:heuristic-v1",
+              schemaVersion: "bartlett-v1",
+              rubricSnapshot: target.analysisRubrics,
+              completedAt: null,
+              sourceResponseCount: null,
               createdAt,
             },
-            ["id", "experiment", "status", "analyzerVersion", "createdAt"],
+            [
+              "id",
+              "experiment",
+              "status",
+              "analyzerVersion",
+              "schemaVersion",
+              "rubricSnapshot",
+              "completedAt",
+              "sourceResponseCount",
+              "createdAt",
+            ],
           )
           .run();
       },
@@ -86,7 +104,17 @@ export const AnalysisRun = entity({
             {
               status: hasErrors ? "completed_with_errors" : "completed",
             },
-            ["id", "experiment", "status", "analyzerVersion", "createdAt"],
+            [
+              "id",
+              "experiment",
+              "status",
+              "analyzerVersion",
+              "schemaVersion",
+              "rubricSnapshot",
+              "completedAt",
+              "sourceResponseCount",
+              "createdAt",
+            ],
           )
           .run();
 
