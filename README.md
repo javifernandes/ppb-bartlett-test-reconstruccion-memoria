@@ -85,6 +85,27 @@ DATA_GRAPH_SUPABASE_SECRET_KEY=...
 El volumen local persiste entre reinicios de Next.js y `supabase stop`. `supabase db reset` sí elimina
 los datos y vuelve a ejecutar migraciones y seed.
 
+### Migración en caliente a análisis V3
+
+El experimento mantiene dos corridas independientes: `live` recibe las respuestas nuevas y
+`reporting` alimenta las pantallas y estadísticas. Para migrar sin interrumpir un experimento:
+
+```bash
+# 1. Inspección sin escrituras
+pnpm backfill:semantic-analysis -- --experiment-id=<uuid> --run-id=<v3-run-uuid>
+
+# 2. Después de desplegar el soporte V3, enrutar nuevos submits y completar el histórico
+pnpm backfill:semantic-analysis -- --experiment-id=<uuid> --run-id=<v3-run-uuid> \
+  --apply --promote-live --project-ref=<supabase-project-ref>
+
+# 3. Repetir el backfill si hubo fallos; cuando la cobertura sea completa, cambiar reporting
+pnpm backfill:semantic-analysis -- --experiment-id=<uuid> --run-id=<v3-run-uuid> \
+  --apply --promote-reporting --project-ref=<supabase-project-ref>
+```
+
+La corrida V1 y el puntero legado no se modifican, por lo que el rollback consiste en restaurar los
+punteros `live_analysis_run_id` y `reporting_analysis_run_id` a la corrida V1.
+
 La aplicación queda disponible en `http://localhost:3000`. Para ejecutar todos los chequeos:
 
 ```bash

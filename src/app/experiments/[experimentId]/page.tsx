@@ -85,7 +85,8 @@ const ExperimentWorkspace = Experiment.view("ExperimentWorkspace", {
   createdAt: true,
   publishedAt: true,
   publicToken: true,
-  analysisRunId: true,
+  liveAnalysisRunId: true,
+  reportingAnalysisRunId: true,
   analysisRubrics: true,
   analysisPreparedAt: true,
 });
@@ -115,13 +116,6 @@ const ShareChannelRow = ShareChannel.view("ShareChannelRow", {
   id: true,
   name: true,
   status: true,
-  createdAt: true,
-});
-
-const AnalysisRunRow = AnalysisRun.view("AnalysisRunRow", {
-  id: true,
-  status: true,
-  analyzerVersion: true,
   createdAt: true,
 });
 
@@ -204,13 +198,7 @@ const ExperimentWorkspacePage = () => {
       .as(ShareChannelRow)
       .orderBy((channel) => channel.createdAt.asc()),
   );
-  const analysisRuns = useGraphQuery(
-    AnalysisRun.all()
-      .where((run) => run.experiment.eq(Experiment.refById(experimentId)))
-      .as(AnalysisRunRow)
-      .orderBy((run) => run.createdAt.desc()),
-  );
-  const currentAnalysisRunId = experiment.data?.analysisRunId;
+  const currentAnalysisRunId = experiment.data?.reportingAnalysisRunId;
   const sessionAnalyses = useGraphQuery(
     RecallAnalysis.all()
       .where((analysis) =>
@@ -554,9 +542,9 @@ const ExperimentWorkspacePage = () => {
       return;
     }
 
-    if (experiment.data?.analysisRunId) {
+    if (experiment.data?.liveAnalysisRunId) {
       await finishAnalysis.executeAsync({
-        run: AnalysisRun.refById(experiment.data.analysisRunId),
+        run: AnalysisRun.refById(experiment.data.liveAnalysisRunId),
         hasErrors: false,
       });
     }
@@ -737,8 +725,8 @@ const ExperimentWorkspacePage = () => {
       : requestedView === "responses" || requestedView === "configuration"
         ? requestedView
         : "summary";
-  const latestAnalysisHref = analysisRuns.data?.[0]
-    ? `/experiments/${experimentId}/analysis/${analysisRuns.data[0].id}`
+  const latestAnalysisHref = experiment.data?.reportingAnalysisRunId
+    ? `/experiments/${experimentId}/analysis/${experiment.data.reportingAnalysisRunId}`
     : undefined;
 
   return (

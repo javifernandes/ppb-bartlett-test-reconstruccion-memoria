@@ -45,6 +45,7 @@ import { createId } from "@/lib/create-id";
 const ResponseExperiment = Experiment.view("ResponseExperiment", {
   id: true,
   title: true,
+  reportingAnalysisRunId: true,
   story: true,
   alternateLanguage: true,
   alternateStory: true,
@@ -294,14 +295,16 @@ const ResponseDetailPage = () => {
       .as(ResponseDetail)
       .one(),
   );
+  const effectiveRunId =
+    requestedRunId ?? experiment.data?.reportingAnalysisRunId;
   const analysis = useGraphQuery(
     (() => {
       let query = RecallAnalysis.all().where((analysis) =>
         analysis.session.eq(ParticipantSession.refById(sessionId)),
       );
-      if (requestedRunId) {
+      if (effectiveRunId) {
         query = query.where((analysis) =>
-          analysis.run.eq(AnalysisRun.refById(requestedRunId)),
+          analysis.run.eq(AnalysisRun.refById(effectiveRunId)),
         );
       }
       return query

@@ -56,7 +56,7 @@ const PublicExperiment = Experiment.view("PublicExperiment", {
   intervalSeconds: true,
   distractorEnabled: true,
   status: true,
-  analysisRunId: true,
+  liveAnalysisRunId: true,
 });
 
 const ResumableSession = ParticipantSession.view("ResumableSession", {
@@ -409,12 +409,12 @@ const PublicParticipationPage = () => {
 
     clearRecallDraft(publicToken, sessionId);
     setStep("complete");
-    if (experiment.data.analysisRunId) {
+    if (experiment.data.liveAnalysisRunId) {
       void (async () => {
         for (let attempt = 1; attempt <= 2; attempt += 1) {
           const analysisResult = await analyzeRecall.executeAsync({
             id: createId(),
-            run: AnalysisRun.refById(experiment.data.analysisRunId!),
+            run: AnalysisRun.refById(experiment.data.liveAnalysisRunId!),
             session: ParticipantSession.refById(sessionId),
             experiment: Experiment.refById(experiment.data.id),
             createdAt: new Date().toISOString(),

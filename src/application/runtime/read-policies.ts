@@ -63,6 +63,8 @@ const ExperimentReadPolicy = defineGraphReadPolicy<
       "publishedAt",
       "publicToken",
       "analysisRunId",
+      "liveAnalysisRunId",
+      "reportingAnalysisRunId",
       "analysisRubrics",
       "analysisPreparedAt",
       "semanticAnalysisRubrics",

@@ -11,6 +11,11 @@ import {
   type RecallAnalysisModelResult,
 } from "../analysis/recall-analysis-model";
 import type { StoryAnalysisUnit } from "../analysis/story-analysis-model";
+import {
+  analyzeSemanticRecall,
+  semanticPhenomena,
+  type SemanticRubric,
+} from "../analysis/semantic-frame-runtime";
 
 export type RecallPhenomenonKind =
   | "retained"
@@ -240,6 +245,93 @@ export const RecallAnalysis = entity({
           targetExperiment.alternateStory
             ? targetExperiment.alternateStory
             : targetExperiment.story;
+        if (analysisRun.schemaVersion === "semantic-frames-v3.1") {
+          const semanticRubrics = analysisRun.rubricSnapshot as
+            | SemanticRubric[]
+            | null;
+          const semanticRubric = semanticRubrics?.find(
+            (candidate) =>
+              candidate.language === participantSession.contentLanguage,
+          );
+          if (!semanticRubric) {
+            return yield* failOperation(
+              "semantic_analysis_not_prepared",
+              "La historia no tiene una rúbrica semántica para este idioma.",
+            );
+          }
+          const attempted = yield* Effect.either(
+            Effect.tryPromise({
+              try: () =>
+                analyzeSemanticRecall(
+                  semanticRubric,
+                  participantSession.recallText!,
+                ),
+              catch: (error) =>
+                error instanceof Error ? error : new Error(String(error)),
+            }),
+          );
+          if (Either.isLeft(attempted)) {
+            console.error("Semantic recall analysis provider failed", {
+              experimentId: targetExperiment.id,
+              analysisRunId: analysisRun.id,
+              participantSessionId: participantSession.id,
+              error: attempted.left.message,
+            });
+            return yield* failOperation(
+              "recall_analysis_provider_failed",
+              attempted.left.message,
+            );
+          }
+          const semantic = attempted.right;
+          const phenomena = semanticPhenomena(semanticRubric, semantic.output);
+          return yield* commands
+            .insertReturning(
+              {
+                id,
+                run,
+                session,
+                experiment,
+                status: "completed",
+                rubricVersion: semanticRubric.version,
+                analyzerProvider: "deepseek",
+                analyzerModel: semantic.model,
+                promptVersion: "semantic-frame-assessment-v3.1",
+                inputTokens: semantic.usage?.prompt_tokens ?? null,
+                outputTokens: semantic.usage?.completion_tokens ?? null,
+                retainedUnitsCount: semantic.summary.facts.preserved,
+                omittedUnitsCount: semantic.summary.facts.omitted,
+                intrusionCount: semantic.output.intrusions.length,
+                phenomena,
+                unitAssessments: [],
+                semanticAssessment: semantic.output,
+                semanticSummary: semantic.summary,
+                createdAt,
+              },
+              [
+                "id",
+                "run",
+                "session",
+                "experiment",
+                "status",
+                "rubricVersion",
+                "analyzerProvider",
+                "analyzerModel",
+                "promptVersion",
+                "inputTokens",
+                "outputTokens",
+                "retainedUnitsCount",
+                "omittedUnitsCount",
+                "intrusionCount",
+                "phenomena",
+                "unitAssessments",
+                "semanticAssessment",
+                "semanticSummary",
+                "createdAt",
+              ],
+            )
+            .run();
+        }
+
         const rubrics = targetExperiment.analysisRubrics as Array<{
           language: "es" | "en";
           units: StoryAnalysisUnit[];
