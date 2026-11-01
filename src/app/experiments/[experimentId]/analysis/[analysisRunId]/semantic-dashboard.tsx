@@ -16,6 +16,7 @@ import {
 import { useState } from "react";
 import {
   isTrivialEntityMapping,
+  normalizeTerm,
   paretoFrontier,
   pearson,
   spearman,
@@ -33,8 +34,7 @@ type Fact = {
   statement: string;
   importance: Importance;
   frame?: {
-    predicate?: { label?: string };
-    slots?: Array<{ slotId: string; role?: string; expected?: string }>;
+    slots?: Array<{ slotId: string; expected?: string }>;
   };
 };
 
@@ -330,9 +330,9 @@ export const SemanticDashboard = ({
           comparableFacts: "hechos comparables",
           transformations: "Transformaciones recurrentes",
           transformationsDescription:
-            "Cambios que aparecieron en al menos dos personas. Cada cambio cuenta como máximo una vez por respuesta y requiere interpretación humana.",
+            "Separamos las sustituciones directas de los hechos que cambiaron de forma recurrente. Cada hallazgo cuenta como máximo una vez por respuesta y requiere interpretación humana.",
           entityChanges: "Personajes y entidades",
-          componentChanges: "Acciones, relaciones y atributos",
+          componentChanges: "Hechos transformados con mayor frecuencia",
           noTransformations:
             "No hay transformaciones recurrentes con este filtro.",
         }
@@ -378,9 +378,9 @@ export const SemanticDashboard = ({
           comparableFacts: "comparable facts",
           transformations: "Recurring transformations",
           transformationsDescription:
-            "Changes found in at least two people. Each change counts at most once per response and requires human interpretation.",
+            "Direct substitutions are separated from facts that changed repeatedly. Each finding counts at most once per response and requires human interpretation.",
           entityChanges: "Characters and entities",
-          componentChanges: "Actions, relations, and attributes",
+          componentChanges: "Most frequently transformed facts",
           noTransformations:
             "There are no recurring transformations under this filter.",
         };
@@ -421,18 +421,55 @@ export const SemanticDashboard = ({
     },
   );
   const factStats = facts.map((fact) => {
-    const statuses = languageAnalyses.flatMap((analysis) => {
+    const matches = languageAnalyses.flatMap((analysis) => {
       const assessment = analysis.semanticAssessment as SemanticAssessment;
       const match = assessment.factAssessments?.find(
         (candidate) => candidate.factId === fact.id,
       );
-      return match ? [deriveStatus(match)] : [];
+      return match ? [{ match, semanticAssessment: assessment }] : [];
     });
+    const statuses = matches.map(({ match }) => deriveStatus(match));
     const present = statuses.filter((status) => status !== "omitted").length;
+    const transformed = matches.filter(({ match, semanticAssessment }) => {
+      if (match.predicate?.status === "transformed") return true;
+      const entityMappingKeys = new Set(
+        (semanticAssessment.entityMappings ?? []).flatMap((mapping) => {
+          const from = mapping.canonicalEntity?.trim();
+          const to = mapping.observedForm?.trim();
+          return from && to
+            ? [`${normalizeTerm(from)}|${normalizeTerm(to)}`]
+            : [];
+        }),
+      );
+      return (match.slots ?? []).some((slotAssessment) => {
+        if (
+          slotAssessment.status !== "transformed" ||
+          !slotAssessment.observedValue
+        ) {
+          return false;
+        }
+        const expected = fact.frame?.slots
+          ?.find((slot) => slot.slotId === slotAssessment.slotId)
+          ?.expected?.trim();
+        if (!expected) return true;
+        const mappingKey = `${normalizeTerm(expected)}|${normalizeTerm(slotAssessment.observedValue)}`;
+        return (
+          !entityMappingKeys.has(mappingKey) &&
+          !isTrivialEntityMapping(
+            expected,
+            slotAssessment.observedValue,
+            language,
+          )
+        );
+      });
+    }).length;
     return {
       ...fact,
       total: statuses.length,
       presenceRate: statuses.length === 0 ? 0 : present / statuses.length,
+      transformed,
+      transformationRate:
+        statuses.length === 0 ? 0 : transformed / statuses.length,
     };
   });
   const remembered = [...factStats]
@@ -523,14 +560,13 @@ export const SemanticDashboard = ({
     from: string;
     to: string;
     count: number;
-    kind: "entity" | "component";
   };
   const transformationCounts = new Map<string, TransformationRow>();
   const addTransformation = (
     sessionKeys: Set<string>,
     row: Omit<TransformationRow, "count">,
   ) => {
-    const key = `${row.kind}|${row.from.toLocaleLowerCase()}|${row.to.toLocaleLowerCase()}`;
+    const key = `${row.from.toLocaleLowerCase()}|${row.to.toLocaleLowerCase()}`;
     if (sessionKeys.has(key)) return;
     sessionKeys.add(key);
     const current = transformationCounts.get(key) ?? { ...row, count: 0 };
@@ -545,51 +581,16 @@ export const SemanticDashboard = ({
       const from = mapping.canonicalEntity?.trim();
       const to = mapping.observedForm?.trim();
       if (!from || !to || isTrivialEntityMapping(from, to, language)) continue;
-      addTransformation(sessionKeys, { from, to, kind: "entity" });
-    }
-    for (const factAssessment of assessment.factAssessments ?? []) {
-      const fact = facts.find(
-        (candidate) => candidate.id === factAssessment.factId,
-      );
-      if (!fact) continue;
-      if (
-        factAssessment.predicate?.status === "transformed" &&
-        factAssessment.predicate.observedValue
-      ) {
-        addTransformation(sessionKeys, {
-          from: fact.frame?.predicate?.label ?? fact.statement,
-          to: factAssessment.predicate.observedValue,
-          kind: "component",
-        });
-      }
-      for (const slotAssessment of factAssessment.slots ?? []) {
-        if (
-          slotAssessment.status !== "transformed" ||
-          !slotAssessment.observedValue
-        ) {
-          continue;
-        }
-        const slot = fact.frame?.slots?.find(
-          (candidate) => candidate.slotId === slotAssessment.slotId,
-        );
-        const from = slot?.expected?.trim();
-        if (
-          !from ||
-          isTrivialEntityMapping(from, slotAssessment.observedValue, language)
-        ) {
-          continue;
-        }
-        addTransformation(sessionKeys, {
-          from,
-          to: slotAssessment.observedValue,
-          kind: "component",
-        });
-      }
+      addTransformation(sessionKeys, { from, to });
     }
   }
   const transformations = [...transformationCounts.values()]
     .filter((row) => row.count >= 2)
     .sort((left, right) => right.count - left.count);
+  const transformedFacts = [...factStats]
+    .filter((fact) => fact.transformed >= 2)
+    .sort((left, right) => right.transformed - left.transformed)
+    .slice(0, 8);
 
   return (
     <Stack gap="xl">
@@ -725,7 +726,7 @@ export const SemanticDashboard = ({
             <Title order={3}>{copy.transformations}</Title>
             <Text c="dimmed">{copy.transformationsDescription}</Text>
           </div>
-          {transformations.length === 0 ? (
+          {transformations.length === 0 && transformedFacts.length === 0 ? (
             <Text c="dimmed">{copy.noTransformations}</Text>
           ) : (
             <SimpleGrid cols={{ base: 1, md: 2 }}>
@@ -736,18 +737,43 @@ export const SemanticDashboard = ({
                   color: "violet",
                 },
                 {
-                  kind: "component" as const,
+                  kind: "fact" as const,
                   title: copy.componentChanges,
                   color: "orange",
                 },
               ].map((section) => {
-                const rows = transformations
-                  .filter((row) => row.kind === section.kind)
-                  .slice(0, 8);
+                const rows =
+                  section.kind === "entity" ? transformations.slice(0, 8) : [];
                 return (
                   <Stack key={section.kind} gap="sm">
                     <Title order={4}>{section.title}</Title>
-                    {rows.length === 0 ? (
+                    {section.kind === "fact" ? (
+                      transformedFacts.length === 0 ? (
+                        <Text size="sm" c="dimmed">
+                          {copy.noTransformations}
+                        </Text>
+                      ) : (
+                        <Table>
+                          <Table.Tbody>
+                            {transformedFacts.map((fact) => (
+                              <Table.Tr key={fact.id}>
+                                <Table.Td>
+                                  <Text size="sm" fw={600}>
+                                    {fact.statement}
+                                  </Text>
+                                </Table.Td>
+                                <Table.Td w={112} ta="right">
+                                  <Badge variant="light" color={section.color}>
+                                    {fact.transformed} ·{" "}
+                                    {percentage(fact.transformationRate)}
+                                  </Badge>
+                                </Table.Td>
+                              </Table.Tr>
+                            ))}
+                          </Table.Tbody>
+                        </Table>
+                      )
+                    ) : rows.length === 0 ? (
                       <Text size="sm" c="dimmed">
                         {copy.noTransformations}
                       </Text>
