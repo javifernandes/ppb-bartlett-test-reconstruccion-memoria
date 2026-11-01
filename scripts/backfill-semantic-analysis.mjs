@@ -13,7 +13,8 @@ const argumentValue = (name) =>
     ?.slice(name.length + 3);
 
 const apply = process.argv.includes("--apply");
-const activate = process.argv.includes("--activate");
+const promoteLive = process.argv.includes("--promote-live");
+const promoteReporting = process.argv.includes("--promote-reporting");
 const help = process.argv.includes("--help") || process.argv.includes("-h");
 const experimentId = argumentValue("experiment-id");
 const requestedRunId = argumentValue("run-id");
@@ -31,19 +32,20 @@ Opciones:
   --run-id=<uuid>          Reanuda una corrida V3.1 existente.
   --apply                  Ejecuta el análisis y persiste una corrida nueva.
   --project-ref=<ref>      Confirmación obligatoria del proyecto al usar --apply.
-  --activate               Hace activa la corrida completa; requiere --apply.
+  --promote-live           Envía los nuevos submits a V3 antes del backfill.
+  --promote-reporting      Muestra V3 sólo si cubre todas las respuestas.
   --help, -h               Muestra esta ayuda.
 
 La corrida V1 nunca se sobrescribe. Se recomienda ejecutar primero sin --apply,
-luego aplicar sin --activate, verificar los resultados y activar por separado.`);
+luego promover live, completar el backfill y promover reporting.`);
   process.exit(0);
 }
 
 if (!experimentId) {
   throw new Error("Indicá --experiment-id=<uuid>.");
 }
-if (activate && !apply) {
-  throw new Error("--activate requiere --apply.");
+if ((promoteLive || promoteReporting) && !apply) {
+  throw new Error("Las promociones requieren --apply.");
 }
 
 const loadEnvironment = async () => {
@@ -130,7 +132,7 @@ const many = async (table, columns, column, value) => {
 
 const experiment = await one(
   "experiments",
-  "id,title,status,primary_language,alternate_language,semantic_analysis_rubrics,semantic_analysis_prepared_at,analysis_run_id",
+  "id,title,status,primary_language,alternate_language,semantic_analysis_rubrics,semantic_analysis_prepared_at,analysis_run_id,live_analysis_run_id,reporting_analysis_run_id",
   "id",
   experimentId,
 );
@@ -185,6 +187,62 @@ const pending = sessions.filter(
   (session) => !completedSessionIds.has(session.id),
 );
 
+const semanticPhenomena = (rubric, assessment) => {
+  const facts = rubric.narrativeUnits.flatMap((unit) => unit.facts);
+  const byId = new Map(facts.map((fact) => [fact.id, fact]));
+  const phenomena = [];
+  const add = (component, excerpt, label) => {
+    phenomena.push({
+      kind:
+        component.status === "omitted"
+          ? "omission"
+          : component.status === "transformed"
+            ? "substitution"
+            : "retained",
+      storyExcerpt: excerpt,
+      recallExcerpt: component.evidence,
+      explanation:
+        component.status === "omitted"
+          ? `No se conserva ${label}.`
+          : component.status === "transformed"
+            ? `${label} aparece transformado como ${component.observedValue ?? "otra forma"}.`
+            : `Se conserva ${label}.`,
+      confidence: component.confidence,
+    });
+  };
+  for (const evaluated of assessment.factAssessments) {
+    const fact = byId.get(evaluated.factId);
+    if (!fact) continue;
+    add(
+      evaluated.predicate,
+      fact.frame.predicate.sourceExcerpt ?? fact.storyExcerpt ?? fact.statement,
+      `la acción «${fact.frame.predicate.label}»`,
+    );
+    const slots = new Map(
+      evaluated.slots.map((component) => [component.slotId, component]),
+    );
+    for (const slot of fact.frame.slots) {
+      const component = slots.get(slot.slotId);
+      if (!component || component.status === "preserved") continue;
+      add(
+        component,
+        slot.sourceExcerpt ?? fact.storyExcerpt ?? fact.statement,
+        `${slot.role}=${slot.expected}`,
+      );
+    }
+  }
+  for (const intrusion of assessment.intrusions) {
+    phenomena.push({
+      kind: "intrusion",
+      storyExcerpt: null,
+      recallExcerpt: intrusion.evidence,
+      explanation: intrusion.explanation,
+      confidence: intrusion.confidence,
+    });
+  }
+  return phenomena;
+};
+
 console.log(`${apply ? "APPLY" : "DRY RUN"}: ${experiment.title}`);
 console.log(`Corrida: ${runId}${existingRun ? " (reanudar)" : " (nueva)"}`);
 console.log(`Rúbricas: ${[...rubricByLanguage.keys()].join(", ")}`);
@@ -221,6 +279,46 @@ if (!existingRun) {
   if (experimentError) throw experimentError;
 }
 
+// A live run remains open: future submissions append analyses to it.
+const { error: runningError } = await client
+  .from("analysis_runs")
+  .update({ status: "running", completed_at: null })
+  .eq("id", runId);
+if (runningError) throw runningError;
+
+if (promoteLive) {
+  const { error } = await client
+    .from("experiments")
+    .update({ live_analysis_run_id: runId })
+    .eq("id", experimentId);
+  if (error) throw error;
+  console.log("V3 promovida como corrida live; los nuevos submits ya usan V3.");
+}
+
+// Existing V3 rows may predate inline-compatible phenomena. Refreshing these
+// is deterministic and does not call the LLM.
+const existingAnalyses = await many(
+  "recall_analyses",
+  "id,session_id,semantic_assessment",
+  "run_id",
+  runId,
+);
+for (const analysis of existingAnalyses) {
+  if (!analysis.semantic_assessment) continue;
+  const session = sessions.find(
+    (candidate) => candidate.id === analysis.session_id,
+  );
+  const rubric = session && rubricByLanguage.get(session.content_language);
+  if (!rubric) continue;
+  const { error } = await client
+    .from("recall_analyses")
+    .update({
+      phenomena: semanticPhenomena(rubric, analysis.semantic_assessment),
+    })
+    .eq("id", analysis.id);
+  if (error) throw error;
+}
+
 const failures = [];
 for (const [index, session] of pending.entries()) {
   const rubric = rubricByLanguage.get(session.content_language);
@@ -248,7 +346,7 @@ for (const [index, session] of pending.entries()) {
       retained_units_count: summary.facts.preserved,
       omitted_units_count: summary.facts.omitted,
       intrusion_count: result.output.intrusions.length,
-      phenomena: result.output.intrusions,
+      phenomena: semanticPhenomena(rubric, result.output),
       unit_assessments: [],
       semantic_assessment: result.output,
       semantic_summary: summary,
@@ -274,27 +372,26 @@ const finalAnalyses = await many(
 );
 const complete =
   failures.length === 0 && finalAnalyses.length === sessions.length;
-const completedAt = new Date().toISOString();
 const { error: finishError } = await client
   .from("analysis_runs")
   .update({
-    status: complete ? "completed" : "completed_with_errors",
-    completed_at: completedAt,
+    status: "running",
+    completed_at: null,
     source_response_count: sessions.length,
   })
   .eq("id", runId);
 if (finishError) throw finishError;
 
-if (activate) {
+if (promoteReporting) {
   if (!complete) {
-    throw new Error("No se puede activar una corrida incompleta.");
+    throw new Error("No se puede promover reporting con cobertura incompleta.");
   }
   const { error } = await client
     .from("experiments")
-    .update({ analysis_run_id: runId })
+    .update({ reporting_analysis_run_id: runId })
     .eq("id", experimentId);
   if (error) throw error;
-  console.log("Corrida activada.");
+  console.log("V3 promovida para reporting. V1 queda intacta para rollback.");
 }
 
 console.log(

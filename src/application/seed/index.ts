@@ -195,6 +195,8 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
       publishedAt: null,
       publicToken: null,
       analysisRunId: null,
+      liveAnalysisRunId: null,
+      reportingAnalysisRunId: null,
       analysisRubrics: null,
       analysisPreparedAt: null,
       semanticAnalysisRubrics: null,
@@ -231,6 +233,8 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
             publishedAt: "2026-10-22T08:01:00.000Z",
             publicToken: "demo-bilingue",
             analysisRunId: null,
+            liveAnalysisRunId: null,
+            reportingAnalysisRunId: null,
             analysisRubrics: null,
             analysisPreparedAt: null,
             semanticAnalysisRubrics: null,
@@ -264,6 +268,8 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
             publishedAt: "2026-10-22T09:01:00.000Z",
             publicToken: "demo-completa",
             analysisRunId: demoRunId,
+            liveAnalysisRunId: demoRunId,
+            reportingAnalysisRunId: demoRunId,
             analysisRubrics: [
               {
                 language: "es",
