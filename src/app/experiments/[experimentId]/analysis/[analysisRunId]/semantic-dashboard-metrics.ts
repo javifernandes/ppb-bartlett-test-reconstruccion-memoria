@@ -1,5 +1,20 @@
 export type Point = { id: string; x: number; y: number };
 
+export const timeAxis = (maximum: number, targetIntervals = 5) => {
+  const safeMaximum = Math.max(maximum, 1);
+  const roughStep = safeMaximum / targetIntervals;
+  const magnitude = 10 ** Math.floor(Math.log10(roughStep));
+  const normalized = roughStep / magnitude;
+  const niceNormalized = normalized <= 1 ? 1 : normalized <= 2 ? 2 : 5;
+  const step = niceNormalized * magnitude;
+  const maximumTick = Math.ceil(safeMaximum / step) * step;
+  const ticks = Array.from(
+    { length: Math.round(maximumTick / step) + 1 },
+    (_, index) => index * step,
+  );
+  return { maximum: maximumTick, step, ticks };
+};
+
 export const paretoFrontier = (points: Point[]) => {
   const bestAtTime = new Map<number, Point>();
   for (const point of points) {

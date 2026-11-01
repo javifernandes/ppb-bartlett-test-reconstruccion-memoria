@@ -3,6 +3,7 @@ import {
   isTrivialEntityMapping,
   paretoFrontier,
   spearman,
+  timeAxis,
   topOverlap,
 } from "./semantic-dashboard-metrics";
 
@@ -50,5 +51,18 @@ describe("semantic dashboard metrics", () => {
         ],
       ),
     ).toMatchObject({ count: 1, jaccard: 1 / 3 });
+  });
+
+  it("builds readable time ticks that cover the observed range", () => {
+    expect(timeAxis(270)).toEqual({
+      maximum: 300,
+      step: 50,
+      ticks: [0, 50, 100, 150, 200, 250, 300],
+    });
+    expect(timeAxis(83)).toEqual({
+      maximum: 100,
+      step: 20,
+      ticks: [0, 20, 40, 60, 80, 100],
+    });
   });
 });

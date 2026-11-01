@@ -19,6 +19,7 @@ import {
   paretoFrontier,
   pearson,
   spearman,
+  timeAxis,
   topOverlap,
 } from "./semantic-dashboard-metrics";
 
@@ -134,10 +135,12 @@ const ScatterPlot = ({
   points,
   emptyLabel,
   frontierLabel,
+  timeAxisLabel,
 }: {
   points: Array<{ id: string; x: number; y: number }>;
   emptyLabel: string;
   frontierLabel: string;
+  timeAxisLabel: string;
 }) => {
   if (points.length === 0) {
     return (
@@ -150,8 +153,10 @@ const ScatterPlot = ({
   const height = 310;
   const margin = { top: 20, right: 24, bottom: 42, left: 50 };
   const maximumX = Math.max(...points.map((point) => point.x), 1);
+  const horizontalAxis = timeAxis(maximumX);
   const x = (value: number) =>
-    margin.left + (value / maximumX) * (width - margin.left - margin.right);
+    margin.left +
+    (value / horizontalAxis.maximum) * (width - margin.left - margin.right);
   const y = (value: number) =>
     height - margin.bottom - value * (height - margin.top - margin.bottom);
   const frontier = paretoFrontier(points);
@@ -189,6 +194,27 @@ const ScatterPlot = ({
               fontSize="12"
             >
               {Math.round(tick * 100)}%
+            </text>
+          </g>
+        ))}
+        {horizontalAxis.ticks.map((tick) => (
+          <g key={`x-${tick}`}>
+            <line
+              x1={x(tick)}
+              x2={x(tick)}
+              y1={margin.top}
+              y2={height - margin.bottom}
+              stroke="var(--mantine-color-dark-4)"
+              strokeDasharray="4 6"
+            />
+            <text
+              x={x(tick)}
+              y={height - margin.bottom + 20}
+              textAnchor="middle"
+              fill="var(--mantine-color-dimmed)"
+              fontSize="12"
+            >
+              {tick}
             </text>
           </g>
         ))}
@@ -232,7 +258,7 @@ const ScatterPlot = ({
           fill="var(--mantine-color-dimmed)"
           fontSize="13"
         >
-          0–{Math.round(maximumX)} s
+          {timeAxisLabel}
         </text>
       </svg>
       <Group gap="xs">
@@ -284,6 +310,7 @@ export const SemanticDashboard = ({
           efficiencyUnavailable:
             "Ninguna respuesta alcanzó todavía el umbral descriptivo de 70 %.",
           atypical: "registros con tiempos atípicos excluidos",
+          seconds: "segundos",
           timeReading: "Tiempo de lectura",
           timeRecall: "Tiempo de reconstrucción",
           timeTotal: "Tiempo total",
@@ -331,6 +358,7 @@ export const SemanticDashboard = ({
           efficiencyUnavailable:
             "No response has reached the descriptive 70% threshold yet.",
           atypical: "records with atypical times excluded",
+          seconds: "seconds",
           timeReading: "Reading time",
           timeRecall: "Recall time",
           timeTotal: "Total time",
@@ -794,6 +822,7 @@ export const SemanticDashboard = ({
             points={points}
             emptyLabel={copy.noData}
             frontierLabel={copy.frontier}
+            timeAxisLabel={copy.seconds}
           />
           <SimpleGrid cols={{ base: 1, sm: 2 }}>
             <Card withBorder padding="md">
