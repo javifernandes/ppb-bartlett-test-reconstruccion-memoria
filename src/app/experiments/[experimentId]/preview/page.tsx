@@ -8,6 +8,7 @@ import {
   Checkbox,
   Container,
   Group,
+  Image,
   Loader,
   Paper,
   Progress,
@@ -57,6 +58,8 @@ type PreviewStep =
   | "recall"
   | "complete";
 
+type ReadingMode = "text" | "storyboard";
+
 const progressByStep: Record<PreviewStep, number> = {
   introduction: 0,
   reading: 25,
@@ -74,6 +77,7 @@ const ParticipantPreviewPage = () => {
   const [intervalStartedAt, setIntervalStartedAt] = useState<number>();
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const [selectedNumbers, setSelectedNumbers] = useState<number[]>([]);
+  const [readingMode, setReadingMode] = useState<ReadingMode>("text");
   const [selectedContentLanguage, setSelectedContentLanguage] = useState<
     "es" | "en"
   >();
@@ -215,9 +219,33 @@ const ParticipantPreviewPage = () => {
           </Text>
           <Title order={1}>{participantContent.participantTitle}</Title>
         </div>
-        <Text size="lg" lh={1.7} style={{ whiteSpace: "pre-wrap" }}>
-          {participantContent.story}
-        </Text>
+        <SegmentedControl
+          fullWidth
+          value={readingMode}
+          data={[
+            { value: "text", label: "Texto" },
+            { value: "storyboard", label: "Storyboard" },
+          ]}
+          onChange={(value) => setReadingMode(value as ReadingMode)}
+          aria-label="Modo de lectura del prototipo"
+        />
+        {readingMode === "text" ? (
+          <Text size="lg" lh={1.7} style={{ whiteSpace: "pre-wrap" }}>
+            {participantContent.story}
+          </Text>
+        ) : (
+          <Stack gap="sm">
+            <Image
+              src="/storyboards/historia-de-la-canasta.png"
+              alt="Storyboard de ocho viñetas de la historia de la canasta"
+              radius="md"
+              fit="contain"
+            />
+            <Text size="sm" c="dimmed" ta="center">
+              Prototipo visual · Historia de la canasta
+            </Text>
+          </Stack>
+        )}
         <Button
           size="lg"
           fullWidth
@@ -321,6 +349,7 @@ const ParticipantPreviewPage = () => {
             setIntervalStartedAt(undefined);
             setRemainingSeconds(0);
             setSelectedNumbers([]);
+            setReadingMode("text");
             setStep("introduction");
           }}
         >
