@@ -10,7 +10,7 @@ import { ShareChannel } from "./share-channel";
 import {
   type ParticipantRequestMetadata,
   participantRequestMetadataResourceKey,
-} from "./participant-request-metadata";
+} from "../runtime/participant-request-metadata";
 
 export const ParticipantSession = entity({
   name: "ParticipantSession",

@@ -10,8 +10,8 @@ import {
   ResultShare,
   ShareChannel,
 } from "./graph";
-import { analyzeRecallHeuristically } from "./recall-analysis";
-import { parseRecallAnalysisOutput } from "./recall-analysis-model";
+import { parseRecallAnalysisOutput } from "./analysis/recall-analysis-model";
+import { analyzeRecallHeuristically } from "./entities/recall-analysis";
 import { createBartlettSeed } from "./seed";
 
 const participantClientMetadata = {

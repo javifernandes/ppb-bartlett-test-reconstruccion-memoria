@@ -3,7 +3,10 @@ import { entity } from "@ontahi/core/entity";
 import { failOperation } from "@ontahi/core/runtime/server";
 import { Effect, Either } from "effect";
 
-import { prepareStory, type StoryAnalysisRubric } from "./story-analysis-model";
+import {
+  prepareStory,
+  type StoryAnalysisRubric,
+} from "../analysis/story-analysis-model";
 
 export const Experiment = entity({
   name: "Experiment",

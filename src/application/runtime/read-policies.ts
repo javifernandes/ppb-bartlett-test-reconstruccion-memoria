@@ -7,12 +7,12 @@ import {
 import type { Principal } from "@ontahi/core/runtime/server";
 import type { ServerRuntimeResourceMap } from "@ontahi/core/runtime/server";
 
-import { AnalysisRun } from "./analysis-run";
-import { Experiment } from "./experiment";
-import { ParticipantSession } from "./participant-session";
-import { RecallAnalysis } from "./recall-analysis";
-import { ResultShare } from "./result-share";
-import { ShareChannel } from "./share-channel";
+import { AnalysisRun } from "../entities/analysis-run";
+import { Experiment } from "../entities/experiment";
+import { ParticipantSession } from "../entities/participant-session";
+import { RecallAnalysis } from "../entities/recall-analysis";
+import { ResultShare } from "../entities/result-share";
+import { ShareChannel } from "../entities/share-channel";
 
 export type LocalRuntimeAuthority = {
   principal: Principal | null;

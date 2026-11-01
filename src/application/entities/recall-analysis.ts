@@ -9,8 +9,8 @@ import { ParticipantSession } from "./participant-session";
 import {
   analyzeRecallWithDeepSeek,
   type RecallAnalysisModelResult,
-} from "./recall-analysis-model";
-import type { StoryAnalysisUnit } from "./story-analysis-model";
+} from "../analysis/recall-analysis-model";
+import type { StoryAnalysisUnit } from "../analysis/story-analysis-model";
 
 export type RecallPhenomenonKind =
   | "retained"

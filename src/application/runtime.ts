@@ -5,7 +5,7 @@ import { BartlettApplication } from "./graph";
 import {
   localGraphReadPolicies,
   type LocalRuntimeAuthority,
-} from "./read-policies";
+} from "./runtime/read-policies";
 
 const operationDispatcher =
   createOperationInvocationDispatcher(BartlettApplication);

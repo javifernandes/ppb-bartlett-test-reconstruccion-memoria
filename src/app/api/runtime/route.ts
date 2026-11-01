@@ -6,7 +6,7 @@ import { BartlettApplication, ResultShare } from "@/application/graph";
 import {
   participantRequestMetadataFromRequest,
   participantRequestMetadataResourceKey,
-} from "@/application/participant-request-metadata";
+} from "@/application/runtime/participant-request-metadata";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
