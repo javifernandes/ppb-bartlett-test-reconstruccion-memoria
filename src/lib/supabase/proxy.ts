@@ -8,7 +8,8 @@ export const updateSupabaseSession = async (request: NextRequest) => {
     pathname.startsWith("/api/runtime") ||
     pathname.startsWith("/auth/") ||
     pathname.startsWith("/p/") ||
-    pathname.startsWith("/r/");
+    pathname.startsWith("/r/") ||
+    pathname.startsWith("/results/");
 
   // The runtime route resolves its own authority, while auth callbacks and
   // participant pages are public. Avoid a second concurrent getUser call for

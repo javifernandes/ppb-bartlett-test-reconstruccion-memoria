@@ -311,4 +311,15 @@ export const createBartlettSeed = (demoEnabled: boolean) => ({
     : [],
   RecallAnalysis: demoEnabled ? createAnalysisDemoResults() : [],
   ResultShare: [],
+  ExperimentResultShare: demoEnabled
+    ? [
+        {
+          id: "demo-resultados-completos",
+          experiment: demoExperimentId,
+          run: demoRunId,
+          status: "active" as const,
+          createdAt: "2026-10-22T09:16:00.000Z",
+        },
+      ]
+    : [],
 });

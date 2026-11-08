@@ -80,7 +80,6 @@ const english: Record<string, string> = {
   "Crear borrador": "Create draft",
   "Configuración del experimento": "Experiment settings",
   "Recolección en curso": "Collection in progress",
-  "Resultados del experimento": "Experiment results",
   Resumen: "Overview",
   Configuración: "Configuration",
   "La configuración queda en modo de solo lectura después de publicar.":
@@ -228,6 +227,29 @@ const english: Record<string, string> = {
   "La participación y su análisis asociado fueron eliminados.":
     "The participation and its associated analysis were deleted.",
   "Compartir resultado": "Share result",
+  "Compartir resultados": "Share results",
+  "Creá un enlace anónimo de sólo lectura con las estadísticas y las respuestas individuales.":
+    "Create an anonymous read-only link with statistics and individual responses.",
+  "Enlace público de resultados": "Public results link",
+  "Crear enlace de resultados": "Create results link",
+  "No se pudo compartir los resultados": "The results could not be shared",
+  "Enlace de resultados creado": "Results link created",
+  "El enlace anónimo se copió al portapapeles.":
+    "The anonymous link was copied to the clipboard.",
+  "Resultados del experimento": "Experiment results",
+  "Vista anónima de sólo lectura con estadísticas agregadas y respuestas individuales.":
+    "Anonymous read-only view with aggregate statistics and individual responses.",
+  "Estos resultados no están disponibles": "These results are not available",
+  "Respuestas individuales": "Individual responses",
+  "Abrí una respuesta para explorar la comparación y sus marcas semánticas.":
+    "Open a response to explore its comparison and semantic annotations.",
+  "Ver detalle": "View details",
+  "Comparación anónima con la historia original.":
+    "Anonymous comparison with the original story.",
+  "Volver a resultados": "Back to results",
+  "Interpretaciones de la marca seleccionada.":
+    "Interpretations of the selected annotation.",
+  Total: "Total",
   "Generá un enlace anónimo para compartir únicamente esta comparación.":
     "Create an anonymous link that shares only this comparison.",
   "Crear enlace público": "Create public link",

@@ -5,6 +5,7 @@ import {
   AnalysisRun,
   BartlettApplication,
   Experiment,
+  ExperimentResultShare,
   ParticipantSession,
   RecallAnalysis,
   ResultShare,
@@ -271,7 +272,7 @@ describe("Bartlett application bootstrap", () => {
 
     const analysis = await asAdmin(() =>
       AnalysisRun.start({
-        id: "analysis-test",
+        id: "analysis-live-test",
         experiment: Experiment.refById("experiment-test"),
         createdAt: "2026-10-22T13:12:30.000Z",
       }),
@@ -287,7 +288,7 @@ describe("Bartlett application bootstrap", () => {
     const recallAnalysis = await asAdmin(() =>
       RecallAnalysis.analyze({
         id: "recall-analysis-test",
-        run: AnalysisRun.refById("analysis-test"),
+        run: AnalysisRun.refById("analysis-live-test"),
         session: ParticipantSession.refById("session-test"),
         experiment: Experiment.refById("experiment-test"),
         createdAt: "2026-10-22T13:12:31.000Z",
@@ -348,13 +349,39 @@ describe("Bartlett application bootstrap", () => {
 
     const finishedAnalysis = await asAdmin(() =>
       AnalysisRun.finish({
-        run: AnalysisRun.refById("analysis-test"),
+        run: AnalysisRun.refById("analysis-live-test"),
         hasErrors: false,
       }),
     );
     expect(finishedAnalysis).toMatchObject({
       ok: true,
       value: { status: "completed" },
+    });
+
+    const experimentResultsShare = await asAdmin(() =>
+      ExperimentResultShare.create({
+        id: "shared-experiment-results-test",
+        experiment: Experiment.refById("experiment-test"),
+        run: AnalysisRun.refById("analysis-live-test"),
+        createdAt: "2026-10-22T13:12:33.000Z",
+      }),
+    );
+    expect(experimentResultsShare).toMatchObject({
+      ok: true,
+      value: {
+        id: "shared-experiment-results-test",
+        status: "active",
+      },
+    });
+
+    const disabledExperimentResultsShare = await asAdmin(() =>
+      ExperimentResultShare.disable({
+        share: ExperimentResultShare.refById("shared-experiment-results-test"),
+      }),
+    );
+    expect(disabledExperimentResultsShare).toMatchObject({
+      ok: true,
+      value: { status: "disabled" },
     });
 
     const deletedSession = await asAdmin(() =>

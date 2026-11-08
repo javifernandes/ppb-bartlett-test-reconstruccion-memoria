@@ -3,6 +3,7 @@ import { inProcessTasks, ontahi } from "@ontahi/core/runtime/server";
 
 import { AnalysisRun } from "./entities/analysis-run";
 import { Experiment } from "./entities/experiment";
+import { ExperimentResultShare } from "./entities/experiment-result-share";
 import { ParticipantSession } from "./entities/participant-session";
 import { RecallAnalysis } from "./entities/recall-analysis";
 import { ResultShare } from "./entities/result-share";
@@ -19,6 +20,7 @@ const useSupabaseStorage =
 const createBartlettApplication = () => {
   const entities = [
     Experiment,
+    ExperimentResultShare,
     ParticipantSession,
     AnalysisRun,
     RecallAnalysis,
@@ -50,6 +52,7 @@ export const BartlettApplication =
 export {
   AnalysisRun,
   Experiment,
+  ExperimentResultShare,
   ParticipantSession,
   RecallAnalysis,
   ResultShare,
