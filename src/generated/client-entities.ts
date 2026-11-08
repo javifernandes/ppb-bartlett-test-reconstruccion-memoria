@@ -14,6 +14,14 @@ import {
 export const ExperimentSchema = defineEntitySchema("Experiment", {
     id: field.id(), title: field.nonEmptyString({ trim: true }), participantTitle: field.nonEmptyString({ trim: true }), introduction: field.nonEmptyString({ trim: true }), consentText: field.nonEmptyString({ trim: true }), story: field.nonEmptyString({ trim: true }), recallInstructions: field.nonEmptyString({ trim: true }), primaryLanguage: field.enum(["es", "en"] as const), alternateLanguage: field.nullable(field.enum(["es", "en"] as const)), alternateParticipantTitle: field.nullable(field.nonEmptyString({ trim: true })), alternateIntroduction: field.nullable(field.nonEmptyString({ trim: true })), alternateConsentText: field.nullable(field.nonEmptyString({ trim: true })), alternateStory: field.nullable(field.nonEmptyString({ trim: true })), alternateRecallInstructions: field.nullable(field.nonEmptyString({ trim: true })), intervalSeconds: field.integer({ min: 0, max: 3600 }), distractorEnabled: field.boolean(), status: field.enum(["draft", "published", "closed"] as const), createdAt: field.nonEmptyString({ trim: true }), publishedAt: field.nullable(field.nonEmptyString({ trim: true })), publicToken: field.nullable(field.nonEmptyString({ trim: true })), analysisRunId: field.nullable(field.nonEmptyString({ trim: true })), liveAnalysisRunId: field.nullable(field.nonEmptyString({ trim: true })), reportingAnalysisRunId: field.nullable(field.nonEmptyString({ trim: true })), analysisRubrics: field.nullable(field.json()), analysisPreparedAt: field.nullable(field.nonEmptyString({ trim: true })), semanticAnalysisRubrics: field.nullable(field.json()), semanticAnalysisPreparedAt: field.nullable(field.nonEmptyString({ trim: true })),
 }).display({ primary: "title", search: ["title"] });
+export const AnalysisRunSchema = defineEntitySchema("AnalysisRun", {
+    id: field.id(), experiment: field.ref(ExperimentSchema), status: field.enum([
+        "running", "completed", "completed_with_errors",
+    ] as const), analyzerVersion: field.nonEmptyString({ trim: true }), schemaVersion: field.nonEmptyString({ trim: true }), rubricSnapshot: field.nullable(field.json()), completedAt: field.nullable(field.nonEmptyString({ trim: true })), sourceResponseCount: field.nullable(field.integer({ min: 0 })), createdAt: field.nonEmptyString({ trim: true }),
+});
+export const ExperimentResultShareSchema = defineEntitySchema("ExperimentResultShare", {
+    id: field.id(), experiment: field.ref(ExperimentSchema), run: field.ref(AnalysisRunSchema), status: field.enum(["active", "disabled"] as const), createdAt: field.nonEmptyString({ trim: true }),
+});
 export const ShareChannelSchema = defineEntitySchema("ShareChannel", {
     id: field.id(), experiment: field.ref(ExperimentSchema), name: field.nonEmptyString({ trim: true, maxLength: 80 }), status: field.enum(["active", "disabled"] as const), createdAt: field.nonEmptyString({ trim: true }),
 }).display({ primary: "name", search: ["name"] });
@@ -21,11 +29,6 @@ export const ParticipantSessionSchema = defineEntitySchema("ParticipantSession",
     id: field.id(), experiment: field.ref(ExperimentSchema), shareChannel: field.nullable(field.ref(ShareChannelSchema)), contentLanguage: field.enum(["es", "en"] as const), countryCode: field.nullable(field.nonEmptyString({ trim: true })), browserLocale: field.nullable(field.nonEmptyString({ trim: true })), timezone: field.nullable(field.nonEmptyString({ trim: true })), deviceType: field.nullable(field.enum(["mobile", "tablet", "desktop"] as const)), browser: field.nullable(field.nonEmptyString({ trim: true })), operatingSystem: field.nullable(field.nonEmptyString({ trim: true })), screenWidth: field.nullable(field.integer({ min: 0, max: 20000 })), screenHeight: field.nullable(field.integer({ min: 0, max: 20000 })), status: field.enum([
         "reading", "interval", "recalling", "submitted",
     ] as const), startedAt: field.nonEmptyString({ trim: true }), intervalStartedAt: field.nullable(field.nonEmptyString({ trim: true })), recallingStartedAt: field.nullable(field.nonEmptyString({ trim: true })), lastActivityAt: field.nonEmptyString({ trim: true }), recallText: field.nullable(field.nonEmptyString({ trim: true, maxLength: 5000 })), submittedAt: field.nullable(field.nonEmptyString({ trim: true })),
-});
-export const AnalysisRunSchema = defineEntitySchema("AnalysisRun", {
-    id: field.id(), experiment: field.ref(ExperimentSchema), status: field.enum([
-        "running", "completed", "completed_with_errors",
-    ] as const), analyzerVersion: field.nonEmptyString({ trim: true }), schemaVersion: field.nonEmptyString({ trim: true }), rubricSnapshot: field.nullable(field.json()), completedAt: field.nullable(field.nonEmptyString({ trim: true })), sourceResponseCount: field.nullable(field.integer({ min: 0 })), createdAt: field.nonEmptyString({ trim: true }),
 });
 export const RecallAnalysisSchema = defineEntitySchema("RecallAnalysis", {
     id: field.id(), run: field.ref(AnalysisRunSchema), session: field.ref(ParticipantSessionSchema), experiment: field.ref(ExperimentSchema), status: field.enum(["completed"] as const), rubricVersion: field.nonEmptyString({ trim: true }), analyzerProvider: field.nonEmptyString({ trim: true }), analyzerModel: field.nonEmptyString({ trim: true }), promptVersion: field.nonEmptyString({ trim: true }), inputTokens: field.nullable(field.integer({ min: 0 })), outputTokens: field.nullable(field.integer({ min: 0 })), retainedUnitsCount: field.integer({ min: 0 }), omittedUnitsCount: field.integer({ min: 0 }), intrusionCount: field.integer({ min: 0 }), phenomena: field.json(), unitAssessments: field.json(), semanticAssessment: field.nullable(field.json()), semanticSummary: field.nullable(field.json()), createdAt: field.nonEmptyString({ trim: true }),
@@ -115,6 +118,35 @@ export const Experiment = defineClientEntity(ExperimentSchema, {
       },
       input: graphSchema.object({ experiment: field.ref(ExperimentSchema) }),
       output: ExperimentSchema,
+    }),
+  },
+});
+
+export const ExperimentResultShare = defineClientEntity(ExperimentResultShareSchema, {
+
+  domainOperations: {
+    create: defineClientDomainOperation({
+      authority: 'server',
+      exposure: 'bridge',
+      bridge: {
+        invalidate: [["ExperimentResultShare"]],
+      },
+      input: graphSchema.object({
+        id: ExperimentResultShareSchema.fields.id,
+        experiment: graphSchema.existingRef(ExperimentSchema),
+        run: graphSchema.existingRef(AnalysisRunSchema),
+        createdAt: ExperimentResultShareSchema.fields.createdAt,
+      }),
+      output: ExperimentResultShareSchema,
+    }),
+    disable: defineClientDomainOperation({
+      authority: 'server',
+      exposure: 'bridge',
+      bridge: {
+        invalidate: [["ExperimentResultShare"]],
+      },
+      input: graphSchema.object({ share: graphSchema.existingRef(ExperimentResultShareSchema) }),
+      output: ExperimentResultShareSchema,
     }),
   },
 });
@@ -313,5 +345,5 @@ export const ShareChannel = defineClientEntity(ShareChannelSchema, {
 });
 
 export const clientApplication = defineClientApplication({
-  entities: [Experiment, ParticipantSession, AnalysisRun, RecallAnalysis, ResultShare, ShareChannel],
+  entities: [Experiment, ExperimentResultShare, ParticipantSession, AnalysisRun, RecallAnalysis, ResultShare, ShareChannel],
 });

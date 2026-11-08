@@ -9,6 +9,7 @@ import type { ServerRuntimeResourceMap } from "@ontahi/core/runtime/server";
 
 import { AnalysisRun } from "../entities/analysis-run";
 import { Experiment } from "../entities/experiment";
+import { ExperimentResultShare } from "../entities/experiment-result-share";
 import { ParticipantSession } from "../entities/participant-session";
 import { RecallAnalysis } from "../entities/recall-analysis";
 import { ResultShare } from "../entities/result-share";
@@ -21,6 +22,11 @@ export type LocalRuntimeAuthority = {
   resultShare?: {
     token: string;
     sessionId: string;
+  };
+  experimentResultShare?: {
+    token: string;
+    experimentId: string;
+    runId: string;
   };
   resources: ServerRuntimeResourceMap;
   cacheScope: readonly string[];
@@ -80,6 +86,11 @@ const ExperimentReadPolicy = defineGraphReadPolicy<
   },
   scope: ({ authority, entity }) => {
     if (authority.principal) return selectionAll();
+    if (authority.experimentResultShare) {
+      return selection(entity, (experiment) =>
+        experiment.id.eq(authority.experimentResultShare!.experimentId),
+      );
+    }
     const publicToken = authority.participantPublicToken;
     if (!publicToken) return selectionNone();
 
@@ -128,6 +139,13 @@ const ParticipantSessionReadPolicy = defineGraphReadPolicy<
   },
   scope: ({ authority, entity }) => {
     if (authority.principal) return selectionAll();
+    if (authority.experimentResultShare) {
+      return selection(entity, (session) =>
+        session.experiment.eq(
+          Experiment.refById(authority.experimentResultShare!.experimentId),
+        ),
+      ).and((session) => session.status.eq("submitted"));
+    }
     const allowedIds = authority.participantSessionIds;
     if (allowedIds.length === 0) return selectionNone();
 
@@ -171,6 +189,33 @@ const ResultShareReadPolicy = defineGraphReadPolicy<
     if (!authority.resultShare) return selectionNone();
     return selection(entity, (share) =>
       share.id.eq(authority.resultShare!.token),
+    ).and((share) => share.status.eq("active"));
+  },
+});
+
+const ExperimentResultShareReadPolicy = defineGraphReadPolicy<
+  typeof ExperimentResultShare,
+  LocalRuntimeAuthority
+>({
+  entity: ExperimentResultShare,
+  modes: ["get", "run", "count"],
+  cardinalities: ["one", "many"],
+  maxLimit: 100,
+  allow: {
+    select: ["id", "experiment", "run", "status", "createdAt"],
+    filter: {
+      id: ["eq", "in"],
+      experiment: ["eq", "in"],
+      run: ["eq", "in"],
+      status: ["eq", "in"],
+    },
+    order: ["createdAt"],
+  },
+  scope: ({ authority, entity }) => {
+    if (authority.principal) return selectionAll();
+    if (!authority.experimentResultShare) return selectionNone();
+    return selection(entity, (share) =>
+      share.id.eq(authority.experimentResultShare!.token),
     ).and((share) => share.status.eq("active"));
   },
 });
@@ -222,7 +267,13 @@ const AnalysisRunReadPolicy = defineGraphReadPolicy<
     },
     order: ["createdAt"],
   },
-  scope: authenticatedScope,
+  scope: ({ authority, entity }) => {
+    if (authority.principal) return selectionAll();
+    if (!authority.experimentResultShare) return selectionNone();
+    return selection(entity, (run) =>
+      run.id.eq(authority.experimentResultShare!.runId),
+    );
+  },
 });
 
 const RecallAnalysisReadPolicy = defineGraphReadPolicy<
@@ -266,6 +317,13 @@ const RecallAnalysisReadPolicy = defineGraphReadPolicy<
   },
   scope: ({ authority, entity }) => {
     if (authority.principal) return selectionAll();
+    if (authority.experimentResultShare) {
+      return selection(entity, (analysis) =>
+        analysis.run.eq(
+          AnalysisRun.refById(authority.experimentResultShare!.runId),
+        ),
+      );
+    }
     if (!authority.resultShare) return selectionNone();
     return selection(entity, (analysis) =>
       analysis.session.eq(
@@ -281,5 +339,6 @@ export const localGraphReadPolicies = [
   AnalysisRunReadPolicy,
   RecallAnalysisReadPolicy,
   ResultShareReadPolicy,
+  ExperimentResultShareReadPolicy,
   ShareChannelReadPolicy,
 ] as const;

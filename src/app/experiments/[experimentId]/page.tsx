@@ -54,6 +54,7 @@ import { useI18n } from "@/app/i18n";
 import {
   AnalysisRun,
   Experiment,
+  ExperimentResultShare,
   ParticipantSession,
   RecallAnalysis,
   ShareChannel,
@@ -125,6 +126,17 @@ const SessionAnalysisRow = RecallAnalysis.view("SessionAnalysisRow", {
   session: true,
   status: true,
 });
+
+const ExperimentResultShareRow = ExperimentResultShare.view(
+  "ExperimentResultShareRow",
+  {
+    id: true,
+    experiment: true,
+    run: true,
+    status: true,
+    createdAt: true,
+  },
+);
 
 const sessionStatus = {
   reading: { label: "Leyendo", color: "blue" },
@@ -207,6 +219,12 @@ const ExperimentWorkspacePage = () => {
       .as(SessionAnalysisRow),
     { enabled: Boolean(currentAnalysisRunId) },
   );
+  const experimentResultShares = useGraphQuery(
+    ExperimentResultShare.all()
+      .where((share) => share.experiment.eq(Experiment.refById(experimentId)))
+      .as(ExperimentResultShareRow)
+      .orderBy((share) => share.createdAt.desc()),
+  );
   const [publishOpened, publishModal] = useDisclosure(false);
   const [closeOpened, closeModal] = useDisclosure(false);
   const [deleteOpened, deleteModal] = useDisclosure(false);
@@ -249,6 +267,12 @@ const ExperimentWorkspacePage = () => {
   const finishAnalysis = useOperation(AnalysisRun.domain.finish);
   const createShareChannel = useOperation(ShareChannel.domain.create);
   const disableShareChannel = useOperation(ShareChannel.domain.disable);
+  const createExperimentResultShare = useOperation(
+    ExperimentResultShare.domain.create,
+  );
+  const disableExperimentResultShare = useOperation(
+    ExperimentResultShare.domain.disable,
+  );
   const form = useForm<{
     title: string;
     participantTitle: string;
@@ -518,6 +542,49 @@ const ExperimentWorkspacePage = () => {
   const handleDisableShareChannel = async (channelId: string) => {
     const result = await disableShareChannel.executeAsync({
       channel: ShareChannel.refById(channelId),
+    });
+    if (!result.ok) {
+      notifications.show({
+        title: t("No se pudo desactivar el enlace"),
+        message: result.message,
+        color: "red",
+      });
+    }
+  };
+
+  const activeExperimentResultShare = experimentResultShares.data?.find(
+    (share) => share.status === "active",
+  );
+
+  const handleCreateExperimentResultShare = async () => {
+    if (!experiment.data?.reportingAnalysisRunId) return;
+    const result = await createExperimentResultShare.executeAsync({
+      id: createId(),
+      experiment: Experiment.refById(experimentId),
+      run: AnalysisRun.refById(experiment.data.reportingAnalysisRunId),
+      createdAt: new Date().toISOString(),
+    });
+    if (!result.ok) {
+      notifications.show({
+        title: t("No se pudo compartir los resultados"),
+        message: result.message,
+        color: "red",
+      });
+      return;
+    }
+    await navigator.clipboard.writeText(
+      `${window.location.origin}/results/${result.value.id}`,
+    );
+    notifications.show({
+      title: t("Enlace de resultados creado"),
+      message: t("El enlace anónimo se copió al portapapeles."),
+      color: "teal",
+    });
+  };
+
+  const handleDisableExperimentResultShare = async (shareId: string) => {
+    const result = await disableExperimentResultShare.executeAsync({
+      share: ExperimentResultShare.refById(shareId),
     });
     if (!result.ok) {
       notifications.show({
@@ -813,6 +880,73 @@ const ExperimentWorkspacePage = () => {
                   isDraft={experiment.data.status === "draft"}
                   analysisHref={latestAnalysisHref}
                 />
+
+                {workspaceSection === "summary" &&
+                  experiment.data.reportingAnalysisRunId && (
+                    <Card withBorder padding="xl">
+                      <Stack gap="md">
+                        <div>
+                          <Title order={2}>{t("Compartir resultados")}</Title>
+                          <Text c="dimmed" size="sm">
+                            {t(
+                              "Creá un enlace anónimo de sólo lectura con las estadísticas y las respuestas individuales.",
+                            )}
+                          </Text>
+                        </div>
+                        {activeExperimentResultShare ? (
+                          <Group align="flex-end">
+                            <TextInput
+                              aria-label={t("Enlace público de resultados")}
+                              value={`/results/${activeExperimentResultShare.id}`}
+                              readOnly
+                              style={{ flex: 1 }}
+                            />
+                            <Button
+                              variant="default"
+                              leftSection={<IconCopy size={18} />}
+                              onClick={() =>
+                                void navigator.clipboard.writeText(
+                                  `${window.location.origin}/results/${activeExperimentResultShare.id}`,
+                                )
+                              }
+                            >
+                              {t("Copiar")}
+                            </Button>
+                            <Button
+                              component={Link}
+                              href={`/results/${activeExperimentResultShare.id}`}
+                              target="_blank"
+                              variant="light"
+                            >
+                              {t("Abrir")}
+                            </Button>
+                            <Button
+                              color="red"
+                              variant="subtle"
+                              loading={disableExperimentResultShare.isExecuting}
+                              onClick={() =>
+                                void handleDisableExperimentResultShare(
+                                  activeExperimentResultShare.id,
+                                )
+                              }
+                            >
+                              {t("Desactivar")}
+                            </Button>
+                          </Group>
+                        ) : (
+                          <Button
+                            style={{ alignSelf: "flex-start" }}
+                            loading={createExperimentResultShare.isExecuting}
+                            onClick={() =>
+                              void handleCreateExperimentResultShare()
+                            }
+                          >
+                            {t("Crear enlace de resultados")}
+                          </Button>
+                        )}
+                      </Stack>
+                    </Card>
+                  )}
 
                 {workspaceSection === "summary" &&
                   experiment.data.status === "published" &&
