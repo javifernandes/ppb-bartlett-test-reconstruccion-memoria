@@ -229,6 +229,7 @@ const ExperimentWorkspacePage = () => {
   const [closeOpened, closeModal] = useDisclosure(false);
   const [deleteOpened, deleteModal] = useDisclosure(false);
   const [qrOpened, qrModal] = useDisclosure(false);
+  const [resultsQrOpened, resultsQrModal] = useDisclosure(false);
   const [publicOrigin, setPublicOrigin] = useState("");
   const [qrChannelId, setQrChannelId] = useState<string | null>(null);
   const [newChannelName, setNewChannelName] = useState("");
@@ -911,6 +912,16 @@ const ExperimentWorkspacePage = () => {
                               }
                             >
                               {t("Copiar")}
+                            </Button>
+                            <Button
+                              variant="default"
+                              leftSection={<IconQrcode size={18} />}
+                              onClick={() => {
+                                setPublicOrigin(window.location.origin);
+                                resultsQrModal.open();
+                              }}
+                            >
+                              {t("Mostrar QR")}
                             </Button>
                             <Button
                               component={Link}
@@ -2004,6 +2015,43 @@ const ExperimentWorkspacePage = () => {
           >
             {publicOrigin && experiment.data?.publicToken
               ? `${publicOrigin}/p/${experiment.data.publicToken}${qrChannelId ? `?s=${encodeURIComponent(qrChannelId)}` : ""}`
+              : ""}
+          </Text>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={resultsQrOpened}
+        onClose={resultsQrModal.close}
+        title={t("Código QR de resultados")}
+        centered
+        size="auto"
+      >
+        <Stack align="center" gap="lg">
+          <Text c="dimmed" ta="center">
+            {t("Escaneá el código para abrir los resultados.")}
+          </Text>
+          {publicOrigin && activeExperimentResultShare ? (
+            <Card bg="white" p="md" radius="md">
+              <QRCodeSVG
+                value={`${publicOrigin}/results/${activeExperimentResultShare.id}`}
+                size={280}
+                marginSize={1}
+                level="M"
+              />
+            </Card>
+          ) : (
+            <Loader />
+          )}
+          <Text
+            size="xs"
+            c="dimmed"
+            ta="center"
+            maw={320}
+            style={{ overflowWrap: "anywhere" }}
+          >
+            {publicOrigin && activeExperimentResultShare
+              ? `${publicOrigin}/results/${activeExperimentResultShare.id}`
               : ""}
           </Text>
         </Stack>
