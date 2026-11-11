@@ -131,6 +131,9 @@ const english: Record<string, string> = {
   "Código QR para participantes": "Participant QR code",
   "Escaneá el código para abrir el experimento.":
     "Scan the code to open the experiment.",
+  "Código QR de resultados": "Results QR code",
+  "Escaneá el código para abrir los resultados.":
+    "Scan the code to open the results.",
   "Sólo lo ven los administradores.": "Only administrators can see it.",
   "El texto se mostrará a los participantes durante la etapa de lectura.":
     "This text is shown to participants during the reading stage.",
