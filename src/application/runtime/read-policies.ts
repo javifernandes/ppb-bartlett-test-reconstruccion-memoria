@@ -3,7 +3,7 @@ import {
   selection,
   selectionAll,
   selectionNone,
-} from "@ontahi/core/data-graph";
+} from "@ontahi/core";
 import type { Principal } from "@ontahi/core/runtime/server";
 import type { ServerRuntimeResourceMap } from "@ontahi/core/runtime/server";
 

@@ -1,4 +1,4 @@
-import { defineGraphApi } from "@ontahi/core/data-graph";
+import { defineGraphApi } from "@ontahi/core";
 
 import { AnalysisRun } from "./application/entities/analysis-run";
 import { Experiment } from "./application/entities/experiment";
