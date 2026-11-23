@@ -1,4 +1,4 @@
-import { createInMemoryDataGraphStorage } from "@ontahi/core/data-graph";
+import { createInMemoryDataGraphStorage } from "@ontahi/core";
 import { inProcessTasks, ontahi } from "@ontahi/core/runtime/server";
 
 import { AnalysisRun } from "./entities/analysis-run";

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { query } from "@ontahi/core/data-graph";
+import { query } from "@ontahi/core";
 
 import {
   AnalysisRun,

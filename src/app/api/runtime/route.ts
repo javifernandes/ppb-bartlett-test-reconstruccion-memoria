@@ -1,5 +1,5 @@
 import { createNextRuntimeProtocolRouteHandler } from "@ontahi/runtime-nextjs/runtime-protocol";
-import { query } from "@ontahi/core/data-graph";
+import { query } from "@ontahi/core";
 
 import { localRuntimeProtocolDispatcher } from "@/application/runtime";
 import {
